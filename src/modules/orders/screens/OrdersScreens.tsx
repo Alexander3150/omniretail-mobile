@@ -4,6 +4,7 @@ import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, V
 
 import { demoConfig } from "@/config";
 import { DeliveryMethod, OrderStatus } from "@/core";
+import { useInvoiceDownload } from "@/modules/invoice";
 import { formatCurrency, formatDateTime } from "@/shared";
 import { colors, spacing, typography } from "@/theme";
 
@@ -45,6 +46,7 @@ export function OrdersScreen() {
 export function OrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { advanceForDemo, branch, currency, isLoading, items, order, payments } = useOrder(id);
+  const { downloadInvoice, error: invoiceError, isGenerating } = useInvoiceDownload();
   const tracking = useOrderTracking(order);
   const canAdvance = demoConfig.enableOrderStatusControls && (order?.status === OrderStatus.Confirmed || order?.status === OrderStatus.Preparing);
 
@@ -72,6 +74,10 @@ export function OrderDetailScreen() {
             <Text style={styles.primaryText}>Avanzar estado (Demo)</Text>
           </Pressable>
         ) : null}
+        <Pressable disabled={isGenerating} onPress={() => void downloadInvoice(order)} style={[styles.secondaryButton, isGenerating ? styles.disabled : null]}>
+          <Text>{isGenerating ? "Generando factura..." : "Descargar factura"}</Text>
+        </Pressable>
+        {invoiceError ? <Text style={styles.error}>{invoiceError}</Text> : null}
       </View>
 
       <View style={styles.panel}>
@@ -122,12 +128,26 @@ export function OrderDetailScreen() {
       </View>
 
       <View style={styles.panel}>
+        <Text style={styles.sectionTitle}>Contacto</Text>
+        <Text>{order.contactSnapshot?.name ?? "Cliente"}</Text>
+        {order.contactSnapshot?.email ? <Text style={styles.muted}>{order.contactSnapshot.email}</Text> : null}
+        <Text>Telefono: {order.contactSnapshot?.phone ?? "No registrado"}</Text>
+      </View>
+
+      <View style={styles.panel}>
+        <Text style={styles.sectionTitle}>Facturacion</Text>
+        <Text>{order.billingSnapshot?.name ?? order.contactSnapshot?.name ?? "Consumidor final"}</Text>
+        <Text>NIT: {order.billingSnapshot?.nit?.trim() || "CF"}</Text>
+      </View>
+
+      <View style={styles.panel}>
         <Text style={styles.sectionTitle}>Pago</Text>
         <Text>Estado: {order.paymentStatus ?? "pendiente"}</Text>
         {payments.length === 0 ? <Text style={styles.muted}>Sin pago registrado.</Text> : null}
         {payments.map((payment) => (
           <Text key={payment.id}>
             {payment.method} - {payment.status} - {formatCurrency(payment.amount, currency)}
+            {payment.cardBrandSnapshot || payment.cardLast4Snapshot ? ` - ${payment.cardBrandSnapshot ?? "Tarjeta"} ${payment.cardLast4Snapshot ?? ""}` : ""}
             {payment.reference ? ` (${payment.reference})` : ""}
           </Text>
         ))}
@@ -146,6 +166,8 @@ export function OrderDetailScreen() {
 const styles = StyleSheet.create({
   badge: { color: colors.primary, fontWeight: "700" },
   content: { backgroundColor: colors.background, gap: spacing.md, padding: spacing.md },
+  disabled: { opacity: 0.7 },
+  error: { color: colors.danger },
   flex: { flex: 1 },
   itemRow: { borderTopColor: colors.border, borderTopWidth: 1, flexDirection: "row", gap: spacing.md, paddingTop: spacing.sm },
   loading: { flex: 1 },
@@ -154,6 +176,7 @@ const styles = StyleSheet.create({
   panel: { borderColor: colors.border, borderRadius: 8, borderWidth: 1, gap: spacing.sm, padding: spacing.md },
   primaryButton: { alignItems: "center", backgroundColor: colors.primary, borderRadius: 8, minHeight: 44, justifyContent: "center", marginTop: spacing.sm },
   primaryText: { color: colors.surface, fontWeight: "700" },
+  secondaryButton: { alignItems: "center", borderColor: colors.border, borderRadius: 8, borderWidth: 1, minHeight: 44, justifyContent: "center", marginTop: spacing.sm },
   sectionTitle: { color: colors.text, fontSize: typography.subtitle, fontWeight: "700" },
   timelineRow: { flexDirection: "row", gap: spacing.md },
   timelineState: { color: colors.primary, fontSize: typography.caption, fontWeight: "700", minWidth: 80 },

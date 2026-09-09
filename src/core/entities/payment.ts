@@ -24,6 +24,9 @@ export type Payment = {
   status: PaymentStatus;
   amount: number;
   reference?: string;
+  customerPaymentMethodId?: EntityId;
+  cardBrandSnapshot?: string;
+  cardLast4Snapshot?: string;
   createdAt: ISODateString;
   updatedAt: ISODateString;
 };

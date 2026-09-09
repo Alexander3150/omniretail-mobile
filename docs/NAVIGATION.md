@@ -50,3 +50,6 @@ Favoritos, notificaciones, checkout, detalle de producto, detalle de pedido, dir
 - Detalle de sucursal vive en `/(protected)/branches/[id]`.
 - Soporte vive en `/(protected)/support`.
 - Cuenta enlaza a pedidos, notificaciones, sucursales y soporte.
+- Metodos de pago vive en `/(protected)/account/payment-methods`.
+- Agregar tarjeta vive en `/(protected)/account/new-payment-method`.
+- Checkout Payment puede navegar a agregar tarjeta y volver al flujo.

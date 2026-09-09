@@ -36,6 +36,8 @@ export default function ProtectedLayout() {
       <Stack.Screen name="addresses/new" options={{ title: "Nueva direccion" }} />
       <Stack.Screen name="addresses/[id]" options={{ title: "Editar direccion" }} />
       <Stack.Screen name="account/security" options={{ title: "Seguridad" }} />
+      <Stack.Screen name="account/payment-methods" options={{ title: "Metodos de pago" }} />
+      <Stack.Screen name="account/new-payment-method" options={{ title: "Agregar tarjeta" }} />
       <Stack.Screen name="branches/index" options={{ title: "Sucursales" }} />
       <Stack.Screen name="branches/[id]" options={{ title: "Detalle de sucursal" }} />
       <Stack.Screen name="support/index" options={{ title: "Soporte" }} />
