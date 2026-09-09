@@ -13,8 +13,13 @@ export type OrderDeliveryAddressSnapshot = {
 
 export type OrderContactSnapshot = {
   name: string;
-  email: string;
-  phone?: string;
+  email?: string;
+  phone: string;
+};
+
+export type OrderBillingSnapshot = {
+  name: string;
+  nit?: string;
 };
 
 export type Order = {
@@ -27,6 +32,7 @@ export type Order = {
   deliveryMethod: DeliveryMethod;
   deliveryAddressSnapshot?: OrderDeliveryAddressSnapshot;
   contactSnapshot?: OrderContactSnapshot;
+  billingSnapshot?: OrderBillingSnapshot;
   subtotal: number;
   discount: number;
   shippingCost: number;

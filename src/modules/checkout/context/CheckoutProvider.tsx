@@ -6,6 +6,9 @@ export type CheckoutSelection = {
   deliveryMethod: DeliveryMethod | null;
   addressId?: string;
   pickupBranchId?: string;
+  contactPhone: string;
+  billingName: string;
+  nit?: string;
   paymentMethod: PaymentMethodType | null;
   customerPaymentMethodId?: string;
   lastOrderId?: string;
@@ -16,6 +19,9 @@ type CheckoutContextValue = CheckoutSelection & {
   setDeliveryMethod(deliveryMethod: DeliveryMethod): void;
   setAddressId(addressId: string): void;
   setPickupBranchId(branchId: string): void;
+  setContactPhone(contactPhone: string): void;
+  setBillingName(billingName: string): void;
+  setNit(nit: string): void;
   setPaymentMethod(paymentMethod: PaymentMethodType): void;
   setCustomerPaymentMethodId(paymentMethodId: string): void;
   setLastOrderId(orderId: string): void;
@@ -25,6 +31,8 @@ const CheckoutContext = createContext<CheckoutContextValue | null>(null);
 
 const initialSelection: CheckoutSelection = {
   deliveryMethod: null,
+  contactPhone: "",
+  billingName: "",
   paymentMethod: PaymentMethodType.Card,
 };
 
@@ -35,12 +43,16 @@ export function CheckoutProvider({ children }: PropsWithChildren) {
     () => ({
       ...selection,
       resetCheckout: () => setSelection(initialSelection),
-      setAddressId: (addressId) => setSelection((current) => ({ ...current, addressId })),
-      setCustomerPaymentMethodId: (customerPaymentMethodId) => setSelection((current) => ({ ...current, customerPaymentMethodId })),
-      setDeliveryMethod: (deliveryMethod) => setSelection((current) => ({ ...current, deliveryMethod })),
-      setLastOrderId: (lastOrderId) => setSelection((current) => ({ ...current, lastOrderId })),
-      setPaymentMethod: (paymentMethod) => setSelection((current) => ({ ...current, paymentMethod })),
-      setPickupBranchId: (pickupBranchId) => setSelection((current) => ({ ...current, pickupBranchId })),
+      setAddressId: (addressId) => setSelection((current) => (current.addressId === addressId ? current : { ...current, addressId })),
+      setBillingName: (billingName) => setSelection((current) => (current.billingName === billingName ? current : { ...current, billingName })),
+      setContactPhone: (contactPhone) => setSelection((current) => (current.contactPhone === contactPhone ? current : { ...current, contactPhone })),
+      setCustomerPaymentMethodId: (customerPaymentMethodId) =>
+        setSelection((current) => (current.customerPaymentMethodId === customerPaymentMethodId ? current : { ...current, customerPaymentMethodId })),
+      setDeliveryMethod: (deliveryMethod) => setSelection((current) => (current.deliveryMethod === deliveryMethod ? current : { ...current, deliveryMethod })),
+      setLastOrderId: (lastOrderId) => setSelection((current) => (current.lastOrderId === lastOrderId ? current : { ...current, lastOrderId })),
+      setNit: (nit) => setSelection((current) => (current.nit === nit ? current : { ...current, nit })),
+      setPaymentMethod: (paymentMethod) => setSelection((current) => (current.paymentMethod === paymentMethod ? current : { ...current, paymentMethod })),
+      setPickupBranchId: (pickupBranchId) => setSelection((current) => (current.pickupBranchId === pickupBranchId ? current : { ...current, pickupBranchId })),
     }),
     [selection],
   );

@@ -36,6 +36,7 @@ Keys:
 - 3 pedidos historicos: confirmed, preparing y shipped.
 - 5 notificaciones, algunas leidas y otras no leidas.
 - 1 metodo de pago demo seguro con token, brand y last4.
+- Facturas PDF de demostracion sin validez fiscal.
 
 ## Reset
 
@@ -97,3 +98,17 @@ Si cambias la contrasena del usuario demo, `Demo1234` deja de funcionar hasta ej
 10. Sucursales: muestra solo sucursales activas del tenant.
 11. Detalle de sucursal: muestra direccion, telefono, horario y coordenadas.
 12. Soporte: muestra datos desde `BusinessConfigRepository`.
+
+## Invoice Manual Tests
+
+1. Register sin telefono.
+2. Account: listar metodos de pago.
+3. Agregar tarjeta y reiniciar app; la tarjeta persiste.
+4. Confirmar que PAN/CVV no existen en el modelo persistido.
+5. Checkout: telefono de contacto requerido.
+6. Checkout: NIT vacio permitido y se muestra como `CF`.
+7. Checkout: seleccionar/agregar tarjeta y confirmar pedido.
+8. Order Detail: contacto y facturacion salen del snapshot del pedido.
+9. Success: descargar factura.
+10. PDF: contiene negocio, pedido, items, totales, pago y footer sin validez fiscal.
+11. Order Detail: descargar factura desde historial.

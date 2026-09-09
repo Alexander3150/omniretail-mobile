@@ -18,6 +18,10 @@ export async function placeOrder(repositories: RepositoryRegistry, session: { te
     throw new Error("Checkout selection incomplete");
   }
 
+  if (!selection.contactPhone.trim() || !selection.billingName.trim()) {
+    throw new Error("Contact and billing required");
+  }
+
   if (selection.deliveryMethod === DeliveryMethod.HomeDelivery && !selection.addressId) {
     throw new Error("Address required");
   }
@@ -29,6 +33,8 @@ export async function placeOrder(repositories: RepositoryRegistry, session: { te
   const business = await repositories.businessConfigRepository.getCurrent();
   const customer = await repositories.customerRepository.getById(session.customerId);
   const address = selection.addressId ? await repositories.addressRepository.getById(selection.addressId) : null;
+  const paymentMethods = await repositories.customerPaymentMethodRepository.getByCustomer(session.tenantId, session.customerId);
+  const selectedPaymentMethod = paymentMethods.find((method) => method.id === selection.customerPaymentMethodId) ?? paymentMethods.find((method) => method.isDefault) ?? paymentMethods[0];
   const promotions = await repositories.promotionRepository.getActive(session.tenantId);
   const lines: CartLine[] = [];
 
@@ -70,7 +76,8 @@ export async function placeOrder(repositories: RepositoryRegistry, session: { te
           longitude: address.longitude,
         }
       : undefined,
-    contactSnapshot: customer ? { name: customer.name, email: customer.email, phone: customer.phone } : undefined,
+    contactSnapshot: { name: customer?.name ?? selection.billingName.trim(), email: customer?.email, phone: selection.contactPhone.trim() },
+    billingSnapshot: { name: selection.billingName.trim(), nit: selection.nit?.trim() || undefined },
     subtotal: totals.subtotalBeforeDiscount,
     discount: totals.discount,
     shippingCost: totals.shippingCost,
@@ -95,7 +102,10 @@ export async function placeOrder(repositories: RepositoryRegistry, session: { te
     method: PaymentMethodType.Card,
     status: PaymentStatus.Approved,
     amount: totals.total,
-    reference: `APPROVED-${confirmedOrder.number}`,
+    reference: selectedPaymentMethod?.last4 ? `APPROVED-${confirmedOrder.number}-${selectedPaymentMethod.last4}` : `APPROVED-${confirmedOrder.number}`,
+    customerPaymentMethodId: selectedPaymentMethod?.id,
+    cardBrandSnapshot: selectedPaymentMethod?.brand,
+    cardLast4Snapshot: selectedPaymentMethod?.last4,
   });
   await repositories.notificationRepository.create({
     tenantId: session.tenantId,

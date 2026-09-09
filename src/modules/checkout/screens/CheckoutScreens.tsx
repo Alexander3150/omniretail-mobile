@@ -1,11 +1,12 @@
-import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { DeliveryMethod, OrderStatus, PaymentMethodType } from "@/core";
 import { useRepositories } from "@/infrastructure";
 import { useSession } from "@/modules/auth";
 import { useCart } from "@/modules/cart";
+import { useInvoiceDownload } from "@/modules/invoice";
 import { formatCurrency } from "@/shared";
 import { colors, spacing, typography } from "@/theme";
 
@@ -15,7 +16,7 @@ import { useCheckout } from "../context/CheckoutProvider";
 
 export function CheckoutDeliveryScreen() {
   const { addressRepository, branchRepository } = useRepositories();
-  const { session } = useSession();
+  const { customer, session } = useSession();
   const checkout = useCheckout();
   const [addresses, setAddresses] = useState<Awaited<ReturnType<typeof addressRepository.getByCustomer>>>([]);
   const [branches, setBranches] = useState<Awaited<ReturnType<typeof branchRepository.getActive>>>([]);
@@ -32,6 +33,12 @@ export function CheckoutDeliveryScreen() {
         if (!checkout.addressId && defaultAddress) {
           checkout.setAddressId(defaultAddress.id);
         }
+        if (!checkout.contactPhone.trim()) {
+          checkout.setContactPhone(defaultAddress?.phone ?? customer?.phone ?? "");
+        }
+        if (!checkout.billingName.trim()) {
+          checkout.setBillingName(customer?.name ?? "");
+        }
         if (!checkout.pickupBranchId && nextBranches[0]) {
           checkout.setPickupBranchId(nextBranches[0].id);
         }
@@ -39,7 +46,7 @@ export function CheckoutDeliveryScreen() {
       setIsLoading(false);
     }
     void load();
-  }, [addressRepository, branchRepository, checkout, session]);
+  }, [addressRepository, branchRepository, checkout, customer, session]);
 
   if (isLoading) {
     return <ActivityIndicator color={colors.primary} style={styles.loading} />;
@@ -63,6 +70,11 @@ export function CheckoutDeliveryScreen() {
           {branches.map((branch) => <Choice key={branch.id} active={checkout.pickupBranchId === branch.id} label={`${branch.name}: ${branch.address}`} onPress={() => checkout.setPickupBranchId(branch.id)} />)}
         </View>
       ) : null}
+      <View style={styles.group}>
+        <Field keyboardType="phone-pad" label="Telefono de contacto" onChangeText={checkout.setContactPhone} value={checkout.contactPhone} />
+        <Field label="Nombre de facturacion" onChangeText={checkout.setBillingName} value={checkout.billingName} />
+        <Field autoCapitalize="characters" label="NIT opcional" onChangeText={checkout.setNit} value={checkout.nit ?? ""} />
+      </View>
       <Pressable onPress={() => router.push("/(protected)/checkout/payment")} style={styles.primaryButton}><Text style={styles.primaryText}>Continuar</Text></Pressable>
     </ScrollView>
   );
@@ -74,19 +86,29 @@ export function CheckoutPaymentScreen() {
   const checkout = useCheckout();
   const [methods, setMethods] = useState<Awaited<ReturnType<typeof customerPaymentMethodRepository.getByCustomer>>>([]);
 
-  useEffect(() => {
-    async function load() {
-      if (session) {
-        const nextMethods = await customerPaymentMethodRepository.getByCustomer(session.tenantId, session.customerId);
-        setMethods(nextMethods);
-        checkout.setPaymentMethod(PaymentMethodType.Card);
-        if (!checkout.customerPaymentMethodId && nextMethods[0]) {
-          checkout.setCustomerPaymentMethodId(nextMethods[0].id);
-        }
+  const loadMethods = useCallback(async () => {
+    if (session) {
+      const nextMethods = await customerPaymentMethodRepository.getByCustomer(session.tenantId, session.customerId);
+      setMethods(nextMethods);
+      checkout.setPaymentMethod(PaymentMethodType.Card);
+      const selectedStillExists = nextMethods.some((method) => method.id === checkout.customerPaymentMethodId);
+      const defaultMethod = nextMethods.find((method) => method.isDefault) ?? nextMethods[0];
+      if ((!checkout.customerPaymentMethodId || !selectedStillExists) && defaultMethod) {
+        checkout.setCustomerPaymentMethodId(defaultMethod.id);
       }
     }
-    void load();
   }, [checkout, customerPaymentMethodRepository, session]);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => void loadMethods(), 0);
+    return () => clearTimeout(timeout);
+  }, [loadMethods]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadMethods();
+    }, [loadMethods]),
+  );
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
@@ -106,6 +128,9 @@ export function CheckoutPaymentScreen() {
           <Text style={styles.muted}>Expira {formatExpiration(method.expirationMonth, method.expirationYear)}</Text>
         </Pressable>
       ))}
+      <Pressable onPress={() => router.push({ pathname: "/(protected)/account/new-payment-method", params: { returnTo: "checkout" } })} style={styles.secondaryButton}>
+        <Text>Agregar nueva tarjeta</Text>
+      </Pressable>
       <Pressable onPress={() => router.push("/(protected)/checkout/review")} style={styles.primaryButton}><Text style={styles.primaryText}>Revisar pedido</Text></Pressable>
     </ScrollView>
   );
@@ -144,6 +169,9 @@ export function CheckoutReviewScreen() {
     setError(null);
     setIsSubmitting(true);
     try {
+      if (!checkout.contactPhone.trim() || !checkout.billingName.trim()) {
+        throw new Error("Contact and billing required");
+      }
       const result = await placeOrder(repositories, session, checkout);
       checkout.setLastOrderId(result.order.id);
       checkout.resetCheckout();
@@ -162,7 +190,10 @@ export function CheckoutReviewScreen() {
       {lines.map((line) => <Text key={line.id}>{line.productName} x {line.quantity}: {formatCurrency(line.lineSubtotal, currency)}</Text>)}
       <Text>Entrega: {checkout.deliveryMethod ?? "pendiente"}</Text>
       <Text>{deliveryLabel}</Text>
-      <Text>Pago: {checkout.paymentMethod ?? "pendiente"}</Text>
+      <Text>Telefono: {checkout.contactPhone || "pendiente"}</Text>
+      <Text>Facturacion: {checkout.billingName || "pendiente"}</Text>
+      <Text>NIT: {checkout.nit?.trim() || "CF"}</Text>
+      <Text>Pago: tarjeta</Text>
       <Text>Subtotal: {formatCurrency(totals.subtotal, currency)}</Text>
       <Text>Descuento: {formatCurrency(totals.discount, currency)}</Text>
       <Text>Envio: {formatCurrency(totals.shippingCost, currency)}</Text>
@@ -176,6 +207,7 @@ export function CheckoutReviewScreen() {
 export function CheckoutSuccessScreen() {
   const { orderId } = useLocalSearchParams<{ orderId?: string }>();
   const { orderRepository, businessConfigRepository } = useRepositories();
+  const { downloadInvoice, error: invoiceError, isGenerating } = useInvoiceDownload();
   const [order, setOrder] = useState<Awaited<ReturnType<typeof orderRepository.getById>>>(null);
   const [currency, setCurrency] = useState("GTQ");
 
@@ -196,6 +228,10 @@ export function CheckoutSuccessScreen() {
       <Text>Estado: {order?.status ?? OrderStatus.Confirmed}</Text>
       <Text style={styles.total}>Total: {formatCurrency(order?.total ?? 0, currency)}</Text>
       <Pressable onPress={() => router.push({ pathname: "/(protected)/orders/[id]", params: { id: order?.id ?? "" } })} style={styles.secondaryButton}><Text>Ver pedido</Text></Pressable>
+      <Pressable disabled={!order || isGenerating} onPress={() => order ? void downloadInvoice(order) : undefined} style={[styles.secondaryButton, !order || isGenerating ? styles.disabled : null]}>
+        <Text>{isGenerating ? "Generando factura..." : "Descargar factura"}</Text>
+      </Pressable>
+      {invoiceError ? <Text style={styles.error}>{invoiceError}</Text> : null}
       <Pressable onPress={() => router.replace("/(protected)/(tabs)")} style={styles.primaryButton}><Text style={styles.primaryText}>Volver al inicio</Text></Pressable>
     </ScrollView>
   );
@@ -206,6 +242,27 @@ function Choice({ active, label, onPress }: { active: boolean; label: string; on
     <Pressable onPress={onPress} style={[styles.choice, active ? styles.choiceActive : null]}>
       <Text style={styles.choiceText}>{label}</Text>
     </Pressable>
+  );
+}
+
+function Field({
+  autoCapitalize,
+  keyboardType = "default",
+  label,
+  onChangeText,
+  value,
+}: {
+  autoCapitalize?: "none" | "sentences" | "words" | "characters";
+  keyboardType?: "default" | "phone-pad";
+  label: string;
+  onChangeText(value: string): void;
+  value: string;
+}) {
+  return (
+    <View style={styles.field}>
+      <Text style={styles.label}>{label}</Text>
+      <TextInput autoCapitalize={autoCapitalize} keyboardType={keyboardType} onChangeText={onChangeText} placeholder={label} placeholderTextColor={colors.textMuted} style={styles.input} value={value} />
+    </View>
   );
 }
 
@@ -222,8 +279,12 @@ const styles = StyleSheet.create({
   choiceActive: { backgroundColor: colors.accent },
   choiceText: { color: colors.text },
   content: { backgroundColor: colors.background, gap: spacing.md, padding: spacing.md },
+  disabled: { opacity: 0.7 },
   error: { color: colors.danger },
+  field: { gap: spacing.xs },
   group: { gap: spacing.sm },
+  input: { borderColor: colors.border, borderRadius: 8, borderWidth: 1, color: colors.text, minHeight: 44, paddingHorizontal: spacing.md },
+  label: { color: colors.text, fontSize: typography.caption, fontWeight: "700" },
   link: { color: colors.primary },
   loading: { flex: 1 },
   muted: { color: colors.textMuted },

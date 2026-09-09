@@ -49,7 +49,6 @@ export function RegisterScreen() {
   const { register } = useSession();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -73,7 +72,6 @@ export function RegisterScreen() {
       await register({
         name: name.trim(),
         email: email.trim(),
-        phone: phone.trim() || undefined,
         password,
       });
       router.replace("/(protected)/(tabs)");
@@ -88,7 +86,6 @@ export function RegisterScreen() {
     <AuthForm title="Registro" error={error}>
       <AuthTextInput label="Nombre" onChangeText={setName} value={name} />
       <AuthTextInput autoCapitalize="none" keyboardType="email-address" label="Correo" onChangeText={setEmail} value={email} />
-      <AuthTextInput keyboardType="phone-pad" label="Telefono" onChangeText={setPhone} value={phone} />
       <AuthTextInput label="Contrasena" onChangeText={setPassword} secureTextEntry value={password} />
       <AuthTextInput label="Confirmar contrasena" onChangeText={setConfirmPassword} secureTextEntry value={confirmPassword} />
       <PrimaryButton disabled={isSubmitting} label="Crear cuenta" loading={isSubmitting} onPress={handleSubmit} />
