@@ -64,3 +64,21 @@ Si cambias la contrasena del usuario demo, `Demo1234` deja de funcionar hasta ej
 9. Change password autenticado: password anterior falla tras logout y la nueva funciona.
 10. Ruta protegida sin session: redirige a Login.
 11. Login/register/reset con session activa: redirige a Home.
+
+## Commerce Manual Tests
+
+1. Login demo: Home carga negocio, categorias y productos seed.
+2. Categorias: seleccionar categoria filtra productos.
+3. Search: buscar por nombre o SKU.
+4. Product Detail: abrir producto y ver precio/disponibilidad.
+5. Favorite: agregar/quitar y reiniciar app; debe persistir.
+6. Cart: agregar, aumentar, disminuir, eliminar y reiniciar app; debe persistir.
+7. Account: muestra customer actual.
+8. Address: crear direccion y marcar default.
+9. Checkout home delivery: seleccionar direccion y confirmar.
+10. Checkout store pickup: seleccionar sucursal y confirmar.
+11. Payment: seleccionar metodo demo; siempre aprueba en MVP.
+12. Confirm: crea Order `confirmed`.
+13. Cart: queda vacio despues de confirmar.
+14. Orders: pedido nuevo persiste tras restart.
+15. Second customer: registrar otro customer y verificar aislamiento de favoritos, carrito, direcciones y pedidos.
