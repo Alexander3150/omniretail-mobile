@@ -1,6 +1,24 @@
-import { Stack } from "expo-router";
+import { Redirect, Stack } from "expo-router";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
+
+import { useSession } from "@/modules/auth";
+import { colors } from "@/theme";
 
 export default function ProtectedLayout() {
+  const { isAuthenticated, isLoading } = useSession();
+
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Redirect href="/(auth)/login" />;
+  }
+
   return (
     <Stack>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -15,8 +33,18 @@ export default function ProtectedLayout() {
       <Stack.Screen name="addresses/index" options={{ title: "Direcciones" }} />
       <Stack.Screen name="addresses/new" options={{ title: "Nueva direccion" }} />
       <Stack.Screen name="addresses/[id]" options={{ title: "Editar direccion" }} />
+      <Stack.Screen name="account/security" options={{ title: "Seguridad" }} />
       <Stack.Screen name="branches/index" options={{ title: "Sucursales" }} />
       <Stack.Screen name="support/index" options={{ title: "Soporte" }} />
     </Stack>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    alignItems: "center",
+    backgroundColor: colors.background,
+    flex: 1,
+    justifyContent: "center",
+  },
+});
