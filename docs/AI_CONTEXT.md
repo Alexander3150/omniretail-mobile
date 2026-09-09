@@ -13,13 +13,15 @@ Contexto funcional futuro:
 
 - App autenticada.
 - Repositories definidos en `core`.
-- Mocks locales en `infrastructure` antes de API real.
+- Mocks locales persistentes en `infrastructure`.
 - No backend real durante esta etapa.
 - No sincronizacion con OmniRetail Web.
-- Datos locales en la simulacion futura.
-- Pagos, seguimiento y recuperacion de contrasena seran simulados.
-- Cambios como password reset o change password deberan afectar la base local cuando existan mocks.
+- Datos locales persistidos en AsyncStorage.
+- Sesion activa y credenciales demo persistidas en SecureStore.
+- Pagos, seguimiento y recuperacion de contrasena son simulados.
+- Cambios como password reset o change password afectan credenciales locales mock.
 - No chatbot IA.
 - Bottom tabs definidos: Inicio, Categorias, Carrito, Pedidos, Cuenta.
 - Arquitectura por modulos: auth, home, catalog, favorites, cart, checkout, orders, notifications, branches, account y support.
 - Core contiene solo contratos customer-facing: entidades, enums, tipos e interfaces de repositorios.
+- Repositorios mock comparten una unica instancia de `MockDatabaseStore`.
