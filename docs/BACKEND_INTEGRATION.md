@@ -2,7 +2,7 @@
 
 No hay backend real en esta etapa y no existe sincronizacion con OmniRetail Web.
 
-El flujo futuro sera:
+El flujo de consumo esperado sera:
 
 ```text
 Screen
@@ -12,14 +12,18 @@ Screen
 -> Mock ahora / API futuro
 ```
 
-`src/infrastructure/mock` alojara datos locales y repositorios mock cuando se habiliten. `src/infrastructure/storage` queda reservado para persistencia futura, sin AsyncStorage ni SecureStore todavia.
+`src/infrastructure/mock` aloja datos locales, normalizacion y repositorios mock. `src/infrastructure/storage` separa AsyncStorage para datos no sensibles y SecureStore para sesion/credenciales demo.
 
 ## Simulacion Local
 
-La siguiente etapa podra implementar repositorios mock sobre datos locales. Esa simulacion debera cubrir login, registro, cambio de contrasena, recuperacion de contrasena, carrito, checkout, pagos simulados, tracking simulado y notificaciones locales sin afirmar integraciones externas reales.
+La simulacion cubre login, registro, cambio de contrasena, recuperacion de contrasena, carrito, pedidos, pagos simulados y notificaciones locales desde repositorios mock, sin afirmar integraciones externas reales.
 
 Las credenciales pertenecen a infraestructura/auth o al mock interno futuro. `User` y `Customer` no guardan `password`, tokens ni secretos.
 
 ## Excluido
 
-No se modelan API clients, fetch, storage real, service locator, providers ni repositories concretos en esta rama.
+No se modelan API clients, fetch, checkout completo, tracking automatico, push notifications, GPS, maps ni analytics en esta rama.
+
+## Reset Demo
+
+`getRepositoryRegistry().resetToDemoData()` restaura seeds, credenciales demo y limpia la sesion activa. La UI para invocarlo se agregara en otra tarea.
