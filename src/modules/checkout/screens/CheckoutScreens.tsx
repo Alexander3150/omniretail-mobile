@@ -79,9 +79,7 @@ export function CheckoutPaymentScreen() {
       if (session) {
         const nextMethods = await customerPaymentMethodRepository.getByCustomer(session.tenantId, session.customerId);
         setMethods(nextMethods);
-        if (!checkout.paymentMethod) {
-          checkout.setPaymentMethod(PaymentMethodType.Card);
-        }
+        checkout.setPaymentMethod(PaymentMethodType.Card);
         if (!checkout.customerPaymentMethodId && nextMethods[0]) {
           checkout.setCustomerPaymentMethodId(nextMethods[0].id);
         }
@@ -93,10 +91,21 @@ export function CheckoutPaymentScreen() {
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <Text style={styles.title}>Pago</Text>
-      <Choice active={checkout.paymentMethod === PaymentMethodType.Card} label="Tarjeta guardada" onPress={() => checkout.setPaymentMethod(PaymentMethodType.Card)} />
-      {methods.map((method) => <Choice key={method.id} active={checkout.customerPaymentMethodId === method.id} label={`${method.brand ?? "Tarjeta"} terminada en ${method.last4 ?? "demo"}`} onPress={() => checkout.setCustomerPaymentMethodId(method.id)} />)}
-      <Choice active={checkout.paymentMethod === PaymentMethodType.BankTransfer} label="Transferencia bancaria demo" onPress={() => checkout.setPaymentMethod(PaymentMethodType.BankTransfer)} />
-      <Choice active={checkout.paymentMethod === PaymentMethodType.CashOnDelivery} label="Pago contra entrega demo" onPress={() => checkout.setPaymentMethod(PaymentMethodType.CashOnDelivery)} />
+      <Text style={styles.muted}>Pago simulado aprobado con tarjeta.</Text>
+      {methods.length === 0 ? <Text>No hay tarjeta guardada. Se usara tarjeta demo segura.</Text> : null}
+      {methods.map((method) => (
+        <Pressable
+          key={method.id}
+          onPress={() => {
+            checkout.setPaymentMethod(PaymentMethodType.Card);
+            checkout.setCustomerPaymentMethodId(method.id);
+          }}
+          style={[styles.choice, checkout.customerPaymentMethodId === method.id ? styles.choiceActive : null]}
+        >
+          <Text style={styles.choiceText}>{method.brand ?? "Tarjeta"} terminada en {method.last4 ?? "demo"}</Text>
+          <Text style={styles.muted}>Expira {formatExpiration(method.expirationMonth, method.expirationYear)}</Text>
+        </Pressable>
+      ))}
       <Pressable onPress={() => router.push("/(protected)/checkout/review")} style={styles.primaryButton}><Text style={styles.primaryText}>Revisar pedido</Text></Pressable>
     </ScrollView>
   );
@@ -200,6 +209,14 @@ function Choice({ active, label, onPress }: { active: boolean; label: string; on
   );
 }
 
+function formatExpiration(month?: number, year?: number): string {
+  if (!month || !year) {
+    return "demo";
+  }
+
+  return `${month.toString().padStart(2, "0")}/${year}`;
+}
+
 const styles = StyleSheet.create({
   choice: { borderColor: colors.border, borderRadius: 8, borderWidth: 1, padding: spacing.md },
   choiceActive: { backgroundColor: colors.accent },
@@ -209,6 +226,7 @@ const styles = StyleSheet.create({
   group: { gap: spacing.sm },
   link: { color: colors.primary },
   loading: { flex: 1 },
+  muted: { color: colors.textMuted },
   primaryButton: { alignItems: "center", backgroundColor: colors.primary, borderRadius: 8, minHeight: 48, justifyContent: "center" },
   primaryText: { color: colors.surface, fontWeight: "700" },
   row: { flexDirection: "row", gap: spacing.sm },

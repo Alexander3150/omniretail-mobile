@@ -43,7 +43,7 @@ export function HomeScreen() {
         </View>
       }
       ListEmptyComponent={<Text style={styles.empty}>No hay productos para mostrar.</Text>}
-      renderItem={({ item }) => <ProductCard currency={currency} item={item} onAddToCart={() => addToCart(item.product)} onToggleFavorite={toggleFavorite} />}
+      renderItem={({ item }) => <ProductCard currency={currency} item={item} onAddToCart={addToCart} onToggleFavorite={toggleFavorite} />}
     />
   );
 }

@@ -40,3 +40,13 @@ Favoritos, notificaciones, checkout, detalle de producto, detalle de pedido, dir
 - Cart vive en la tab Carrito.
 - Checkout usa `delivery -> payment -> review -> success`.
 - Success puede navegar a `/(protected)/orders/[id]`.
+
+## Customer Services
+
+- Pedidos vive como tab en `/(protected)/(tabs)/orders`.
+- Detalle de pedido vive en `/(protected)/orders/[id]`.
+- Notificaciones vive en `/(protected)/notifications`.
+- Sucursales vive en `/(protected)/branches`.
+- Detalle de sucursal vive en `/(protected)/branches/[id]`.
+- Soporte vive en `/(protected)/support`.
+- Cuenta enlaza a pedidos, notificaciones, sucursales y soporte.

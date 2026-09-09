@@ -1,4 +1,5 @@
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback } from "react";
 import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { formatCurrency } from "@/shared";
@@ -7,7 +8,13 @@ import { colors, spacing, typography } from "@/theme";
 import { useCart } from "../hooks/useCart";
 
 export function CartScreen() {
-  const { currency, error, isLoading, lines, removeItem, totals, updateQuantity } = useCart();
+  const { currency, error, isLoading, lines, reload, removeItem, totals, updateQuantity } = useCart();
+
+  useFocusEffect(
+    useCallback(() => {
+      void reload();
+    }, [reload]),
+  );
 
   if (isLoading) {
     return <ActivityIndicator color={colors.primary} style={styles.loading} />;

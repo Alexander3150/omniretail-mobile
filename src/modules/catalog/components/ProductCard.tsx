@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View, type GestureResponderEvent } from "react-native";
 
 import { formatCurrency } from "@/shared";
 import { colors, radius, spacing, typography } from "@/theme";
@@ -9,12 +9,22 @@ import type { ProductCardViewModel } from "../application/productViewModels";
 type ProductCardProps = {
   item: ProductCardViewModel;
   currency: string;
-  onAddToCart(productId: string): void;
-  onToggleFavorite(productId: string): void;
+  onAddToCart(productId: string): Promise<void> | void;
+  onToggleFavorite(productId: string): Promise<void> | void;
 };
 
 export function ProductCard({ currency, item, onAddToCart, onToggleFavorite }: ProductCardProps) {
   const canAdd = item.available && item.availableQuantity > 0;
+
+  function handleToggleFavorite(event: GestureResponderEvent) {
+    event.stopPropagation();
+    void onToggleFavorite(item.product.id);
+  }
+
+  function handleAddToCart(event: GestureResponderEvent) {
+    event.stopPropagation();
+    void onAddToCart(item.product.id);
+  }
 
   return (
     <Pressable onPress={() => router.push({ pathname: "/(protected)/products/[id]", params: { id: item.product.id } })} style={styles.card}>
@@ -24,7 +34,7 @@ export function ProductCard({ currency, item, onAddToCart, onToggleFavorite }: P
           <Text numberOfLines={2} style={styles.name}>
             {item.product.name}
           </Text>
-          <Pressable onPress={() => onToggleFavorite(item.product.id)} style={styles.iconButton}>
+          <Pressable onPress={handleToggleFavorite} style={styles.iconButton}>
             <Text style={styles.favorite}>{item.isFavorite ? "♥" : "♡"}</Text>
           </Pressable>
         </View>
@@ -33,7 +43,7 @@ export function ProductCard({ currency, item, onAddToCart, onToggleFavorite }: P
           {item.price.discount > 0 ? <Text style={styles.oldPrice}>{formatCurrency(item.price.basePrice, currency)}</Text> : null}
           <Text style={styles.price}>{formatCurrency(item.price.effectivePrice, currency)}</Text>
         </View>
-        <Pressable disabled={!canAdd} onPress={() => onAddToCart(item.product.id)} style={[styles.button, !canAdd ? styles.buttonDisabled : null]}>
+        <Pressable disabled={!canAdd} onPress={handleAddToCart} style={[styles.button, !canAdd ? styles.buttonDisabled : null]}>
           <Text style={styles.buttonText}>Agregar</Text>
         </Pressable>
       </View>

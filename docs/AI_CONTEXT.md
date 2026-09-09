@@ -30,4 +30,8 @@ Contexto funcional futuro:
 - Login, registro, logout, forgot/reset y cambio de contrasena consumen repositories; no acceden directo a SecureStore.
 - Commerce flow funcional local: catalogo, favoritos, carrito, direcciones, checkout y creacion de order.
 - Checkout no procesa pagos reales: crea pagos aprobados simulados.
-- Nuevo pedido nace `confirmed`; tracking automatico queda fuera de esta rama.
+- Mobile solo ofrece pago con tarjeta guardada/demo segura.
+- Nuevo pedido nace `confirmed`.
+- Customer services esta implementado con pedidos, detalle, tracking simulado, notificaciones, sucursales y soporte local.
+- El tracking se deriva desde `Order`; no existe entidad de tracking persistida.
+- Las pantallas y hooks en `modules` no acceden directo a `MockDatabaseStore`, `databaseStore`, AsyncStorage ni SecureStore.

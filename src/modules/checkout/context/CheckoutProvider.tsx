@@ -25,7 +25,7 @@ const CheckoutContext = createContext<CheckoutContextValue | null>(null);
 
 const initialSelection: CheckoutSelection = {
   deliveryMethod: null,
-  paymentMethod: null,
+  paymentMethod: PaymentMethodType.Card,
 };
 
 export function CheckoutProvider({ children }: PropsWithChildren) {

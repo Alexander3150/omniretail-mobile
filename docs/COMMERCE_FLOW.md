@@ -59,12 +59,20 @@ Regla demo de envio:
 
 Payment simulation:
 
-- metodos: card, bankTransfer, cashOnDelivery;
+- metodo mobile: card;
 - resultado MVP: `approved`;
 - nunca se solicita PAN, CVV ni PIN.
 
 ## Place Order
 
-`PlaceOrderService` obtiene carrito, valida seleccion, calcula totales, crea `Order`, crea `OrderItem` snapshots, crea `Payment` aprobado, crea `Notification` `orderConfirmed` y vacia el carrito.
+`PlaceOrderService` obtiene carrito, valida seleccion, calcula totales, crea el agregado `Order + OrderItem` mediante `OrderRepository.create`, crea `Payment` aprobado, crea `Notification` `orderConfirmed` y vacia el carrito.
 
 El nuevo pedido nace `confirmed`. No se avanza automaticamente a `preparing` ni `shipped`.
+
+## Post-compra
+
+Pedidos y detalle consumen `OrderRepository.getByCustomer`, `getItems` y `getWithItems`.
+
+El detalle usa snapshots historicos de `OrderItem`. El tracking visual se deriva desde `Order` y el avance demo persiste cambios por repository.
+
+Notificaciones consumen `NotificationRepository`; no hay Expo push notifications en esta etapa.

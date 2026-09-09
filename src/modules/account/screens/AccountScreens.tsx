@@ -33,12 +33,13 @@ export function AccountScreen() {
       <Link href="/(protected)/addresses" style={styles.link}>Mis direcciones</Link>
       <Link href="/(protected)/favorites" style={styles.link}>Mis favoritos</Link>
       <Link href="/(protected)/(tabs)/orders" style={styles.link}>Pedidos</Link>
+      <Link href="/(protected)/notifications" style={styles.link}>Notificaciones</Link>
       <Link href="/(protected)/branches" style={styles.link}>Sucursales</Link>
       <Link href="/(protected)/support" style={styles.link}>Soporte</Link>
-      <ProfileEditor />
       <Pressable onPress={handleLogout} style={styles.button}>
         <Text style={styles.buttonText}>Cerrar sesion</Text>
       </Pressable>
+      <ProfileEditor />
     </ScrollView>
   );
 }
