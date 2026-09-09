@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { useRepositories } from "@/infrastructure";
-import { calculatePrice } from "@/modules/catalog";
+import { calculatePrice, resolveProductImage, selectPrimaryProductMedia } from "@/modules/catalog";
 import { useSession } from "@/modules/auth";
 
 import { calculateCartTotals, type CartLine, type CartTotals } from "../application/cartTotals";
@@ -42,6 +42,7 @@ export function useCart() {
             }
             const media = await repositories.productMediaRepository.getByProduct(product.id);
             const price = calculatePrice(product, promotions);
+            const primaryMedia = selectPrimaryProductMedia(media);
             const unitPrice = item.unitPriceSnapshot ?? price.basePrice;
             const effectiveUnitPrice = item.effectiveUnitPriceSnapshot ?? price.effectivePrice;
             return {
@@ -49,7 +50,7 @@ export function useCart() {
               productId: product.id,
               productName: product.name,
               sku: product.sku,
-              imageUrl: media.find((image) => image.isPrimary)?.url,
+              image: resolveProductImage(product, primaryMedia),
               quantity: item.quantity,
               unitPrice,
               effectiveUnitPrice,

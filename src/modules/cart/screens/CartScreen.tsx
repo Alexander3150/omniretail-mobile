@@ -1,11 +1,12 @@
 import { router, useFocusEffect } from "expo-router";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { formatCurrency } from "@/shared";
 import { colors, spacing, typography } from "@/theme";
 
 import { useCart } from "../hooks/useCart";
+import type { CartLine } from "../application/cartTotals";
 
 export function CartScreen() {
   const { currency, error, isLoading, lines, reload, removeItem, totals, updateQuantity } = useCart();
@@ -41,7 +42,7 @@ export function CartScreen() {
       }
       renderItem={({ item }) => (
         <View style={styles.line}>
-          <Image source={{ uri: item.imageUrl ?? "" }} style={styles.image} />
+          <CartLineImage item={item} />
           <View style={styles.lineBody}>
             <Text style={styles.name}>{item.productName}</Text>
             <Text style={styles.muted}>SKU {item.sku}</Text>
@@ -56,6 +57,23 @@ export function CartScreen() {
           </View>
         </View>
       )}
+    />
+  );
+}
+
+function CartLineImage({ item }: { item: CartLine }) {
+  const [imageFailed, setImageFailed] = useState(false);
+
+  if (!item.image) {
+    return <View accessibilityLabel={item.productName} style={styles.image} />;
+  }
+
+  return (
+    <Image
+      accessibilityLabel={item.image.altText}
+      onError={() => setImageFailed(true)}
+      source={imageFailed ? item.image.fallbackSource : item.image.source}
+      style={styles.image}
     />
   );
 }
