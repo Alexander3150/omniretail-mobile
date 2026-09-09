@@ -12,6 +12,7 @@ Stack:
 Contexto funcional futuro:
 
 - App autenticada.
+- Auth/session funcional mediante `SessionProvider`.
 - Repositories definidos en `core`.
 - Mocks locales persistentes en `infrastructure`.
 - No backend real durante esta etapa.
@@ -25,3 +26,5 @@ Contexto funcional futuro:
 - Arquitectura por modulos: auth, home, catalog, favorites, cart, checkout, orders, notifications, branches, account y support.
 - Core contiene solo contratos customer-facing: entidades, enums, tipos e interfaces de repositorios.
 - Repositorios mock comparten una unica instancia de `MockDatabaseStore`.
+- Guards de Expo Router viven en layouts de `(auth)` y `(protected)`.
+- Login, registro, logout, forgot/reset y cambio de contrasena consumen repositories; no acceden directo a SecureStore.

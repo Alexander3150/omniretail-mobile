@@ -48,3 +48,19 @@ await getRepositoryRegistry().resetToDemoData();
 ```
 
 Esto borra el snapshot local, restaura seeds, restaura credenciales demo y limpia la sesion activa.
+
+Si cambias la contrasena del usuario demo, `Demo1234` deja de funcionar hasta ejecutar `resetToDemoData()`.
+
+## Manual Runtime Tests
+
+1. Fresh install/reset: debe mostrar Login.
+2. Login demo con `cliente@demo.com` / `Demo1234`: debe ir a Home.
+3. Cerrar y abrir app: debe seguir autenticado.
+4. Logout desde Cuenta: debe volver a Login.
+5. Login con credenciales incorrectas: debe mostrar error.
+6. Register nueva cuenta: debe iniciar sesion y persistir tras logout/login.
+7. Forgot password: muestra codigo demo `123456`; no envia email/SMS real.
+8. Reset password con `123456`: password anterior falla y nueva funciona.
+9. Change password autenticado: password anterior falla tras logout y la nueva funciona.
+10. Ruta protegida sin session: redirige a Login.
+11. Login/register/reset con session activa: redirige a Home.
