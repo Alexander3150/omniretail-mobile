@@ -1,4 +1,5 @@
 import { router } from "expo-router";
+import { useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View, type GestureResponderEvent } from "react-native";
 
 import { formatCurrency } from "@/shared";
@@ -15,6 +16,7 @@ type ProductCardProps = {
 
 export function ProductCard({ currency, item, onAddToCart, onToggleFavorite }: ProductCardProps) {
   const canAdd = item.available && item.availableQuantity > 0;
+  const [imageFailed, setImageFailed] = useState(false);
 
   function handleToggleFavorite(event: GestureResponderEvent) {
     event.stopPropagation();
@@ -28,7 +30,7 @@ export function ProductCard({ currency, item, onAddToCart, onToggleFavorite }: P
 
   return (
     <Pressable onPress={() => router.push({ pathname: "/(protected)/products/[id]", params: { id: item.product.id } })} style={styles.card}>
-      <Image source={{ uri: item.primaryImage?.url ?? "" }} style={styles.image} />
+      <Image accessibilityLabel={item.primaryImage.altText} onError={() => setImageFailed(true)} source={imageFailed ? item.primaryImage.fallbackSource : item.primaryImage.source} style={styles.image} />
       <View style={styles.body}>
         <View style={styles.header}>
           <Text numberOfLines={2} style={styles.name}>

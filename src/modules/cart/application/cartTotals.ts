@@ -1,11 +1,12 @@
 import { roundMoney } from "@/modules/catalog";
+import type { ProductImageViewModel } from "@/modules/catalog";
 
 export type CartLine = {
   id: string;
   productId: string;
   productName: string;
   sku: string;
-  imageUrl?: string;
+  image?: ProductImageViewModel;
   quantity: number;
   unitPrice: number;
   effectiveUnitPrice: number;

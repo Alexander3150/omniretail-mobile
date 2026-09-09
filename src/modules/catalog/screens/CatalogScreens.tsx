@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, FlatList, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { formatCurrency } from "@/shared";
 import { colors, spacing, typography } from "@/theme";
@@ -53,6 +53,7 @@ export function ProductDetailScreen() {
   const productVm = products.find((item) => item.product.id === id);
   const [quantity, setQuantity] = useState(1);
   const [message, setMessage] = useState<string | null>(null);
+  const [imageFailed, setImageFailed] = useState(false);
 
   async function handleAdd() {
     if (!productVm || quantity <= 0) {
@@ -89,6 +90,14 @@ export function ProductDetailScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
+      <Image accessibilityLabel={productVm.primaryImage.altText} onError={() => setImageFailed(true)} source={imageFailed ? productVm.primaryImage.fallbackSource : productVm.primaryImage.source} style={styles.detailImage} />
+      {productVm.images.length > 1 ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.mediaStrip}>
+          {productVm.images.map((image) => (
+            <Image accessibilityLabel={image.altText} key={image.media?.id ?? image.altText} source={image.source} style={styles.thumbnail} />
+          ))}
+        </ScrollView>
+      ) : null}
       <Text style={styles.title}>{productVm.product.name}</Text>
       <Text style={styles.muted}>SKU {productVm.product.sku}</Text>
       <Text style={styles.body}>{productVm.product.description}</Text>
@@ -122,12 +131,14 @@ const styles = StyleSheet.create({
   categorySelected: { backgroundColor: colors.accent },
   categoryText: { color: colors.text },
   content: { backgroundColor: colors.background, gap: spacing.md, padding: spacing.md },
+  detailImage: { backgroundColor: colors.border, borderRadius: 8, height: 220, width: "100%" },
   disabled: { opacity: 0.45 },
   empty: { color: colors.textMuted, textAlign: "center" },
   error: { color: colors.danger },
   header: { gap: spacing.md },
   input: { borderColor: colors.border, borderRadius: 8, borderWidth: 1, color: colors.text, minHeight: 44, paddingHorizontal: spacing.md },
   loading: { flex: 1 },
+  mediaStrip: { flexGrow: 0 },
   muted: { color: colors.textMuted },
   price: { color: colors.text, fontSize: typography.subtitle, fontWeight: "700" },
   primaryButton: { alignItems: "center", backgroundColor: colors.primary, borderRadius: 8, minHeight: 48, justifyContent: "center" },
@@ -137,5 +148,6 @@ const styles = StyleSheet.create({
   sectionTitle: { color: colors.text, fontSize: typography.subtitle, fontWeight: "700" },
   smallButton: { alignItems: "center", borderColor: colors.border, borderRadius: 8, borderWidth: 1, height: 40, justifyContent: "center", width: 40 },
   success: { color: colors.success },
+  thumbnail: { backgroundColor: colors.border, borderRadius: 8, height: 64, marginRight: spacing.sm, width: 64 },
   title: { color: colors.text, fontSize: typography.title, fontWeight: "700" },
 });
