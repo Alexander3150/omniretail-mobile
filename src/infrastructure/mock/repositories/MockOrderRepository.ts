@@ -1,4 +1,4 @@
-import { OrderStatus, type CreateOrderInput, type EntityId, type Order, type OrderRepository, type TenantId } from "@/core";
+import { OrderStatus, type CreateOrderInput, type EntityId, type Order, type OrderItem, type OrderRepository, type OrderWithItems, type TenantId } from "@/core";
 
 import type { MockDatabaseStore } from "../database";
 import { createId } from "../utils/createId";
@@ -21,14 +21,33 @@ export class MockOrderRepository implements OrderRepository {
     return database.orders.find((order) => order.tenantId === tenantId && order.number === number) ?? null;
   }
 
+  async getItems(orderId: EntityId): Promise<OrderItem[]> {
+    const database = await this.store.getState();
+    return database.orderItems.filter((orderItem) => orderItem.orderId === orderId);
+  }
+
+  async getWithItems(orderId: EntityId): Promise<OrderWithItems | null> {
+    const order = await this.getById(orderId);
+
+    if (!order) {
+      return null;
+    }
+
+    return {
+      order,
+      items: await this.getItems(orderId),
+    };
+  }
+
   async create(input: CreateOrderInput): Promise<Order> {
     const now = new Date().toISOString();
-    const order: Order = { ...input, id: createId("order"), createdAt: now };
+    const { items, ...orderInput } = input;
+    const order: Order = { ...orderInput, id: createId("order"), createdAt: now };
+    const orderItems: OrderItem[] = items.map((item) => ({ ...item, id: createId("order-item"), orderId: order.id }));
+
     await this.store.update((database) => {
       database.orders.push(order);
-      input.items.forEach((item) => {
-        database.orderItems.push({ ...item, id: createId("order-item"), orderId: order.id });
-      });
+      database.orderItems.push(...orderItems);
     });
     return order;
   }
