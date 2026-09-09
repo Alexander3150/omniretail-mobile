@@ -2,7 +2,7 @@
 
 OmniRetail Mobile es la aplicacion customer-facing de OmniRetail, construida con React Native, Expo, TypeScript y Expo Router.
 
-Esta etapa contiene la foundation arquitectonica, contratos core customer-facing, infraestructura local persistente y auth/session funcional para simulacion demo. No incluye UI final, checkout completo, pagos reales, seguimiento automatico, notificaciones push ni backend.
+Esta etapa contiene la foundation arquitectonica, contratos core customer-facing, infraestructura local persistente, auth/session funcional y flujo commerce local. No incluye UI final, pagos reales, seguimiento automatico, notificaciones push ni backend.
 
 ## Scripts
 
@@ -52,3 +52,7 @@ La app inicia con bootstrap de sesion:
 - rutas protegidas redirigen a Login si no hay sesion.
 
 La pantalla Cuenta muestra el customer actual y permite cerrar sesion. La ruta `/(protected)/account/security` permite cambiar contrasena de forma local.
+
+## Commerce Flow
+
+Home, Categorias, Detalle de producto, Favoritos, Carrito, Direcciones, Cuenta y Checkout consumen repositories mock locales. El checkout crea un `Order` local confirmado, un `Payment` aprobado simulado, una notificacion `orderConfirmed` y vacia el carrito.

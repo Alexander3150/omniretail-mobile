@@ -28,3 +28,6 @@ Contexto funcional futuro:
 - Repositorios mock comparten una unica instancia de `MockDatabaseStore`.
 - Guards de Expo Router viven en layouts de `(auth)` y `(protected)`.
 - Login, registro, logout, forgot/reset y cambio de contrasena consumen repositories; no acceden directo a SecureStore.
+- Commerce flow funcional local: catalogo, favoritos, carrito, direcciones, checkout y creacion de order.
+- Checkout no procesa pagos reales: crea pagos aprobados simulados.
+- Nuevo pedido nace `confirmed`; tracking automatico queda fuera de esta rama.

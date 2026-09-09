@@ -2,6 +2,7 @@ import { Redirect, Stack } from "expo-router";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 import { useSession } from "@/modules/auth";
+import { CheckoutProvider } from "@/modules/checkout";
 import { colors } from "@/theme";
 
 export default function ProtectedLayout() {
@@ -20,6 +21,7 @@ export default function ProtectedLayout() {
   }
 
   return (
+    <CheckoutProvider>
     <Stack>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="products/[id]" options={{ title: "Producto" }} />
@@ -37,6 +39,7 @@ export default function ProtectedLayout() {
       <Stack.Screen name="branches/index" options={{ title: "Sucursales" }} />
       <Stack.Screen name="support/index" options={{ title: "Soporte" }} />
     </Stack>
+    </CheckoutProvider>
   );
 }
 
