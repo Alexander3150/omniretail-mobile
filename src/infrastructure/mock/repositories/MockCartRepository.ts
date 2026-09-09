@@ -1,4 +1,4 @@
-import { CartStatus, type AddCartItemInput, type Cart, type CartItem, type CartRepository, type EntityId, type TenantId } from "@/core";
+import { CartStatus, type AddCartItemInput, type Cart, type CartItem, type CartRepository, type CartWithItems, type EntityId, type TenantId } from "@/core";
 
 import type { MockDatabaseStore } from "../database";
 import { createId } from "../utils/createId";
@@ -14,6 +14,24 @@ export class MockCartRepository implements CartRepository {
   async getById(id: EntityId): Promise<Cart | null> {
     const database = await this.store.getState();
     return database.carts.find((cart) => cart.id === id) ?? null;
+  }
+
+  async getItems(cartId: EntityId): Promise<CartItem[]> {
+    const database = await this.store.getState();
+    return database.cartItems.filter((cartItem) => cartItem.cartId === cartId);
+  }
+
+  async getWithItems(cartId: EntityId): Promise<CartWithItems | null> {
+    const cart = await this.getById(cartId);
+
+    if (!cart) {
+      return null;
+    }
+
+    return {
+      cart,
+      items: await this.getItems(cartId),
+    };
   }
 
   async getOrCreate(tenantId: TenantId, customerId: EntityId): Promise<Cart> {
