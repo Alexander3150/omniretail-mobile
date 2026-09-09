@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-import type { Category, Product } from "@/core";
+import type { Category } from "@/core";
 import { useRepositories } from "@/infrastructure";
 import { useSession } from "@/modules/auth";
 
@@ -72,8 +72,13 @@ export function useCommerceCatalog(categoryId?: string, query = "") {
     await load();
   }
 
-  async function addToCart(product: Product) {
+  async function addToCart(productId: string) {
     if (!session) {
+      return;
+    }
+
+    const product = await repositories.productRepository.getById(productId);
+    if (!product) {
       return;
     }
 
@@ -99,6 +104,7 @@ export function useCommerceCatalog(categoryId?: string, query = "") {
       unitPriceSnapshot: viewModel.price.basePrice,
       effectiveUnitPriceSnapshot: viewModel.price.effectivePrice,
     });
+    await load();
   }
 
   return { ...state, addToCart, reload: load, toggleFavorite };

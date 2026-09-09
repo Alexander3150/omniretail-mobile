@@ -1,3 +1,5 @@
+import { useFocusEffect } from "expo-router";
+import { useCallback } from "react";
 import { ActivityIndicator, FlatList, StyleSheet, Text } from "react-native";
 
 import { ProductCard } from "@/modules/catalog";
@@ -6,7 +8,13 @@ import { colors, spacing, typography } from "@/theme";
 import { useFavorites } from "../hooks/useFavorites";
 
 export function FavoritesScreen() {
-  const { addToCart, currency, isLoading, items, toggleFavorite } = useFavorites();
+  const { addToCart, currency, isLoading, items, reload, toggleFavorite } = useFavorites();
+
+  useFocusEffect(
+    useCallback(() => {
+      void reload();
+    }, [reload]),
+  );
 
   if (isLoading) {
     return <ActivityIndicator color={colors.primary} style={styles.loading} />;
@@ -19,7 +27,7 @@ export function FavoritesScreen() {
       keyExtractor={(item) => item.product.id}
       ListHeaderComponent={<Text style={styles.title}>Favoritos</Text>}
       ListEmptyComponent={<Text style={styles.empty}>No tienes favoritos todavia.</Text>}
-      renderItem={({ item }) => <ProductCard currency={currency} item={item} onAddToCart={() => addToCart(item.product)} onToggleFavorite={toggleFavorite} />}
+      renderItem={({ item }) => <ProductCard currency={currency} item={item} onAddToCart={addToCart} onToggleFavorite={toggleFavorite} />}
     />
   );
 }

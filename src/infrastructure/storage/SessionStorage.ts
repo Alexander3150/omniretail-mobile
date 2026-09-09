@@ -2,7 +2,7 @@ import type { Session } from "@/core";
 
 import type { KeyValueStorage } from "./types";
 
-export const SESSION_STORAGE_KEY = "omniretail-mobile:session:v1";
+export const SESSION_STORAGE_KEY = "omniretail-mobile.session.v1";
 
 export class SessionStorage {
   constructor(private readonly storage: KeyValueStorage) {}

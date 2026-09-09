@@ -18,8 +18,8 @@ Estas credenciales existen solo para simulacion academica/local. No se guardan e
 Keys:
 
 - `omniretail-mobile:mock-db:v1`
-- `omniretail-mobile:mock-credentials:v1`
-- `omniretail-mobile:session:v1`
+- `omniretail-mobile.mock-credentials.v1`
+- `omniretail-mobile.session.v1`
 
 ## Dataset
 
@@ -77,8 +77,23 @@ Si cambias la contrasena del usuario demo, `Demo1234` deja de funcionar hasta ej
 8. Address: crear direccion y marcar default.
 9. Checkout home delivery: seleccionar direccion y confirmar.
 10. Checkout store pickup: seleccionar sucursal y confirmar.
-11. Payment: seleccionar metodo demo; siempre aprueba en MVP.
+11. Payment: usa tarjeta demo segura; siempre aprueba en MVP.
 12. Confirm: crea Order `confirmed`.
 13. Cart: queda vacio despues de confirmar.
 14. Orders: pedido nuevo persiste tras restart.
 15. Second customer: registrar otro customer y verificar aislamiento de favoritos, carrito, direcciones y pedidos.
+
+## Customer Services Manual Tests
+
+1. Pedidos: muestra pedidos seed y nuevos pedidos del customer actual.
+2. Pedidos: ordena por fecha descendente y muestra numero, fecha, estado, total y cantidad de articulos.
+3. Detalle de pedido: muestra snapshots de items, totales, pago y datos de entrega.
+4. Tracking demo: confirmed avanza a preparing y crea notificacion `orderPreparing`.
+5. Tracking demo: preparing avanza a shipped y crea notificacion `orderShipped`.
+6. Tracking demo: shipped no avanza ni crea notificacion duplicada.
+7. Notificaciones: lista solo notificaciones del customer actual, recientes primero.
+8. Notificaciones: marcar una y marcar todas persisten `readAt`.
+9. Notificaciones: presionar una con `relatedOrderId` navega al detalle de pedido.
+10. Sucursales: muestra solo sucursales activas del tenant.
+11. Detalle de sucursal: muestra direccion, telefono, horario y coordenadas.
+12. Soporte: muestra datos desde `BusinessConfigRepository`.

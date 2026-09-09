@@ -42,7 +42,7 @@ export function CategoriesScreen() {
         </View>
       }
       ListEmptyComponent={<Text style={styles.empty}>No hay productos en esta categoria.</Text>}
-      renderItem={({ item }) => <ProductCard currency={currency} item={item} onAddToCart={() => addToCart(item.product)} onToggleFavorite={toggleFavorite} />}
+      renderItem={({ item }) => <ProductCard currency={currency} item={item} onAddToCart={addToCart} onToggleFavorite={toggleFavorite} />}
     />
   );
 }
@@ -60,7 +60,7 @@ export function ProductDetailScreen() {
     }
 
     for (let index = 0; index < quantity; index += 1) {
-      await addToCart(productVm.product);
+      await addToCart(productVm.product.id);
     }
     setMessage("Producto agregado al carrito.");
   }

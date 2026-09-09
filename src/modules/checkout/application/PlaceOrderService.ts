@@ -92,7 +92,7 @@ export async function placeOrder(repositories: RepositoryRegistry, session: { te
     tenantId: session.tenantId,
     orderId: confirmedOrder.id,
     customerId: session.customerId,
-    method: selection.paymentMethod ?? PaymentMethodType.CashOnDelivery,
+    method: PaymentMethodType.Card,
     status: PaymentStatus.Approved,
     amount: totals.total,
     reference: `APPROVED-${confirmedOrder.number}`,
