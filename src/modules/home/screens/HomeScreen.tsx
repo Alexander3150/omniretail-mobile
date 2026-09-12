@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Link } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -13,14 +14,26 @@ import {
 
 import { useSession } from "@/modules/auth";
 import { ProductCard, useCommerceCatalog } from "@/modules/catalog";
-import { colors, radius, spacing, typography } from "@/theme";
+
+const palette = {
+  deepBlue: "#3E668F",
+  dreamyBlue: "#81A9EE",
+  silkyLilac: "#AAB4E7",
+  butterHoney: "#FFDB83",
+  vanillaMilk: "#FFF2D0",
+  white: "#FFFFFF",
+  text: "#172033",
+  muted: "#687286",
+  border: "#DDE3EE",
+  danger: "#B94343",
+  success: "#247A52",
+};
 
 export function HomeScreen() {
   const { customer } = useSession();
   const [query, setQuery] = useState("");
   const [activeBanner, setActiveBanner] = useState(0);
-  const bannerListRef =
-    useRef<FlatList<(typeof homeBanners)[number]>>(null);
+  const bannerListRef = useRef<FlatList<(typeof homeBanners)[number]>>(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -53,8 +66,8 @@ export function HomeScreen() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator color={colors.primary} size="large" />
-        <Text style={styles.loadingText}>Cargando productos...</Text>
+        <ActivityIndicator color={palette.deepBlue} size="large" />
+        <Text style={styles.loadingText}>Preparando FerrePharma...</Text>
       </View>
     );
   }
@@ -66,50 +79,117 @@ export function HomeScreen() {
       keyExtractor={(item) => item.product.id}
       showsVerticalScrollIndicator={false}
       ListHeaderComponent={
-        <View style={styles.header}>
-          <View style={styles.welcomeRow}>
-            <View style={styles.welcomeText}>
-              <Text style={styles.greeting}>
-                Hola, {customer?.name ?? "cliente"}
-              </Text>
-              <Text style={styles.businessName}>{businessName}</Text>
+        <>
+          <View style={styles.hero}>
+            <View style={styles.heroDecorationOne} />
+            <View style={styles.heroDecorationTwo} />
+
+            <View style={styles.welcomeRow}>
+              <View style={styles.welcomeText}>
+                <Text style={styles.brand}>FERREPHARMA</Text>
+
+                <Text style={styles.greeting}>
+                  Hola, {customer?.name ?? "cliente"}
+                </Text>
+
+                <View style={styles.businessRow}>
+                  <Ionicons
+                    color={palette.butterHoney}
+                    name="storefront-outline"
+                    size={14}
+                  />
+                  <Text style={styles.businessName}>{businessName}</Text>
+                </View>
+              </View>
+
+              <Link asChild href="/(protected)/notifications">
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.notificationButton,
+                    pressed ? styles.pressed : null,
+                  ]}
+                >
+                  <Ionicons
+                    color={palette.deepBlue}
+                    name="notifications-outline"
+                    size={22}
+                  />
+
+                  <View style={styles.notificationDot} />
+                </Pressable>
+              </Link>
             </View>
 
-            <Link asChild href="/(protected)/notifications">
-              <Pressable style={styles.notificationButton}>
-                <Text style={styles.notificationIcon}>🔔</Text>
-              </Pressable>
-            </Link>
-          </View>
+            <Text style={styles.heroDescription}>
+              Todo lo que necesitas, más cerca de ti.
+            </Text>
 
-          {error ? (
-            <View style={styles.errorBox}>
-              <Text style={styles.error}>{error}</Text>
+            <View style={styles.searchContainer}>
+              <Ionicons
+                color={palette.deepBlue}
+                name="search-outline"
+                size={20}
+              />
+
+              <TextInput
+                onChangeText={setQuery}
+                placeholder="Buscar productos o SKU"
+                placeholderTextColor={palette.muted}
+                returnKeyType="search"
+                style={styles.input}
+                value={query}
+              />
+
+              {query.length > 0 ? (
+                <Pressable
+                  onPress={() => setQuery("")}
+                  style={styles.clearButton}
+                >
+                  <Ionicons color={palette.deepBlue} name="close" size={18} />
+                </Pressable>
+              ) : (
+                <View style={styles.searchAction}>
+                  <Ionicons
+                    color={palette.white}
+                    name="options-outline"
+                    size={15}
+                  />
+                </View>
+              )}
             </View>
-          ) : null}
 
-          <View style={styles.searchContainer}>
-            <Text style={styles.searchIcon}>⌕</Text>
-
-            <TextInput
-              onChangeText={setQuery}
-              placeholder="Buscar productos o SKU"
-              placeholderTextColor={colors.textMuted}
-              style={styles.input}
-              value={query}
-              returnKeyType="search"
-            />
-
-            {query.length > 0 ? (
-              <Pressable onPress={() => setQuery("")} style={styles.clearButton}>
-                <Text style={styles.clearText}>×</Text>
-              </Pressable>
+            {error ? (
+              <View style={styles.errorBox}>
+                <Ionicons
+                  color={palette.danger}
+                  name="alert-circle-outline"
+                  size={17}
+                />
+                <Text style={styles.error}>{error}</Text>
+              </View>
             ) : null}
           </View>
 
           {!query.trim() ? (
             <>
-              <View>
+              <View style={styles.carouselSection}>
+                <View style={styles.sectionHeader}>
+                  <View>
+                    <Text style={styles.eyebrow}>PARA TI</Text>
+                    <Text style={styles.sectionTitle}>
+                      Descubre FerrePharma
+                    </Text>
+                  </View>
+
+                  <View style={styles.sparkleIcon}>
+                    <Ionicons
+                      color={palette.deepBlue}
+                      name="sparkles-outline"
+                      size={18}
+                    />
+                  </View>
+                </View>
+
                 <FlatList
                   ref={bannerListRef}
                   data={homeBanners}
@@ -127,32 +207,96 @@ export function HomeScreen() {
                     offset: BANNER_WIDTH * index,
                   })}
                   pagingEnabled
-                  renderItem={({ item }) => (
-                    <View style={[styles.promoCard, { width: BANNER_WIDTH }]}>
-                      <View style={styles.promoContent}>
-                        <Text style={styles.promoLabel}>{item.label}</Text>
+                  renderItem={({ item, index }) => (
+                    <View style={[styles.bannerOuter, { width: BANNER_WIDTH }]}>
+                      <View
+                        style={[
+                          styles.promoCard,
+                          index === 1 ? styles.promoCardLight : null,
+                        ]}
+                      >
+                        <View style={styles.bannerCircleOne} />
+                        <View style={styles.bannerCircleTwo} />
 
-                        <Text style={styles.promoTitle}>
-                          {item.title}
-                        </Text>
+                        <View style={styles.promoContent}>
+                          <View style={styles.promoLabelRow}>
+                            <Ionicons
+                              color={
+                                index === 1
+                                  ? palette.deepBlue
+                                  : palette.butterHoney
+                              }
+                              name={item.smallIcon}
+                              size={13}
+                            />
 
-                        <Text style={styles.promoDescription}>
-                          {item.description}
-                        </Text>
-
-                        <Link asChild href={item.href}>
-                          <Pressable style={styles.promoButton}>
-                            <Text style={styles.promoButtonText}>
-                              {item.buttonLabel}
+                            <Text
+                              style={[
+                                styles.promoLabel,
+                                index === 1 ? styles.promoLabelLight : null,
+                              ]}
+                            >
+                              {item.label}
                             </Text>
-                          </Pressable>
-                        </Link>
-                      </View>
+                          </View>
 
-                      <View style={styles.promoGraphic}>
-                        <Text style={styles.promoGraphicIcon}>
-                          {item.icon}
-                        </Text>
+                          <Text
+                            style={[
+                              styles.promoTitle,
+                              index === 1 ? styles.promoTitleLight : null,
+                            ]}
+                          >
+                            {item.title}
+                          </Text>
+
+                          <Text
+                            style={[
+                              styles.promoDescription,
+                              index === 1 ? styles.promoDescriptionLight : null,
+                            ]}
+                          >
+                            {item.description}
+                          </Text>
+
+                          <Link asChild href={item.href}>
+                            <Pressable
+                              style={({ pressed }) => [
+                                styles.promoButton,
+                                index === 1 ? styles.promoButtonLight : null,
+                                pressed ? styles.pressed : null,
+                              ]}
+                            >
+                              <Text style={styles.promoButtonText}>
+                                {item.buttonLabel}
+                              </Text>
+
+                              <Ionicons
+                                color={palette.deepBlue}
+                                name="arrow-forward"
+                                size={14}
+                              />
+                            </Pressable>
+                          </Link>
+                        </View>
+
+                        <View style={styles.promoGraphic}>
+                          <View
+                            style={[
+                              styles.promoGraphicCircle,
+                              index === 1
+                                ? styles.promoGraphicCircleLight
+                                : null,
+                            ]}
+                          >
+                            <Ionicons
+                              color={
+                                index === 1 ? palette.deepBlue : palette.white
+                              }
+                              name={item.icon}
+                              size={42}
+                            />
+                          </View>
+                        </View>
                       </View>
                     </View>
                   )}
@@ -176,77 +320,128 @@ export function HomeScreen() {
                 </View>
               </View>
 
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Categorías</Text>
+              <View style={styles.categoriesSection}>
+                <View style={styles.sectionHeader}>
+                  <View>
+                    <Text style={styles.eyebrow}>EXPLORA</Text>
+                    <Text style={styles.sectionTitle}>Categorías</Text>
+                  </View>
 
-                <Link asChild href="/(protected)/(tabs)/categories">
-                  <Pressable>
-                    <Text style={styles.seeAll}>Ver todas</Text>
-                  </Pressable>
-                </Link>
-              </View>
-
-              <FlatList
-                data={categories}
-                horizontal
-                keyExtractor={(item) => item.id}
-                contentContainerStyle={styles.categoriesContent}
-                renderItem={({ item }) => (
-                  <Link
-                    asChild
-                    href={{
-                      pathname: "/(protected)/(tabs)/categories",
-                      params: { categoryId: item.id },
-                    }}
-                  >
-                    <Pressable style={styles.categoryCard}>
-                      <View style={styles.categoryIconContainer}>
-                        <Text style={styles.categoryIcon}>
-                          {getCategoryIcon(item.name)}
-                        </Text>
-                      </View>
-
-                      <Text
-                        numberOfLines={2}
-                        style={styles.categoryText}
-                      >
-                        {item.name}
-                      </Text>
+                  <Link asChild href="/(protected)/(tabs)/categories">
+                    <Pressable style={styles.seeAllButton}>
+                      <Text style={styles.seeAll}>Ver todas</Text>
+                      <Ionicons
+                        color={palette.deepBlue}
+                        name="chevron-forward"
+                        size={15}
+                      />
                     </Pressable>
                   </Link>
-                )}
-                showsHorizontalScrollIndicator={false}
-              />
+                </View>
+
+                <FlatList
+                  data={categories}
+                  horizontal
+                  keyExtractor={(item) => item.id}
+                  contentContainerStyle={styles.categoriesContent}
+                  showsHorizontalScrollIndicator={false}
+                  ItemSeparatorComponent={() => (
+                    <View style={styles.categorySeparator} />
+                  )}
+                  renderItem={({ item, index }) => (
+                    <Link
+                      asChild
+                      href={{
+                        pathname: "/(protected)/(tabs)/categories",
+                        params: { categoryId: item.id },
+                      }}
+                    >
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.categoryItem,
+                          pressed ? styles.pressed : null,
+                        ]}
+                      >
+                        <View style={styles.categoryCenter}>
+                          <View
+                            style={[
+                              styles.categoryIconContainer,
+                              index % 3 === 1 ? styles.categoryIconBlue : null,
+                              index % 3 === 2 ? styles.categoryIconLilac : null,
+                            ]}
+                          >
+                            <Ionicons
+                              color={palette.deepBlue}
+                              name={getCategoryIcon(item.name)}
+                              size={25}
+                            />
+                          </View>
+
+                          <View style={styles.categoryLabelContainer}>
+                            <Text numberOfLines={2} style={styles.categoryText}>
+                              {item.name}
+                            </Text>
+                          </View>
+                        </View>
+                      </Pressable>
+                    </Link>
+                  )}
+                />
+              </View>
             </>
           ) : null}
 
-          <View style={styles.sectionHeader}>
+          <View style={styles.productsHeader}>
             <View>
+              <Text style={styles.eyebrow}>
+                {query.trim() ? "BÚSQUEDA" : "SELECCIÓN"}
+              </Text>
+
               <Text style={styles.sectionTitle}>
                 {query.trim() ? "Resultados" : "Productos destacados"}
               </Text>
 
               <Text style={styles.sectionSubtitle}>
                 {products.length}{" "}
-                {products.length === 1 ? "producto" : "productos"}
+                {products.length === 1
+                  ? "producto disponible"
+                  : "productos disponibles"}
               </Text>
             </View>
+
+            <View style={styles.productsIcon}>
+              <Ionicons
+                color={palette.deepBlue}
+                name={query.trim() ? "search-outline" : "star-outline"}
+                size={19}
+              />
+            </View>
           </View>
-        </View>
+        </>
       }
       ListEmptyComponent={
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyIcon}>🔎</Text>
+          <View style={styles.emptyIcon}>
+            <Ionicons
+              color={palette.deepBlue}
+              name="search-outline"
+              size={37}
+            />
+          </View>
+
           <Text style={styles.emptyTitle}>No encontramos productos</Text>
+
           <Text style={styles.empty}>
             Intenta buscar con otro nombre o código SKU.
           </Text>
 
           {query.length > 0 ? (
-            <Pressable
-              onPress={() => setQuery("")}
-              style={styles.emptyButton}
-            >
+            <Pressable onPress={() => setQuery("")} style={styles.emptyButton}>
+              <Ionicons
+                color={palette.white}
+                name="refresh-outline"
+                size={16}
+              />
               <Text style={styles.emptyButtonText}>Limpiar búsqueda</Text>
             </Pressable>
           ) : null}
@@ -265,97 +460,158 @@ export function HomeScreen() {
 }
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
-const BANNER_WIDTH = SCREEN_WIDTH - spacing.md * 2;
+const BANNER_WIDTH = SCREEN_WIDTH - 32;
 
-const homeBanners = [
+type HomeIconName = "storefront-outline" | "hammer-outline" | "receipt-outline";
+
+type HomeSmallIconName =
+  "sparkles-outline" | "construct-outline" | "bag-check-outline";
+
+const homeBanners: {
+  id: string;
+  label: string;
+  title: string;
+  description: string;
+  buttonLabel: string;
+  icon: HomeIconName;
+  smallIcon: HomeSmallIconName;
+  href:
+    | "/(protected)/(tabs)/categories"
+    | "/(protected)/(tabs)/orders"
+    | {
+        pathname: "/(protected)/(tabs)/categories";
+        params: { categoryId: string };
+      };
+}[] = [
   {
     id: "catalog",
-    label: "OMNIRETAIL",
+    label: "FERREPHARMA",
     title: "Todo lo que necesitas en un solo lugar",
     description:
       "Explora nuestro catálogo y encuentra productos para tu día a día.",
     buttonLabel: "Ver categorías",
-    icon: "🛍️",
-    href: "/(protected)/(tabs)/categories" as const,
+    icon: "storefront-outline",
+    smallIcon: "sparkles-outline",
+    href: "/(protected)/(tabs)/categories",
   },
   {
     id: "tools",
     label: "HERRAMIENTAS",
     title: "Equipa tus proyectos",
     description:
-      "Encuentra herramientas y artículos para reparaciones y trabajos en casa.",
+      "Herramientas y artículos para reparaciones y trabajos en casa.",
     buttonLabel: "Explorar",
-    icon: "🛠️",
+    icon: "hammer-outline",
+    smallIcon: "construct-outline",
     href: {
       pathname: "/(protected)/(tabs)/categories",
       params: { categoryId: "category-tools" },
-    } as const,
+    },
   },
   {
     id: "orders",
     label: "TUS COMPRAS",
     title: "Consulta tus pedidos fácilmente",
-    description:
-      "Revisa tus compras y consulta el estado de tus pedidos desde la aplicación.",
+    description: "Revisa tus compras y consulta el estado de tus pedidos.",
     buttonLabel: "Ver pedidos",
-    icon: "📦",
-    href: "/(protected)/(tabs)/orders" as const,
+    icon: "receipt-outline",
+    smallIcon: "bag-check-outline",
+    href: "/(protected)/(tabs)/orders",
   },
 ];
 
-function getCategoryIcon(name: string) {
+function getCategoryIcon(
+  name: string,
+):
+  | "hammer-outline"
+  | "home-outline"
+  | "body-outline"
+  | "medkit-outline"
+  | "pencil-outline"
+  | "basket-outline"
+  | "cube-outline" {
   const normalized = name.toLowerCase();
 
   if (normalized.includes("herramient")) {
-    return "🛠️";
+    return "hammer-outline";
   }
 
   if (normalized.includes("hogar")) {
-    return "🏠";
+    return "home-outline";
   }
 
   if (normalized.includes("personal")) {
-    return "🧴";
+    return "body-outline";
   }
 
   if (normalized.includes("farmacia")) {
-    return "➕";
+    return "medkit-outline";
   }
 
   if (normalized.includes("papeler")) {
-    return "✏️";
+    return "pencil-outline";
   }
 
   if (normalized.includes("despensa")) {
-    return "🛒";
+    return "basket-outline";
   }
 
-  return "📦";
+  return "cube-outline";
 }
 
 const styles = StyleSheet.create({
   loadingContainer: {
     alignItems: "center",
-    backgroundColor: colors.background,
+    backgroundColor: palette.vanillaMilk,
     flex: 1,
-    gap: spacing.md,
+    gap: 10,
     justifyContent: "center",
   },
 
   loadingText: {
-    color: colors.textMuted,
-    fontSize: typography.body,
+    color: palette.deepBlue,
+    fontSize: 12,
+    fontWeight: "800",
   },
 
   content: {
-    backgroundColor: colors.background,
-    gap: spacing.md,
-    padding: spacing.md,
-    paddingBottom: spacing.xl,
+    backgroundColor: palette.vanillaMilk,
+    flexGrow: 1,
+    paddingBottom: 34,
   },
 
-  header: {
-    gap: spacing.lg,
+  hero: {
+    backgroundColor: palette.deepBlue,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    marginBottom: 22,
+    minHeight: 245,
+    overflow: "hidden",
+    paddingBottom: 24,
+    paddingHorizontal: 20,
+    paddingTop: 44,
+  },
+
+  heroDecorationOne: {
+    backgroundColor: palette.dreamyBlue,
+    borderRadius: 110,
+    height: 190,
+    opacity: 0.17,
+    position: "absolute",
+    right: -60,
+    top: -60,
+    width: 190,
+  },
+
+  heroDecorationTwo: {
+    backgroundColor: palette.butterHoney,
+    borderRadius: 60,
+    bottom: -55,
+    height: 120,
+    opacity: 0.16,
+    position: "absolute",
+    right: 55,
+    width: 120,
   },
 
   welcomeRow: {
@@ -366,266 +622,468 @@ const styles = StyleSheet.create({
 
   welcomeText: {
     flex: 1,
+    paddingRight: 12,
+  },
+
+  brand: {
+    color: palette.butterHoney,
+    fontSize: 11,
+    fontWeight: "900",
+    letterSpacing: 1.8,
   },
 
   greeting: {
-    color: colors.textMuted,
-    fontSize: typography.body,
+    color: palette.white,
+    fontSize: 27,
+    fontWeight: "900",
+    marginTop: 3,
+  },
+
+  businessRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 5,
+    marginTop: 5,
   },
 
   businessName: {
-    color: colors.text,
-    fontSize: typography.title,
-    fontWeight: "800",
-    marginTop: spacing.xs,
+    color: "#EAF1F8",
+    fontSize: 11,
+    fontWeight: "700",
   },
 
   notificationButton: {
     alignItems: "center",
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    height: 48,
+    backgroundColor: palette.white,
+    borderRadius: 23,
+    height: 46,
     justifyContent: "center",
-    width: 48,
+    position: "relative",
+    width: 46,
   },
 
-  notificationIcon: {
-    fontSize: 20,
+  notificationDot: {
+    backgroundColor: palette.butterHoney,
+    borderColor: palette.white,
+    borderRadius: 6,
+    borderWidth: 2,
+    height: 11,
+    position: "absolute",
+    right: 7,
+    top: 6,
+    width: 11,
   },
 
-  errorBox: {
-    backgroundColor: colors.surface,
-    borderColor: colors.danger,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    padding: spacing.md,
-  },
-
-  error: {
-    color: colors.danger,
+  heroDescription: {
+    color: "#EAF1F8",
+    fontSize: 12,
+    marginTop: 14,
   },
 
   searchContainer: {
     alignItems: "center",
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    borderWidth: 1,
+    backgroundColor: palette.white,
+    borderRadius: 15,
     flexDirection: "row",
+    gap: 9,
+    marginTop: 16,
     minHeight: 52,
-    paddingHorizontal: spacing.md,
-  },
-
-  searchIcon: {
-    color: colors.textMuted,
-    fontSize: 24,
-    marginRight: spacing.sm,
+    paddingHorizontal: 14,
   },
 
   input: {
-    color: colors.text,
+    color: palette.text,
     flex: 1,
-    fontSize: typography.body,
+    fontSize: 13,
     minHeight: 50,
   },
 
   clearButton: {
     alignItems: "center",
-    height: 36,
+    backgroundColor: "#EEF3FB",
+    borderRadius: 10,
+    height: 30,
     justifyContent: "center",
-    width: 36,
+    width: 30,
   },
 
-  clearText: {
-    color: colors.textMuted,
-    fontSize: 28,
+  searchAction: {
+    alignItems: "center",
+    backgroundColor: palette.deepBlue,
+    borderRadius: 10,
+    height: 30,
+    justifyContent: "center",
+    width: 30,
   },
 
-  promoCard: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.lg,
+  errorBox: {
+    alignItems: "center",
+    backgroundColor: "#FFF0F0",
+    borderRadius: 11,
     flexDirection: "row",
-    minHeight: 190,
-    overflow: "hidden",
-    padding: spacing.lg,
+    gap: 7,
+    marginTop: 10,
+    padding: 9,
   },
 
-  promoContent: {
+  error: {
+    color: palette.danger,
     flex: 1,
-    justifyContent: "center",
+    fontSize: 10,
   },
 
-  promoLabel: {
-    color: colors.accent,
-    fontSize: typography.caption,
-    fontWeight: "800",
-    letterSpacing: 1,
-    marginBottom: spacing.sm,
-  },
-
-  promoTitle: {
-    color: colors.surface,
-    fontSize: typography.subtitle,
-    fontWeight: "800",
-    lineHeight: 26,
-  },
-
-  promoDescription: {
-    color: colors.surface,
-    fontSize: typography.caption,
-    lineHeight: 19,
-    marginTop: spacing.sm,
-    opacity: 0.9,
-  },
-
-  promoButton: {
-    alignItems: "center",
-    alignSelf: "flex-start",
-    backgroundColor: colors.accent,
-    borderRadius: radius.md,
-    justifyContent: "center",
-    marginTop: spacing.md,
-    minHeight: 38,
-    paddingHorizontal: spacing.md,
-  },
-
-  promoButtonText: {
-    color: colors.text,
-    fontSize: typography.caption,
-    fontWeight: "800",
-  },
-
-  promoGraphic: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingLeft: spacing.md,
-  },
-
-  promoGraphicIcon: {
-    fontSize: 56,
-  },
-
-  pagination: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: spacing.sm,
-    justifyContent: "center",
-    marginTop: spacing.sm,
-  },
-
-  paginationDot: {
-    backgroundColor: colors.border,
-    borderRadius: 4,
-    height: 7,
-    width: 7,
-  },
-
-  paginationDotActive: {
-    backgroundColor: colors.primary,
-    width: 22,
+  carouselSection: {
+    marginBottom: 25,
   },
 
   sectionHeader: {
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
+    marginBottom: 13,
+    paddingHorizontal: 18,
+  },
+
+  eyebrow: {
+    color: palette.dreamyBlue,
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 1.5,
   },
 
   sectionTitle: {
-    color: colors.text,
-    fontSize: typography.subtitle,
-    fontWeight: "800",
+    color: palette.text,
+    fontSize: 20,
+    fontWeight: "900",
+    marginTop: 2,
   },
 
-  sectionSubtitle: {
-    color: colors.textMuted,
-    fontSize: typography.caption,
-    marginTop: spacing.xs,
+  sparkleIcon: {
+    alignItems: "center",
+    backgroundColor: palette.butterHoney,
+    borderRadius: 12,
+    height: 40,
+    justifyContent: "center",
+    width: 40,
+  },
+
+  bannerOuter: {
+    paddingHorizontal: 16,
+  },
+
+  promoCard: {
+    backgroundColor: palette.deepBlue,
+    borderRadius: 23,
+    flexDirection: "row",
+    minHeight: 205,
+    overflow: "hidden",
+    padding: 19,
+  },
+
+  promoCardLight: {
+    backgroundColor: palette.dreamyBlue,
+  },
+
+  bannerCircleOne: {
+    backgroundColor: palette.white,
+    borderRadius: 70,
+    height: 140,
+    opacity: 0.08,
+    position: "absolute",
+    right: -30,
+    top: -35,
+    width: 140,
+  },
+
+  bannerCircleTwo: {
+    backgroundColor: palette.butterHoney,
+    borderRadius: 50,
+    bottom: -45,
+    height: 100,
+    opacity: 0.15,
+    position: "absolute",
+    right: 60,
+    width: 100,
+  },
+
+  promoContent: {
+    flex: 1,
+    justifyContent: "center",
+    zIndex: 2,
+  },
+
+  promoLabelRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 5,
+    marginBottom: 7,
+  },
+
+  promoLabel: {
+    color: palette.butterHoney,
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 1.2,
+  },
+
+  promoLabelLight: {
+    color: palette.deepBlue,
+  },
+
+  promoTitle: {
+    color: palette.white,
+    fontSize: 19,
+    fontWeight: "900",
+    lineHeight: 24,
+    maxWidth: 210,
+  },
+
+  promoTitleLight: {
+    color: palette.deepBlue,
+  },
+
+  promoDescription: {
+    color: "#EAF1F8",
+    fontSize: 10,
+    lineHeight: 15,
+    marginTop: 6,
+    maxWidth: 205,
+  },
+
+  promoDescriptionLight: {
+    color: "#294B6D",
+  },
+
+  promoButton: {
+    alignItems: "center",
+    alignSelf: "flex-start",
+    backgroundColor: palette.butterHoney,
+    borderRadius: 11,
+    flexDirection: "row",
+    gap: 5,
+    justifyContent: "center",
+    marginTop: 12,
+    minHeight: 36,
+    paddingHorizontal: 12,
+  },
+
+  promoButtonLight: {
+    backgroundColor: palette.white,
+  },
+
+  promoButtonText: {
+    color: palette.deepBlue,
+    fontSize: 9,
+    fontWeight: "900",
+  },
+
+  promoGraphic: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingLeft: 7,
+    width: 82,
+    zIndex: 2,
+  },
+
+  promoGraphicCircle: {
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.14)",
+    borderColor: "rgba(255,255,255,0.20)",
+    borderRadius: 37,
+    borderWidth: 1,
+    height: 74,
+    justifyContent: "center",
+    width: 74,
+  },
+
+  promoGraphicCircleLight: {
+    backgroundColor: "rgba(255,255,255,0.42)",
+    borderColor: "rgba(255,255,255,0.60)",
+  },
+
+  pagination: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 6,
+    justifyContent: "center",
+    marginTop: 10,
+  },
+
+  paginationDot: {
+    backgroundColor: palette.silkyLilac,
+    borderRadius: 4,
+    height: 6,
+    width: 6,
+  },
+
+  paginationDotActive: {
+    backgroundColor: palette.deepBlue,
+    width: 23,
+  },
+
+  categoriesSection: {
+    marginBottom: 26,
+  },
+
+  seeAllButton: {
+    alignItems: "center",
+    backgroundColor: palette.white,
+    borderColor: palette.silkyLilac,
+    borderRadius: 13,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 2,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
   },
 
   seeAll: {
-    color: colors.primary,
-    fontSize: typography.caption,
-    fontWeight: "700",
+    color: palette.deepBlue,
+    fontSize: 9,
+    fontWeight: "900",
   },
 
   categoriesContent: {
-    gap: spacing.sm,
-    paddingRight: spacing.md,
+    alignItems: "flex-start",
+    paddingHorizontal: 16,
+    paddingRight: 20,
   },
 
-  categoryCard: {
+  categorySeparator: {
+    width: 4,
+  },
+
+  categoryItem: {
     alignItems: "center",
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    justifyContent: "center",
-    minHeight: 108,
-    padding: spacing.sm,
-    width: 100,
+    justifyContent: "flex-start",
+    width: 64,
+  },
+
+  categoryCenter: {
+    alignItems: "center",
+    justifyContent: "flex-start",
+    width: 64,
   },
 
   categoryIconContainer: {
     alignItems: "center",
-    backgroundColor: colors.background,
-    borderRadius: 22,
-    height: 44,
+    backgroundColor: palette.butterHoney,
+    borderRadius: 16,
+    height: 52,
     justifyContent: "center",
-    marginBottom: spacing.sm,
-    width: 44,
+    marginBottom: 8,
+    shadowColor: "#172033",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    width: 52,
+    elevation: 1,
   },
 
-  categoryIcon: {
-    fontSize: 21,
+  categoryLabelContainer: {
+    alignItems: "center",
+    justifyContent: "flex-start",
+    minHeight: 28,
+    width: 64,
   },
 
   categoryText: {
-    color: colors.text,
-    fontSize: typography.caption,
-    fontWeight: "700",
+    color: palette.text,
+    fontSize: 9,
+    fontWeight: "800",
+    lineHeight: 12,
+    paddingHorizontal: 0,
     textAlign: "center",
+    width: 64,
+  },
+
+  categoryIconBlue: {
+    backgroundColor: "#DDEBFF",
+  },
+
+  categoryIconLilac: {
+    backgroundColor: "#E7E8F8",
+  },
+
+  productsHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 14,
+    paddingHorizontal: 18,
+  },
+
+  sectionSubtitle: {
+    color: palette.muted,
+    fontSize: 10,
+    marginTop: 4,
+  },
+
+  productsIcon: {
+    alignItems: "center",
+    backgroundColor: palette.butterHoney,
+    borderRadius: 12,
+    height: 40,
+    justifyContent: "center",
+    width: 40,
   },
 
   emptyContainer: {
     alignItems: "center",
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
+    backgroundColor: palette.white,
+    borderColor: palette.silkyLilac,
+    borderRadius: 22,
     borderWidth: 1,
-    marginTop: spacing.md,
-    padding: spacing.xl,
+    marginHorizontal: 18,
+    marginTop: 4,
+    padding: 28,
   },
 
   emptyIcon: {
-    fontSize: 40,
-    marginBottom: spacing.md,
+    alignItems: "center",
+    backgroundColor: palette.butterHoney,
+    borderRadius: 34,
+    height: 68,
+    justifyContent: "center",
+    width: 68,
   },
 
   emptyTitle: {
-    color: colors.text,
-    fontSize: typography.subtitle,
-    fontWeight: "800",
+    color: palette.text,
+    fontSize: 18,
+    fontWeight: "900",
+    marginTop: 17,
   },
 
   empty: {
-    color: colors.textMuted,
-    marginTop: spacing.sm,
+    color: palette.muted,
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 6,
     textAlign: "center",
   },
 
   emptyButton: {
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
-    marginTop: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
+    alignItems: "center",
+    backgroundColor: palette.deepBlue,
+    borderRadius: 12,
+    flexDirection: "row",
+    gap: 6,
+    marginTop: 17,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
   },
 
   emptyButtonText: {
-    color: colors.surface,
-    fontWeight: "700",
+    color: palette.white,
+    fontSize: 10,
+    fontWeight: "900",
+  },
+
+  pressed: {
+    opacity: 0.76,
   },
 });
