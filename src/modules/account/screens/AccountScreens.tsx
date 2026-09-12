@@ -20,6 +20,7 @@ export function AccountScreen() {
   return (
     <ScrollView
       contentContainerStyle={accountStyles.container}
+      keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
       <View style={accountStyles.hero}>
