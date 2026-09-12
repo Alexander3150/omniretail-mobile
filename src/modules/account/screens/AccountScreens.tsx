@@ -514,7 +514,7 @@ const accountStyles = StyleSheet.create({
     overflow: "hidden",
     paddingBottom: 28,
     paddingHorizontal: 22,
-    paddingTop: 22,
+    paddingTop: 44,
   },
 
   heroCircleLarge: {
