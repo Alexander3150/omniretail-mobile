@@ -1,9 +1,9 @@
 import { Link, router, useLocalSearchParams } from "expo-router";
 import { useState, type ReactNode } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { DEMO_RESET_CODE, useRepositories } from "@/infrastructure";
-import { colors, radius, spacing, typography } from "@/theme";
+import { radius, spacing, typography } from "@/theme";
 
 import { useSession } from "../hooks/useSession";
 import { validateEmail, validateNewPassword, validatePasswordConfirmation, validateRequiredPassword } from "../validation";
@@ -35,7 +35,7 @@ export function LoginScreen() {
   }
 
   return (
-    <AuthForm title="Login" error={error}>
+    <AuthForm title="Login" subtitle="Accede a tu cuenta y continúa con tus compras." error={error}>
       <AuthTextInput autoCapitalize="none" keyboardType="email-address" label="Correo" onChangeText={setEmail} value={email} />
       <AuthTextInput label="Contrasena" onChangeText={setPassword} secureTextEntry value={password} />
       <PrimaryButton disabled={isSubmitting} label="Iniciar sesion" loading={isSubmitting} onPress={handleSubmit} />
@@ -83,7 +83,7 @@ export function RegisterScreen() {
   }
 
   return (
-    <AuthForm title="Registro" error={error}>
+    <AuthForm title="Registro" subtitle="Crea tu cuenta para comenzar a comprar." error={error}>
       <AuthTextInput label="Nombre" onChangeText={setName} value={name} />
       <AuthTextInput autoCapitalize="none" keyboardType="email-address" label="Correo" onChangeText={setEmail} value={email} />
       <AuthTextInput label="Contrasena" onChangeText={setPassword} secureTextEntry value={password} />
@@ -120,7 +120,7 @@ export function ForgotPasswordScreen() {
   }
 
   return (
-    <AuthForm title="Recuperar contrasena" error={error} message={message}>
+    <AuthForm title="Recuperar contrasena" subtitle="Recupera el acceso a tu cuenta." error={error} message={message}>
       <AuthTextInput autoCapitalize="none" keyboardType="email-address" label="Correo" onChangeText={setEmail} value={email} />
       <PrimaryButton disabled={isSubmitting} label="Solicitar codigo" loading={isSubmitting} onPress={handleSubmit} />
       <InlineLink href={{ pathname: "/(auth)/reset-password", params: { email } }} label="Continuar a reset" />
@@ -166,7 +166,12 @@ export function ResetPasswordScreen() {
   }
 
   return (
-    <AuthForm title="Restablecer contrasena" error={error} message={message}>
+    <AuthForm
+      title="Restablecer contrasena"
+      subtitle="Define una nueva contraseña para tu cuenta."
+      error={error}
+      message={message}
+    >
       <Text style={styles.helpText}>Codigo de demostracion: {DEMO_RESET_CODE}</Text>
       <AuthTextInput autoCapitalize="none" keyboardType="email-address" label="Correo" onChangeText={setEmail} value={email} />
       <AuthTextInput keyboardType="number-pad" label="Codigo" onChangeText={setCode} value={code} />
@@ -216,7 +221,7 @@ export function ChangePasswordScreen() {
   }
 
   return (
-    <AuthForm title="Seguridad" error={error} message={message}>
+    <AuthForm title="Seguridad" subtitle="Actualiza la seguridad de tu cuenta." error={error} message={message}>
       <AuthTextInput label="Contrasena actual" onChangeText={setCurrentPassword} secureTextEntry value={currentPassword} />
       <AuthTextInput label="Nueva contrasena" onChangeText={setNewPassword} secureTextEntry value={newPassword} />
       <AuthTextInput label="Confirmar contrasena" onChangeText={setConfirmPassword} secureTextEntry value={confirmPassword} />
@@ -229,17 +234,58 @@ type AuthFormProps = {
   children: ReactNode;
   error?: string | null;
   message?: string | null;
+  subtitle: string;
   title: string;
 };
 
-function AuthForm({ children, error, message, title }: AuthFormProps) {
+function AuthForm({ children, error, message, subtitle, title }: AuthFormProps) {
   return (
-    <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-      <View style={styles.form}>
-        <Text style={styles.title}>{title}</Text>
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-        {message ? <Text style={styles.message}>{message}</Text> : null}
-        {children}
+    <ScrollView
+      automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
+      contentContainerStyle={styles.scrollContent}
+      keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+      keyboardShouldPersistTaps="handled"
+    >
+      <View style={styles.decorativeCircleTop} />
+      <View style={styles.decorativeCircleBottom} />
+
+      <View style={styles.authWrapper}>
+        <View style={styles.brandArea}>
+          <View style={styles.logoBox}>
+            <Text style={styles.logoIcon}>✦</Text>
+          </View>
+
+          <Text style={styles.brandName}>FerrePharma</Text>
+          <Text style={styles.brandSubtitle}>
+            FERRETERÍA & FARMACIA
+          </Text>
+        </View>
+
+        <View style={styles.formCard}>
+          <Text style={styles.title}>{title}</Text>
+
+          <Text style={styles.formSubtitle}>{subtitle}</Text>
+
+          {error ? (
+            <View style={styles.errorBox}>
+              <Text style={styles.error}>{error}</Text>
+            </View>
+          ) : null}
+
+          {message ? (
+            <View style={styles.messageBox}>
+              <Text style={styles.message}>{message}</Text>
+            </View>
+          ) : null}
+
+          <View style={styles.form}>
+            {children}
+          </View>
+        </View>
+
+        <Text style={styles.footerText}>
+          Compra fácil, segura y desde cualquier lugar.
+        </Text>
       </View>
     </ScrollView>
   );
@@ -258,7 +304,15 @@ function AuthTextInput({ label, ...inputProps }: AuthTextInputProps) {
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
-      <TextInput placeholder={label} placeholderTextColor={colors.textMuted} style={styles.input} {...inputProps} />
+
+      <View style={styles.inputContainer}>
+        <TextInput
+          placeholder={label}
+          placeholderTextColor="#8290A5"
+          style={styles.input}
+          {...inputProps}
+        />
+      </View>
     </View>
   );
 }
@@ -270,10 +324,27 @@ type PrimaryButtonProps = {
   onPress(): void;
 };
 
-function PrimaryButton({ disabled, label, loading, onPress }: PrimaryButtonProps) {
+function PrimaryButton({
+  disabled,
+  label,
+  loading,
+  onPress,
+}: PrimaryButtonProps) {
   return (
-    <Pressable disabled={disabled} onPress={onPress} style={[styles.button, disabled ? styles.buttonDisabled : null]}>
-      {loading ? <ActivityIndicator color={colors.surface} /> : <Text style={styles.buttonText}>{label}</Text>}
+    <Pressable
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.button,
+        pressed && !disabled ? styles.buttonPressed : null,
+        disabled ? styles.buttonDisabled : null,
+      ]}
+    >
+      {loading ? (
+        <ActivityIndicator color="#FFFFFF" />
+      ) : (
+        <Text style={styles.buttonText}>{label}</Text>
+      )}
     </Pressable>
   );
 }
@@ -285,76 +356,273 @@ type InlineLinkProps = {
 
 function InlineLink({ href, label }: InlineLinkProps) {
   return (
-    <Link href={href} style={styles.link}>
-      {label}
+    <Link href={href} asChild>
+      <Pressable style={({ pressed }) => [
+        styles.linkButton,
+        pressed ? styles.linkButtonPressed : null,
+      ]}>
+        <Text style={styles.link}>{label}</Text>
+      </Pressable>
     </Link>
   );
 }
 
+const palette = {
+  deepBlue: "#3E668F",
+  dreamyBlue: "#81A9EE",
+  silkyLilac: "#AAB4E7",
+  butterHoney: "#FFDB83",
+  vanillaMilk: "#FFF2D0",
+  white: "#FFFFFF",
+  text: "#172033",
+  muted: "#687286",
+  danger: "#C2413B",
+  success: "#1E8E5A",
+};
+
 const styles = StyleSheet.create({
-  button: {
-    alignItems: "center",
-    backgroundColor: colors.primary,
-    borderRadius: radius.md,
+  scrollContent: {
+    backgroundColor: palette.vanillaMilk,
+    flexGrow: 1,
     justifyContent: "center",
-    minHeight: 48,
-    paddingHorizontal: spacing.md,
+    minHeight: "100%",
+    overflow: "hidden",
+    paddingBottom: spacing.xl + spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl,
   },
-  buttonDisabled: {
-    opacity: 0.7,
+
+  decorativeCircleTop: {
+    backgroundColor: palette.silkyLilac,
+    borderRadius: 120,
+    height: 210,
+    opacity: 0.35,
+    position: "absolute",
+    right: -80,
+    top: -70,
+    width: 210,
   },
-  buttonText: {
-    color: colors.surface,
-    fontSize: typography.body,
+
+  decorativeCircleBottom: {
+    backgroundColor: palette.butterHoney,
+    borderRadius: 100,
+    bottom: -70,
+    height: 190,
+    left: -80,
+    opacity: 0.35,
+    position: "absolute",
+    width: 190,
+  },
+
+  authWrapper: {
+    alignSelf: "center",
+    maxWidth: 480,
+    width: "100%",
+  },
+
+  brandArea: {
+    alignItems: "center",
+    marginBottom: spacing.lg,
+  },
+
+  logoBox: {
+    alignItems: "center",
+    backgroundColor: palette.deepBlue,
+    borderRadius: radius.lg,
+    height: 58,
+    justifyContent: "center",
+    marginBottom: spacing.sm,
+    shadowColor: "#000000",
+    shadowOffset: {
+      width: 0,
+      height: 5,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    width: 58,
+    elevation: 5,
+  },
+
+  logoIcon: {
+    color: palette.butterHoney,
+    fontSize: 30,
+    fontWeight: "800",
+  },
+
+  brandName: {
+    color: palette.deepBlue,
+    fontSize: 29,
+    fontWeight: "900",
+    letterSpacing: -0.5,
+  },
+
+  brandSubtitle: {
+    color: palette.muted,
+    fontSize: 11,
     fontWeight: "700",
+    letterSpacing: 1.6,
+    marginTop: 2,
   },
-  error: {
-    color: colors.danger,
-    fontSize: typography.body,
+
+  formCard: {
+    backgroundColor: palette.white,
+    borderColor: palette.silkyLilac,
+    borderRadius: 22,
+    borderWidth: 1,
+    padding: spacing.lg,
+    shadowColor: "#000000",
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
   },
-  field: {
-    gap: spacing.xs,
+
+  title: {
+    color: palette.text,
+    fontSize: typography.title,
+    fontWeight: "900",
+    textAlign: "center",
   },
+
+  formSubtitle: {
+    color: palette.muted,
+    fontSize: typography.caption,
+    lineHeight: 19,
+    marginBottom: spacing.lg,
+    marginTop: spacing.xs,
+    textAlign: "center",
+  },
+
   form: {
     gap: spacing.md,
     width: "100%",
   },
-  helpText: {
-    color: colors.textMuted,
-    fontSize: typography.body,
+
+  field: {
+    gap: spacing.xs,
   },
-  input: {
-    borderColor: colors.border,
-    borderRadius: radius.md,
+
+  label: {
+    color: palette.deepBlue,
+    fontSize: typography.caption,
+    fontWeight: "800",
+  },
+
+  inputContainer: {
+    backgroundColor: "#FAFBFD",
+    borderColor: palette.silkyLilac,
+    borderRadius: 12,
     borderWidth: 1,
-    color: colors.text,
+  },
+
+  input: {
+    color: palette.text,
     fontSize: typography.body,
-    minHeight: 48,
+    minHeight: 52,
     paddingHorizontal: spacing.md,
   },
-  label: {
-    color: colors.text,
-    fontSize: typography.caption,
-    fontWeight: "700",
+
+  button: {
+    alignItems: "center",
+    backgroundColor: palette.deepBlue,
+    borderRadius: 12,
+    justifyContent: "center",
+    minHeight: 52,
+    paddingHorizontal: spacing.md,
+    shadowColor: "#000000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  link: {
-    color: colors.primary,
+
+  buttonPressed: {
+    opacity: 0.88,
+    transform: [{ scale: 0.99 }],
+  },
+
+  buttonDisabled: {
+    opacity: 0.55,
+  },
+
+  buttonText: {
+    color: palette.white,
     fontSize: typography.body,
+    fontWeight: "800",
+  },
+
+  linkButton: {
+    alignItems: "center",
+    borderRadius: radius.md,
+    justifyContent: "center",
+    minHeight: 38,
+  },
+
+  linkButtonPressed: {
+    backgroundColor: palette.vanillaMilk,
+  },
+
+  link: {
+    color: palette.deepBlue,
+    fontSize: typography.body,
+    fontWeight: "700",
     textAlign: "center",
   },
+
+  errorBox: {
+    backgroundColor: "#FFF2F1",
+    borderColor: "#E8A9A5",
+    borderRadius: radius.md,
+    borderWidth: 1,
+    marginBottom: spacing.md,
+    padding: spacing.sm,
+  },
+
+  error: {
+    color: palette.danger,
+    fontSize: typography.caption,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+
+  messageBox: {
+    backgroundColor: "#EFFAF5",
+    borderColor: "#A7D8C1",
+    borderRadius: radius.md,
+    borderWidth: 1,
+    marginBottom: spacing.md,
+    padding: spacing.sm,
+  },
+
   message: {
-    color: colors.success,
-    fontSize: typography.body,
+    color: palette.success,
+    fontSize: typography.caption,
+    fontWeight: "600",
+    textAlign: "center",
   },
-  scrollContent: {
-    backgroundColor: colors.background,
-    flexGrow: 1,
-    justifyContent: "center",
-    padding: spacing.lg,
-  },
-  title: {
-    color: colors.text,
-    fontSize: typography.title,
+
+  helpText: {
+    backgroundColor: palette.vanillaMilk,
+    borderRadius: radius.md,
+    color: palette.deepBlue,
+    fontSize: typography.caption,
     fontWeight: "700",
+    padding: spacing.sm,
+    textAlign: "center",
+  },
+
+  footerText: {
+    color: palette.deepBlue,
+    fontSize: typography.caption,
+    fontWeight: "600",
+    marginTop: spacing.lg,
+    opacity: 0.8,
+    textAlign: "center",
   },
 });
