@@ -1,6 +1,6 @@
 import { Link, router, useLocalSearchParams } from "expo-router";
 import { useState, type ReactNode } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { DEMO_RESET_CODE, useRepositories } from "@/infrastructure";
 import { radius, spacing, typography } from "@/theme";
@@ -35,7 +35,7 @@ export function LoginScreen() {
   }
 
   return (
-    <AuthForm title="Login" error={error}>
+    <AuthForm title="Login" subtitle="Accede a tu cuenta y continúa con tus compras." error={error}>
       <AuthTextInput autoCapitalize="none" keyboardType="email-address" label="Correo" onChangeText={setEmail} value={email} />
       <AuthTextInput label="Contrasena" onChangeText={setPassword} secureTextEntry value={password} />
       <PrimaryButton disabled={isSubmitting} label="Iniciar sesion" loading={isSubmitting} onPress={handleSubmit} />
@@ -83,7 +83,7 @@ export function RegisterScreen() {
   }
 
   return (
-    <AuthForm title="Registro" error={error}>
+    <AuthForm title="Registro" subtitle="Crea tu cuenta para comenzar a comprar." error={error}>
       <AuthTextInput label="Nombre" onChangeText={setName} value={name} />
       <AuthTextInput autoCapitalize="none" keyboardType="email-address" label="Correo" onChangeText={setEmail} value={email} />
       <AuthTextInput label="Contrasena" onChangeText={setPassword} secureTextEntry value={password} />
@@ -120,7 +120,7 @@ export function ForgotPasswordScreen() {
   }
 
   return (
-    <AuthForm title="Recuperar contrasena" error={error} message={message}>
+    <AuthForm title="Recuperar contrasena" subtitle="Recupera el acceso a tu cuenta." error={error} message={message}>
       <AuthTextInput autoCapitalize="none" keyboardType="email-address" label="Correo" onChangeText={setEmail} value={email} />
       <PrimaryButton disabled={isSubmitting} label="Solicitar codigo" loading={isSubmitting} onPress={handleSubmit} />
       <InlineLink href={{ pathname: "/(auth)/reset-password", params: { email } }} label="Continuar a reset" />
@@ -166,7 +166,12 @@ export function ResetPasswordScreen() {
   }
 
   return (
-    <AuthForm title="Restablecer contrasena" error={error} message={message}>
+    <AuthForm
+      title="Restablecer contrasena"
+      subtitle="Define una nueva contraseña para tu cuenta."
+      error={error}
+      message={message}
+    >
       <Text style={styles.helpText}>Codigo de demostracion: {DEMO_RESET_CODE}</Text>
       <AuthTextInput autoCapitalize="none" keyboardType="email-address" label="Correo" onChangeText={setEmail} value={email} />
       <AuthTextInput keyboardType="number-pad" label="Codigo" onChangeText={setCode} value={code} />
@@ -216,7 +221,7 @@ export function ChangePasswordScreen() {
   }
 
   return (
-    <AuthForm title="Seguridad" error={error} message={message}>
+    <AuthForm title="Seguridad" subtitle="Actualiza la seguridad de tu cuenta." error={error} message={message}>
       <AuthTextInput label="Contrasena actual" onChangeText={setCurrentPassword} secureTextEntry value={currentPassword} />
       <AuthTextInput label="Nueva contrasena" onChangeText={setNewPassword} secureTextEntry value={newPassword} />
       <AuthTextInput label="Confirmar contrasena" onChangeText={setConfirmPassword} secureTextEntry value={confirmPassword} />
@@ -229,13 +234,16 @@ type AuthFormProps = {
   children: ReactNode;
   error?: string | null;
   message?: string | null;
+  subtitle: string;
   title: string;
 };
 
-function AuthForm({ children, error, message, title }: AuthFormProps) {
+function AuthForm({ children, error, message, subtitle, title }: AuthFormProps) {
   return (
     <ScrollView
+      automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
       contentContainerStyle={styles.scrollContent}
+      keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
       keyboardShouldPersistTaps="handled"
     >
       <View style={styles.decorativeCircleTop} />
@@ -256,9 +264,7 @@ function AuthForm({ children, error, message, title }: AuthFormProps) {
         <View style={styles.formCard}>
           <Text style={styles.title}>{title}</Text>
 
-          <Text style={styles.formSubtitle}>
-            Accede a tu cuenta y continúa con tus compras.
-          </Text>
+          <Text style={styles.formSubtitle}>{subtitle}</Text>
 
           {error ? (
             <View style={styles.errorBox}>
@@ -381,8 +387,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     minHeight: "100%",
     overflow: "hidden",
+    paddingBottom: spacing.xl + spacing.lg,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xl,
+    paddingTop: spacing.xl,
   },
 
   decorativeCircleTop: {
