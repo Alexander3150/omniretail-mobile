@@ -26,7 +26,7 @@ export default function ProtectedLayout() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="products/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="favorites" options={{ title: "Favoritos" }} />
-      <Stack.Screen name="notifications" options={{ title: "Notificaciones" }} />
+      <Stack.Screen name="notifications" options={{ headerShown: false }} />
       <Stack.Screen name="checkout/delivery" options={{ title: "Entrega" }} />
       <Stack.Screen name="checkout/payment" options={{ title: "Pago" }} />
       <Stack.Screen name="checkout/review" options={{ title: "Revisar pedido" }} />
@@ -36,11 +36,11 @@ export default function ProtectedLayout() {
       <Stack.Screen name="addresses/new" options={{ headerShown: false }} />
       <Stack.Screen name="addresses/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="account/security" options={{ title: "Seguridad" }} />
-      <Stack.Screen name="account/payment-methods" options={{ title: "Metodos de pago" }} />
-      <Stack.Screen name="account/new-payment-method" options={{ title: "Agregar tarjeta" }} />
-      <Stack.Screen name="branches/index" options={{ title: "Sucursales" }} />
-      <Stack.Screen name="branches/[id]" options={{ title: "Detalle de sucursal" }} />
-      <Stack.Screen name="support/index" options={{ title: "Soporte" }} />
+      <Stack.Screen name="account/payment-methods" options={{ headerShown: false }} />
+      <Stack.Screen name="account/new-payment-method" options={{ headerShown: false }} />
+      <Stack.Screen name="branches/index" options={{ headerShown: false }} />
+      <Stack.Screen name="branches/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="support/index" options={{ headerShown: false }} />
     </Stack>
     </CheckoutProvider>
   );
