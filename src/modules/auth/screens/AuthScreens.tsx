@@ -1,12 +1,26 @@
 import { Link, router, useLocalSearchParams } from "expo-router";
 import { useState, type ReactNode } from "react";
-import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 import { DEMO_RESET_CODE, useRepositories } from "@/infrastructure";
 import { radius, spacing, typography } from "@/theme";
 
 import { useSession } from "../hooks/useSession";
-import { validateEmail, validateNewPassword, validatePasswordConfirmation, validateRequiredPassword } from "../validation";
+import {
+  validateEmail,
+  validateNewPassword,
+  validatePasswordConfirmation,
+  validateRequiredPassword,
+} from "../validation";
 
 export function LoginScreen() {
   const { login } = useSession();
@@ -16,7 +30,8 @@ export function LoginScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit() {
-    const validationError = validateEmail(email) ?? validateRequiredPassword(password);
+    const validationError =
+      validateEmail(email) ?? validateRequiredPassword(password);
     if (validationError) {
       setError(validationError);
       return;
@@ -35,10 +50,30 @@ export function LoginScreen() {
   }
 
   return (
-    <AuthForm title="Login" subtitle="Accede a tu cuenta y continúa con tus compras." error={error}>
-      <AuthTextInput autoCapitalize="none" keyboardType="email-address" label="Correo" onChangeText={setEmail} value={email} />
-      <AuthTextInput label="Contrasena" onChangeText={setPassword} secureTextEntry value={password} />
-      <PrimaryButton disabled={isSubmitting} label="Iniciar sesion" loading={isSubmitting} onPress={handleSubmit} />
+    <AuthForm
+      title="Login"
+      subtitle="Accede a tu cuenta y continúa con tus compras."
+      error={error}
+    >
+      <AuthTextInput
+        autoCapitalize="none"
+        keyboardType="email-address"
+        label="Correo"
+        onChangeText={setEmail}
+        value={email}
+      />
+      <AuthTextInput
+        label="Contrasena"
+        onChangeText={setPassword}
+        secureTextEntry
+        value={password}
+      />
+      <PrimaryButton
+        disabled={isSubmitting}
+        label="Iniciar sesion"
+        loading={isSubmitting}
+        onPress={handleSubmit}
+      />
       <InlineLink href="/(auth)/register" label="Crear cuenta" />
       <InlineLink href="/(auth)/forgot-password" label="Recuperar contrasena" />
     </AuthForm>
@@ -83,12 +118,37 @@ export function RegisterScreen() {
   }
 
   return (
-    <AuthForm title="Registro" subtitle="Crea tu cuenta para comenzar a comprar." error={error}>
+    <AuthForm
+      title="Registro"
+      subtitle="Crea tu cuenta para comenzar a comprar."
+      error={error}
+    >
       <AuthTextInput label="Nombre" onChangeText={setName} value={name} />
-      <AuthTextInput autoCapitalize="none" keyboardType="email-address" label="Correo" onChangeText={setEmail} value={email} />
-      <AuthTextInput label="Contrasena" onChangeText={setPassword} secureTextEntry value={password} />
-      <AuthTextInput label="Confirmar contrasena" onChangeText={setConfirmPassword} secureTextEntry value={confirmPassword} />
-      <PrimaryButton disabled={isSubmitting} label="Crear cuenta" loading={isSubmitting} onPress={handleSubmit} />
+      <AuthTextInput
+        autoCapitalize="none"
+        keyboardType="email-address"
+        label="Correo"
+        onChangeText={setEmail}
+        value={email}
+      />
+      <AuthTextInput
+        label="Contrasena"
+        onChangeText={setPassword}
+        secureTextEntry
+        value={password}
+      />
+      <AuthTextInput
+        label="Confirmar contrasena"
+        onChangeText={setConfirmPassword}
+        secureTextEntry
+        value={confirmPassword}
+      />
+      <PrimaryButton
+        disabled={isSubmitting}
+        label="Crear cuenta"
+        loading={isSubmitting}
+        onPress={handleSubmit}
+      />
       <InlineLink href="/(auth)/login" label="Ya tengo cuenta" />
     </AuthForm>
   );
@@ -113,17 +173,38 @@ export function ForgotPasswordScreen() {
     setIsSubmitting(true);
     try {
       await authRepository.requestPasswordReset({ email: email.trim() });
-      setMessage(`Recuperacion simulada solicitada. Codigo de demostracion: ${DEMO_RESET_CODE}`);
+      setMessage(
+        `Recuperacion simulada solicitada. Codigo de demostracion: ${DEMO_RESET_CODE}`,
+      );
     } finally {
       setIsSubmitting(false);
     }
   }
 
   return (
-    <AuthForm title="Recuperar contrasena" subtitle="Recupera el acceso a tu cuenta." error={error} message={message}>
-      <AuthTextInput autoCapitalize="none" keyboardType="email-address" label="Correo" onChangeText={setEmail} value={email} />
-      <PrimaryButton disabled={isSubmitting} label="Solicitar codigo" loading={isSubmitting} onPress={handleSubmit} />
-      <InlineLink href={{ pathname: "/(auth)/reset-password", params: { email } }} label="Continuar a reset" />
+    <AuthForm
+      title="Recuperar contrasena"
+      subtitle="Recupera el acceso a tu cuenta."
+      error={error}
+      message={message}
+    >
+      <AuthTextInput
+        autoCapitalize="none"
+        keyboardType="email-address"
+        label="Correo"
+        onChangeText={setEmail}
+        value={email}
+      />
+      <PrimaryButton
+        disabled={isSubmitting}
+        label="Solicitar codigo"
+        loading={isSubmitting}
+        onPress={handleSubmit}
+      />
+      <InlineLink
+        href={{ pathname: "/(auth)/reset-password", params: { email } }}
+        label="Continuar a reset"
+      />
     </AuthForm>
   );
 }
@@ -155,7 +236,11 @@ export function ResetPasswordScreen() {
     setMessage(null);
     setIsSubmitting(true);
     try {
-      await authRepository.resetPassword({ email: email.trim(), code: code.trim(), newPassword: password });
+      await authRepository.resetPassword({
+        email: email.trim(),
+        code: code.trim(),
+        newPassword: password,
+      });
       setMessage("Contrasena actualizada. Ya puedes iniciar sesion.");
       router.replace("/(auth)/login");
     } catch {
@@ -172,12 +257,40 @@ export function ResetPasswordScreen() {
       error={error}
       message={message}
     >
-      <Text style={styles.helpText}>Codigo de demostracion: {DEMO_RESET_CODE}</Text>
-      <AuthTextInput autoCapitalize="none" keyboardType="email-address" label="Correo" onChangeText={setEmail} value={email} />
-      <AuthTextInput keyboardType="number-pad" label="Codigo" onChangeText={setCode} value={code} />
-      <AuthTextInput label="Nueva contrasena" onChangeText={setPassword} secureTextEntry value={password} />
-      <AuthTextInput label="Confirmar contrasena" onChangeText={setConfirmPassword} secureTextEntry value={confirmPassword} />
-      <PrimaryButton disabled={isSubmitting} label="Restablecer" loading={isSubmitting} onPress={handleSubmit} />
+      <Text style={styles.helpText}>
+        Codigo de demostracion: {DEMO_RESET_CODE}
+      </Text>
+      <AuthTextInput
+        autoCapitalize="none"
+        keyboardType="email-address"
+        label="Correo"
+        onChangeText={setEmail}
+        value={email}
+      />
+      <AuthTextInput
+        keyboardType="number-pad"
+        label="Codigo"
+        onChangeText={setCode}
+        value={code}
+      />
+      <AuthTextInput
+        label="Nueva contrasena"
+        onChangeText={setPassword}
+        secureTextEntry
+        value={password}
+      />
+      <AuthTextInput
+        label="Confirmar contrasena"
+        onChangeText={setConfirmPassword}
+        secureTextEntry
+        value={confirmPassword}
+      />
+      <PrimaryButton
+        disabled={isSubmitting}
+        label="Restablecer"
+        loading={isSubmitting}
+        onPress={handleSubmit}
+      />
     </AuthForm>
   );
 }
@@ -193,7 +306,11 @@ export function ChangePasswordScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit() {
-    const validationError = validateNewPassword(currentPassword, newPassword, confirmPassword);
+    const validationError = validateNewPassword(
+      currentPassword,
+      newPassword,
+      confirmPassword,
+    );
     if (validationError) {
       setError(validationError);
       return;
@@ -208,7 +325,11 @@ export function ChangePasswordScreen() {
     setMessage(null);
     setIsSubmitting(true);
     try {
-      await authRepository.changePassword({ userId: session.userId, currentPassword, newPassword });
+      await authRepository.changePassword({
+        userId: session.userId,
+        currentPassword,
+        newPassword,
+      });
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -221,11 +342,36 @@ export function ChangePasswordScreen() {
   }
 
   return (
-    <AuthForm title="Seguridad" subtitle="Actualiza la seguridad de tu cuenta." error={error} message={message}>
-      <AuthTextInput label="Contrasena actual" onChangeText={setCurrentPassword} secureTextEntry value={currentPassword} />
-      <AuthTextInput label="Nueva contrasena" onChangeText={setNewPassword} secureTextEntry value={newPassword} />
-      <AuthTextInput label="Confirmar contrasena" onChangeText={setConfirmPassword} secureTextEntry value={confirmPassword} />
-      <PrimaryButton disabled={isSubmitting} label="Cambiar contrasena" loading={isSubmitting} onPress={handleSubmit} />
+    <AuthForm
+      title="Seguridad"
+      subtitle="Actualiza la seguridad de tu cuenta."
+      error={error}
+      message={message}
+    >
+      <AuthTextInput
+        label="Contrasena actual"
+        onChangeText={setCurrentPassword}
+        secureTextEntry
+        value={currentPassword}
+      />
+      <AuthTextInput
+        label="Nueva contrasena"
+        onChangeText={setNewPassword}
+        secureTextEntry
+        value={newPassword}
+      />
+      <AuthTextInput
+        label="Confirmar contrasena"
+        onChangeText={setConfirmPassword}
+        secureTextEntry
+        value={confirmPassword}
+      />
+      <PrimaryButton
+        disabled={isSubmitting}
+        label="Cambiar contrasena"
+        loading={isSubmitting}
+        onPress={handleSubmit}
+      />
     </AuthForm>
   );
 }
@@ -238,7 +384,13 @@ type AuthFormProps = {
   title: string;
 };
 
-function AuthForm({ children, error, message, subtitle, title }: AuthFormProps) {
+function AuthForm({
+  children,
+  error,
+  message,
+  subtitle,
+  title,
+}: AuthFormProps) {
   return (
     <ScrollView
       automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
@@ -255,10 +407,8 @@ function AuthForm({ children, error, message, subtitle, title }: AuthFormProps) 
             <Text style={styles.logoIcon}>✦</Text>
           </View>
 
-          <Text style={styles.brandName}>FerrePharma</Text>
-          <Text style={styles.brandSubtitle}>
-            FERRETERÍA & FARMACIA
-          </Text>
+          <Text style={styles.brandName}>MARJYM</Text>
+          <Text style={styles.brandSubtitle}>TU TIENDA, MÁS CERCA DE TI</Text>
         </View>
 
         <View style={styles.formCard}>
@@ -278,9 +428,7 @@ function AuthForm({ children, error, message, subtitle, title }: AuthFormProps) 
             </View>
           ) : null}
 
-          <View style={styles.form}>
-            {children}
-          </View>
+          <View style={styles.form}>{children}</View>
         </View>
 
         <Text style={styles.footerText}>
@@ -357,10 +505,12 @@ type InlineLinkProps = {
 function InlineLink({ href, label }: InlineLinkProps) {
   return (
     <Link href={href} asChild>
-      <Pressable style={({ pressed }) => [
-        styles.linkButton,
-        pressed ? styles.linkButtonPressed : null,
-      ]}>
+      <Pressable
+        style={({ pressed }) => [
+          styles.linkButton,
+          pressed ? styles.linkButtonPressed : null,
+        ]}
+      >
         <Text style={styles.link}>{label}</Text>
       </Pressable>
     </Link>

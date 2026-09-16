@@ -60,7 +60,6 @@ export function HomeScreen() {
     error,
     isLoading,
     products,
-    toggleFavorite,
   } = useCommerceCatalog(undefined, query);
 
   if (isLoading) {
@@ -147,15 +146,7 @@ export function HomeScreen() {
                 >
                   <Ionicons color={palette.deepBlue} name="close" size={18} />
                 </Pressable>
-              ) : (
-                <View style={styles.searchAction}>
-                  <Ionicons
-                    color={palette.white}
-                    name="options-outline"
-                    size={15}
-                  />
-                </View>
-              )}
+              ) : null}
             </View>
 
             {error ? (
@@ -402,10 +393,7 @@ export function HomeScreen() {
               </Text>
 
               <Text style={styles.sectionSubtitle}>
-                {products.length}{" "}
-                {products.length === 1
-                  ? "producto disponible"
-                  : "productos disponibles"}
+                Explora nuestra selección para ti
               </Text>
             </View>
 
@@ -448,12 +436,7 @@ export function HomeScreen() {
         </View>
       }
       renderItem={({ item }) => (
-        <ProductCard
-          currency={currency}
-          item={item}
-          onAddToCart={addToCart}
-          onToggleFavorite={toggleFavorite}
-        />
+        <ProductCard currency={currency} item={item} onAddToCart={addToCart} />
       )}
     />
   );

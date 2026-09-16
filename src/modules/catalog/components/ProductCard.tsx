@@ -32,22 +32,11 @@ type ProductCardProps = {
   item: ProductCardViewModel;
   currency: string;
   onAddToCart(productId: string): Promise<void> | void;
-  onToggleFavorite(productId: string): Promise<void> | void;
 };
 
-export function ProductCard({
-  currency,
-  item,
-  onAddToCart,
-  onToggleFavorite,
-}: ProductCardProps) {
+export function ProductCard({ currency, item, onAddToCart }: ProductCardProps) {
   const canAdd = item.available && item.availableQuantity > 0;
   const [imageFailed, setImageFailed] = useState(false);
-
-  function handleToggleFavorite(event: GestureResponderEvent) {
-    event.stopPropagation();
-    void onToggleFavorite(item.product.id);
-  }
 
   function handleAddToCart(event: GestureResponderEvent) {
     event.stopPropagation();
@@ -96,26 +85,6 @@ export function ProductCard({
               SKU {item.product.sku}
             </Text>
           </View>
-
-          <Pressable
-            accessibilityLabel={
-              item.isFavorite
-                ? `Quitar ${item.product.name} de favoritos`
-                : `Agregar ${item.product.name} a favoritos`
-            }
-            onPress={handleToggleFavorite}
-            style={({ pressed }) => [
-              styles.favoriteButton,
-              item.isFavorite ? styles.favoriteButtonActive : null,
-              pressed ? styles.pressed : null,
-            ]}
-          >
-            <Ionicons
-              color={item.isFavorite ? palette.danger : palette.deepBlue}
-              name={item.isFavorite ? "heart" : "heart-outline"}
-              size={19}
-            />
-          </Pressable>
         </View>
 
         <View style={styles.stockRow}>
@@ -132,9 +101,7 @@ export function ProductCard({
               !item.available ? styles.unavailableText : null,
             ]}
           >
-            {item.available
-              ? `${item.availableQuantity} disponibles`
-              : "No disponible"}
+            {item.available ? "Disponible" : "Agotado"}
           </Text>
         </View>
 

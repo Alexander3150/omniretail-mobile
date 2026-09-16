@@ -1,7 +1,16 @@
 import { Link, router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 import { useSession } from "@/modules/auth";
 import { useRepositories } from "@/infrastructure";
@@ -48,19 +57,12 @@ export function AccountScreen() {
               {customer?.name ?? "Cliente"}
             </Text>
 
-            <Text
-              numberOfLines={1}
-              style={accountStyles.profileEmail}
-            >
+            <Text numberOfLines={1} style={accountStyles.profileEmail}>
               {customer?.email ?? "Sin correo"}
             </Text>
 
             <View style={accountStyles.memberBadge}>
-              <Ionicons
-                name="checkmark-circle"
-                size={13}
-                color="#3E668F"
-              />
+              <Ionicons name="checkmark-circle" size={13} color="#3E668F" />
               <Text style={accountStyles.memberBadgeText}>
                 Cliente FerrePharma
               </Text>
@@ -73,17 +75,11 @@ export function AccountScreen() {
         <View style={accountStyles.cardHeaderRow}>
           <View>
             <Text style={accountStyles.miniLabel}>PERFIL</Text>
-            <Text style={accountStyles.cardTitle}>
-              Datos personales
-            </Text>
+            <Text style={accountStyles.cardTitle}>Datos personales</Text>
           </View>
 
           <View style={accountStyles.cardHeaderIcon}>
-            <Ionicons
-              name="person-outline"
-              size={20}
-              color="#3E668F"
-            />
+            <Ionicons name="person-outline" size={20} color="#3E668F" />
           </View>
         </View>
 
@@ -101,14 +97,6 @@ export function AccountScreen() {
           label="Mis pedidos"
           description="Consulta compras y seguimiento"
           route="/(protected)/(tabs)/orders"
-        />
-
-        <AccountMenuItem
-          icon="heart-outline"
-          iconBackground="#FFF1F4"
-          label="Mis favoritos"
-          description="Productos que guardaste"
-          route="/(protected)/favorites"
           isLast
         />
       </AccountSection>
@@ -174,15 +162,9 @@ export function AccountScreen() {
           pressed ? accountStyles.pressed : null,
         ]}
       >
-        <Ionicons
-          name="log-out-outline"
-          size={20}
-          color="#B94343"
-        />
+        <Ionicons name="log-out-outline" size={20} color="#B94343" />
 
-        <Text style={accountStyles.logoutButtonText}>
-          Cerrar sesión
-        </Text>
+        <Text style={accountStyles.logoutButtonText}>Cerrar sesión</Text>
       </Pressable>
 
       <Text style={accountStyles.footer}>
@@ -197,17 +179,12 @@ type AccountSectionProps = {
   title: string;
 };
 
-function AccountSection({
-  children,
-  title,
-}: AccountSectionProps) {
+function AccountSection({ children, title }: AccountSectionProps) {
   return (
     <View style={accountStyles.section}>
       <Text style={accountStyles.sectionHeading}>{title}</Text>
 
-      <View style={accountStyles.menuCard}>
-        {children}
-      </View>
+      <View style={accountStyles.menuCard}>{children}</View>
     </View>
   );
 }
@@ -239,62 +216,47 @@ function AccountMenuItem({
       ]}
     >
       <View
-        style={[
-          accountStyles.menuIcon,
-          { backgroundColor: iconBackground },
-        ]}
+        style={[accountStyles.menuIcon, { backgroundColor: iconBackground }]}
       >
-        <Ionicons
-          name={icon}
-          size={22}
-          color="#3E668F"
-        />
+        <Ionicons name={icon} size={22} color="#3E668F" />
       </View>
 
       <View style={accountStyles.menuText}>
-        <Text style={accountStyles.menuLabel}>
-          {label}
-        </Text>
+        <Text style={accountStyles.menuLabel}>{label}</Text>
 
-        <Text
-          numberOfLines={1}
-          style={accountStyles.menuDescription}
-        >
+        <Text numberOfLines={1} style={accountStyles.menuDescription}>
           {description}
         </Text>
       </View>
 
       <View style={accountStyles.chevronCircle}>
-        <Ionicons
-          name="chevron-forward"
-          size={17}
-          color="#3E668F"
-        />
+        <Ionicons name="chevron-forward" size={17} color="#3E668F" />
       </View>
     </Pressable>
   );
 }
 
 function getInitials(name: string): string {
-  const parts = name
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2);
+  const parts = name.trim().split(/\s+/).filter(Boolean).slice(0, 2);
 
-  return parts
-    .map((part) => part[0]?.toUpperCase())
-    .join("") || "C";
+  return parts.map((part) => part[0]?.toUpperCase()).join("") || "C";
 }
 
 export function AddressesScreen() {
   const { addressRepository } = useRepositories();
   const { session } = useSession();
-  const [addresses, setAddresses] = useState<Awaited<ReturnType<typeof addressRepository.getByCustomer>>>([]);
+  const [addresses, setAddresses] = useState<
+    Awaited<ReturnType<typeof addressRepository.getByCustomer>>
+  >([]);
 
   const load = useCallback(async () => {
     if (session) {
-      setAddresses(await addressRepository.getByCustomer(session.tenantId, session.customerId));
+      setAddresses(
+        await addressRepository.getByCustomer(
+          session.tenantId,
+          session.customerId,
+        ),
+      );
     }
   }, [addressRepository, session]);
 
@@ -308,17 +270,51 @@ export function AddressesScreen() {
       contentContainerStyle={styles.container}
       data={addresses}
       keyExtractor={(item) => item.id}
-      ListHeaderComponent={<><Text style={styles.title}>Direcciones</Text><Link href="/(protected)/addresses/new" style={styles.link}>Nueva direccion</Link></>}
+      ListHeaderComponent={
+        <>
+          <Text style={styles.title}>Direcciones</Text>
+          <Link href="/(protected)/addresses/new" style={styles.link}>
+            Nueva direccion
+          </Link>
+        </>
+      }
       ListEmptyComponent={<Text style={styles.value}>No hay direcciones.</Text>}
       renderItem={({ item }) => (
         <View style={styles.panel}>
-          <Text style={styles.value}>{item.label} {item.isDefault ? "(default)" : ""}</Text>
+          <Text style={styles.value}>
+            {item.label} {item.isDefault ? "(default)" : ""}
+          </Text>
           <Text style={styles.label}>{item.addressLine}</Text>
-          <Text style={styles.label}>{item.municipality} {item.department}</Text>
+          <Text style={styles.label}>
+            {item.municipality} {item.department}
+          </Text>
           <View style={styles.row}>
-            <Pressable onPress={() => router.push({ pathname: "/(protected)/addresses/[id]", params: { id: item.id } })}><Text style={styles.linkText}>Editar</Text></Pressable>
-            <Pressable onPress={async () => { await addressRepository.setDefault(item.customerId, item.id); await load(); }}><Text style={styles.linkText}>Default</Text></Pressable>
-            <Pressable onPress={async () => { await addressRepository.archive(item.id); await load(); }}><Text style={styles.remove}>Eliminar</Text></Pressable>
+            <Pressable
+              onPress={() =>
+                router.push({
+                  pathname: "/(protected)/addresses/[id]",
+                  params: { id: item.id },
+                })
+              }
+            >
+              <Text style={styles.linkText}>Editar</Text>
+            </Pressable>
+            <Pressable
+              onPress={async () => {
+                await addressRepository.setDefault(item.customerId, item.id);
+                await load();
+              }}
+            >
+              <Text style={styles.linkText}>Default</Text>
+            </Pressable>
+            <Pressable
+              onPress={async () => {
+                await addressRepository.archive(item.id);
+                await load();
+              }}
+            >
+              <Text style={styles.remove}>Eliminar</Text>
+            </Pressable>
           </View>
         </View>
       )}
@@ -401,9 +397,7 @@ function ProfileEditor() {
           pressed ? accountStyles.pressed : null,
         ]}
       >
-        <Text style={accountStyles.saveButtonText}>
-          Guardar cambios
-        </Text>
+        <Text style={accountStyles.saveButtonText}>Guardar cambios</Text>
       </Pressable>
 
       {message ? (
@@ -415,7 +409,13 @@ function ProfileEditor() {
   );
 }
 
-function AddressForm({ addressId, mode }: { addressId?: string; mode: "create" | "edit" }) {
+function AddressForm({
+  addressId,
+  mode,
+}: {
+  addressId?: string;
+  mode: "create" | "edit";
+}) {
   const { addressRepository } = useRepositories();
   const { session } = useSession();
   const [label, setLabel] = useState("");
@@ -454,9 +454,20 @@ function AddressForm({ addressId, mode }: { addressId?: string; mode: "create" |
       return;
     }
 
-    const input = { label: label.trim(), addressLine: addressLine.trim(), municipality: municipality.trim() || undefined, department: department.trim() || undefined, phone: phone.trim() || undefined, isDefault };
+    const input = {
+      label: label.trim(),
+      addressLine: addressLine.trim(),
+      municipality: municipality.trim() || undefined,
+      department: department.trim() || undefined,
+      phone: phone.trim() || undefined,
+      isDefault,
+    };
     if (mode === "create") {
-      await addressRepository.create({ ...input, tenantId: session.tenantId, customerId: session.customerId });
+      await addressRepository.create({
+        ...input,
+        tenantId: session.tenantId,
+        customerId: session.customerId,
+      });
     } else if (addressId) {
       await addressRepository.update(addressId, input);
       if (isDefault) {
@@ -472,15 +483,49 @@ function AddressForm({ addressId, mode }: { addressId?: string; mode: "create" |
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>{mode === "create" ? "Nueva direccion" : "Editar direccion"}</Text>
+      <Text style={styles.title}>
+        {mode === "create" ? "Nueva direccion" : "Editar direccion"}
+      </Text>
       {error ? <Text style={styles.remove}>{error}</Text> : null}
-      <TextInput style={styles.input} value={label} onChangeText={setLabel} placeholder="Casa, Trabajo..." />
-      <TextInput style={styles.input} value={addressLine} onChangeText={setAddressLine} placeholder="Direccion" />
-      <TextInput style={styles.input} value={municipality} onChangeText={setMunicipality} placeholder="Municipio" />
-      <TextInput style={styles.input} value={department} onChangeText={setDepartment} placeholder="Departamento" />
-      <TextInput style={styles.input} value={phone} onChangeText={setPhone} placeholder="Telefono" />
-      <Pressable onPress={() => setIsDefault((value) => !value)} style={styles.secondaryButton}><Text>{isDefault ? "Default: si" : "Marcar default"}</Text></Pressable>
-      <Pressable onPress={save} style={styles.button}><Text style={styles.buttonText}>Guardar</Text></Pressable>
+      <TextInput
+        style={styles.input}
+        value={label}
+        onChangeText={setLabel}
+        placeholder="Casa, Trabajo..."
+      />
+      <TextInput
+        style={styles.input}
+        value={addressLine}
+        onChangeText={setAddressLine}
+        placeholder="Direccion"
+      />
+      <TextInput
+        style={styles.input}
+        value={municipality}
+        onChangeText={setMunicipality}
+        placeholder="Municipio"
+      />
+      <TextInput
+        style={styles.input}
+        value={department}
+        onChangeText={setDepartment}
+        placeholder="Departamento"
+      />
+      <TextInput
+        style={styles.input}
+        value={phone}
+        onChangeText={setPhone}
+        placeholder="Telefono"
+      />
+      <Pressable
+        onPress={() => setIsDefault((value) => !value)}
+        style={styles.secondaryButton}
+      >
+        <Text>{isDefault ? "Default: si" : "Marcar default"}</Text>
+      </Pressable>
+      <Pressable onPress={save} style={styles.button}>
+        <Text style={styles.buttonText}>Guardar</Text>
+      </Pressable>
     </ScrollView>
   );
 }
@@ -888,7 +933,14 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     padding: spacing.lg,
   },
-  input: { borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, color: colors.text, minHeight: 44, paddingHorizontal: spacing.md },
+  input: {
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    color: colors.text,
+    minHeight: 44,
+    paddingHorizontal: spacing.md,
+  },
   label: {
     color: colors.textMuted,
     fontSize: typography.caption,
@@ -902,11 +954,28 @@ const styles = StyleSheet.create({
   },
   linkText: { color: colors.primary },
   loading: { flex: 1 },
-  panel: { borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, gap: spacing.sm, padding: spacing.md },
+  panel: {
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
   remove: { color: colors.danger },
   row: { flexDirection: "row", gap: spacing.md },
-  secondaryButton: { alignItems: "center", borderColor: colors.border, borderRadius: radius.md, borderWidth: 1, minHeight: 44, justifyContent: "center" },
-  sectionTitle: { color: colors.text, fontSize: typography.subtitle, fontWeight: "700" },
+  secondaryButton: {
+    alignItems: "center",
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    minHeight: 44,
+    justifyContent: "center",
+  },
+  sectionTitle: {
+    color: colors.text,
+    fontSize: typography.subtitle,
+    fontWeight: "700",
+  },
   success: { color: colors.success },
   title: {
     color: colors.text,
