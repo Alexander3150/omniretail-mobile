@@ -32,9 +32,9 @@ export default function ProtectedLayout() {
       <Stack.Screen name="checkout/review" options={{ title: "Revisar pedido" }} />
       <Stack.Screen name="checkout/success" options={{ title: "Pedido confirmado" }} />
       <Stack.Screen name="orders/[id]" options={{ title: "Detalle de pedido" }} />
-      <Stack.Screen name="addresses/index" options={{ title: "Direcciones" }} />
-      <Stack.Screen name="addresses/new" options={{ title: "Nueva direccion" }} />
-      <Stack.Screen name="addresses/[id]" options={{ title: "Editar direccion" }} />
+      <Stack.Screen name="addresses/index" options={{ headerShown: false }} />
+      <Stack.Screen name="addresses/new" options={{ headerShown: false }} />
+      <Stack.Screen name="addresses/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="account/security" options={{ title: "Seguridad" }} />
       <Stack.Screen name="account/payment-methods" options={{ title: "Metodos de pago" }} />
       <Stack.Screen name="account/new-payment-method" options={{ title: "Agregar tarjeta" }} />

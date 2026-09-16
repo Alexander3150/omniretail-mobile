@@ -1,4 +1,4 @@
-import { Link, router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -14,7 +14,6 @@ import {
 
 import { useSession } from "@/modules/auth";
 import { useRepositories } from "@/infrastructure";
-import { colors, radius, spacing, typography } from "@/theme";
 
 export function AccountScreen() {
   const { customer, logout } = useSession();
@@ -267,28 +266,173 @@ export function AddressesScreen() {
 
   return (
     <FlatList
-      contentContainerStyle={styles.container}
+      contentContainerStyle={addressStyles.container}
       data={addresses}
       keyExtractor={(item) => item.id}
+      showsVerticalScrollIndicator={false}
       ListHeaderComponent={
         <>
-          <Text style={styles.title}>Direcciones</Text>
-          <Link href="/(protected)/addresses/new" style={styles.link}>
-            Nueva direccion
-          </Link>
+          <View style={addressStyles.hero}>
+            <View style={addressStyles.heroCircleOne} />
+            <View style={addressStyles.heroCircleTwo} />
+
+            <View style={addressStyles.heroRow}>
+              <View style={addressStyles.heroText}>
+                <Text style={addressStyles.brand}>FERREPHARMA</Text>
+                <Text style={addressStyles.heroTitle}>Mis direcciones</Text>
+                <Text style={addressStyles.heroSubtitle}>
+                  Administra los lugares donde deseas recibir tus pedidos.
+                </Text>
+              </View>
+
+              <View style={addressStyles.heroIcon}>
+                <Ionicons
+                  color={addressPalette.deepBlue}
+                  name="location-outline"
+                  size={22}
+                />
+              </View>
+            </View>
+          </View>
+
+          <Pressable
+            onPress={() => router.push("/(protected)/addresses/new")}
+            style={({ pressed }) => [
+              addressStyles.addAddressButton,
+              pressed ? addressStyles.pressed : null,
+            ]}
+          >
+            <View style={addressStyles.addAddressIcon}>
+              <Ionicons
+                color={addressPalette.deepBlue}
+                name="add"
+                size={19}
+              />
+            </View>
+
+            <View style={addressStyles.addAddressText}>
+              <Text style={addressStyles.addAddressTitle}>
+                Agregar dirección
+              </Text>
+              <Text style={addressStyles.addAddressSubtitle}>
+                Registra un nuevo lugar de entrega
+              </Text>
+            </View>
+
+            <Ionicons
+              color={addressPalette.white}
+              name="chevron-forward"
+              size={18}
+            />
+          </Pressable>
+
+          {addresses.length > 0 ? (
+            <View style={addressStyles.sectionHeading}>
+              <View>
+                <Text style={addressStyles.sectionTitle}>
+                  Direcciones guardadas
+                </Text>
+                <Text style={addressStyles.sectionSubtitle}>
+                  {addresses.length}{" "}
+                  {addresses.length === 1 ? "dirección" : "direcciones"}
+                </Text>
+              </View>
+
+              <View style={addressStyles.countBadge}>
+                <Text style={addressStyles.countText}>{addresses.length}</Text>
+              </View>
+            </View>
+          ) : null}
         </>
       }
-      ListEmptyComponent={<Text style={styles.value}>No hay direcciones.</Text>}
+      ListEmptyComponent={
+        <View style={addressStyles.emptyCard}>
+          <View style={addressStyles.emptyIcon}>
+            <Ionicons
+              color={addressPalette.deepBlue}
+              name="map-outline"
+              size={30}
+            />
+          </View>
+
+          <Text style={addressStyles.emptyTitle}>
+            Aún no tienes direcciones
+          </Text>
+
+          <Text style={addressStyles.emptyText}>
+            Agrega una dirección para facilitar la entrega de tus compras.
+          </Text>
+        </View>
+      }
       renderItem={({ item }) => (
-        <View style={styles.panel}>
-          <Text style={styles.value}>
-            {item.label} {item.isDefault ? "(default)" : ""}
-          </Text>
-          <Text style={styles.label}>{item.addressLine}</Text>
-          <Text style={styles.label}>
-            {item.municipality} {item.department}
-          </Text>
-          <View style={styles.row}>
+        <View
+          style={[
+            addressStyles.addressCard,
+            item.isDefault ? addressStyles.defaultCard : null,
+          ]}
+        >
+          <View style={addressStyles.addressTop}>
+            <View style={addressStyles.locationIcon}>
+              <Ionicons
+                color={addressPalette.deepBlue}
+                name={item.isDefault ? "home" : "location-outline"}
+                size={20}
+              />
+            </View>
+
+            <View style={addressStyles.addressMain}>
+              <View style={addressStyles.addressNameRow}>
+                <Text style={addressStyles.addressName}>{item.label}</Text>
+
+                {item.isDefault ? (
+                  <View style={addressStyles.defaultBadge}>
+                    <Ionicons
+                      color={addressPalette.deepBlue}
+                      name="checkmark-circle"
+                      size={12}
+                    />
+                    <Text style={addressStyles.defaultBadgeText}>
+                      Principal
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+
+              <Text style={addressStyles.addressLine}>
+                {item.addressLine}
+              </Text>
+
+              {item.municipality || item.department ? (
+                <View style={addressStyles.metaRow}>
+                  <Ionicons
+                    color={addressPalette.muted}
+                    name="navigate-outline"
+                    size={13}
+                  />
+                  <Text style={addressStyles.metaText}>
+                    {[item.municipality, item.department]
+                      .filter(Boolean)
+                      .join(", ")}
+                  </Text>
+                </View>
+              ) : null}
+
+              {item.phone ? (
+                <View style={addressStyles.metaRow}>
+                  <Ionicons
+                    color={addressPalette.muted}
+                    name="call-outline"
+                    size={13}
+                  />
+                  <Text style={addressStyles.metaText}>{item.phone}</Text>
+                </View>
+              ) : null}
+            </View>
+          </View>
+
+          <View style={addressStyles.cardDivider} />
+
+          <View style={addressStyles.actionsRow}>
             <Pressable
               onPress={() =>
                 router.push({
@@ -296,24 +440,58 @@ export function AddressesScreen() {
                   params: { id: item.id },
                 })
               }
+              style={({ pressed }) => [
+                addressStyles.actionButton,
+                pressed ? addressStyles.pressed : null,
+              ]}
             >
-              <Text style={styles.linkText}>Editar</Text>
+              <Ionicons
+                color={addressPalette.deepBlue}
+                name="create-outline"
+                size={16}
+              />
+              <Text style={addressStyles.actionText}>Editar</Text>
             </Pressable>
-            <Pressable
-              onPress={async () => {
-                await addressRepository.setDefault(item.customerId, item.id);
-                await load();
-              }}
-            >
-              <Text style={styles.linkText}>Default</Text>
-            </Pressable>
+
+            {!item.isDefault ? (
+              <Pressable
+                onPress={async () => {
+                  await addressRepository.setDefault(
+                    item.customerId,
+                    item.id,
+                  );
+                  await load();
+                }}
+                style={({ pressed }) => [
+                  addressStyles.actionButton,
+                  pressed ? addressStyles.pressed : null,
+                ]}
+              >
+                <Ionicons
+                  color={addressPalette.deepBlue}
+                  name="star-outline"
+                  size={16}
+                />
+                <Text style={addressStyles.actionText}>Principal</Text>
+              </Pressable>
+            ) : null}
+
             <Pressable
               onPress={async () => {
                 await addressRepository.archive(item.id);
                 await load();
               }}
+              style={({ pressed }) => [
+                addressStyles.deleteButton,
+                pressed ? addressStyles.pressed : null,
+              ]}
             >
-              <Text style={styles.remove}>Eliminar</Text>
+              <Ionicons
+                color={addressPalette.danger}
+                name="trash-outline"
+                size={16}
+              />
+              <Text style={addressStyles.deleteText}>Eliminar</Text>
             </Pressable>
           </View>
         </View>
@@ -431,6 +609,7 @@ function AddressForm({
     async function load() {
       if (mode === "edit" && addressId) {
         const address = await addressRepository.getById(addressId);
+
         if (address) {
           setLabel(address.label);
           setAddressLine(address.addressLine);
@@ -440,8 +619,10 @@ function AddressForm({
           setIsDefault(address.isDefault);
         }
       }
+
       setIsLoading(false);
     }
+
     void load();
   }, [addressId, addressRepository, mode]);
 
@@ -449,10 +630,13 @@ function AddressForm({
     if (!session) {
       return;
     }
+
     if (!label.trim() || !addressLine.trim()) {
-      setError("Label y direccion son requeridos.");
+      setError("El nombre y la dirección son requeridos.");
       return;
     }
+
+    setError(null);
 
     const input = {
       label: label.trim(),
@@ -462,6 +646,7 @@ function AddressForm({
       phone: phone.trim() || undefined,
       isDefault,
     };
+
     if (mode === "create") {
       await addressRepository.create({
         ...input,
@@ -470,62 +655,255 @@ function AddressForm({
       });
     } else if (addressId) {
       await addressRepository.update(addressId, input);
+
       if (isDefault) {
-        await addressRepository.setDefault(session.customerId, addressId);
+        await addressRepository.setDefault(
+          session.customerId,
+          addressId,
+        );
       }
     }
+
     router.replace("/(protected)/addresses");
   }
 
   if (isLoading) {
-    return <ActivityIndicator color={colors.primary} style={styles.loading} />;
+    return (
+      <View style={addressStyles.loadingContainer}>
+        <ActivityIndicator
+          color={addressPalette.deepBlue}
+          size="large"
+        />
+        <Text style={addressStyles.loadingText}>
+          Cargando dirección...
+        </Text>
+      </View>
+    );
   }
 
+  const isCreate = mode === "create";
+
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>
-        {mode === "create" ? "Nueva direccion" : "Editar direccion"}
-      </Text>
-      {error ? <Text style={styles.remove}>{error}</Text> : null}
-      <TextInput
-        style={styles.input}
-        value={label}
-        onChangeText={setLabel}
-        placeholder="Casa, Trabajo..."
-      />
-      <TextInput
-        style={styles.input}
-        value={addressLine}
-        onChangeText={setAddressLine}
-        placeholder="Direccion"
-      />
-      <TextInput
-        style={styles.input}
-        value={municipality}
-        onChangeText={setMunicipality}
-        placeholder="Municipio"
-      />
-      <TextInput
-        style={styles.input}
-        value={department}
-        onChangeText={setDepartment}
-        placeholder="Departamento"
-      />
-      <TextInput
-        style={styles.input}
-        value={phone}
-        onChangeText={setPhone}
-        placeholder="Telefono"
-      />
-      <Pressable
-        onPress={() => setIsDefault((value) => !value)}
-        style={styles.secondaryButton}
-      >
-        <Text>{isDefault ? "Default: si" : "Marcar default"}</Text>
-      </Pressable>
-      <Pressable onPress={save} style={styles.button}>
-        <Text style={styles.buttonText}>Guardar</Text>
-      </Pressable>
+    <ScrollView
+      contentContainerStyle={addressStyles.formContainer}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={addressStyles.formHero}>
+        <View style={addressStyles.heroCircleOne} />
+        <View style={addressStyles.heroCircleTwo} />
+
+        <View style={addressStyles.heroRow}>
+          <View style={addressStyles.heroText}>
+            <Text style={addressStyles.brand}>FERREPHARMA</Text>
+            <Text style={addressStyles.heroTitle}>
+              {isCreate ? "Nueva dirección" : "Editar dirección"}
+            </Text>
+            <Text style={addressStyles.heroSubtitle}>
+              {isCreate
+                ? "Agrega la información del lugar donde deseas recibir tus pedidos."
+                : "Actualiza los datos de tu lugar de entrega."}
+            </Text>
+          </View>
+
+          <View style={addressStyles.heroIcon}>
+            <Ionicons
+              color={addressPalette.deepBlue}
+              name={isCreate ? "location-outline" : "create-outline"}
+              size={22}
+            />
+          </View>
+        </View>
+      </View>
+
+      <View style={addressStyles.formBody}>
+        {error ? (
+          <View style={addressStyles.errorBox}>
+            <Ionicons
+              color={addressPalette.danger}
+              name="alert-circle-outline"
+              size={18}
+            />
+            <Text style={addressStyles.errorText}>{error}</Text>
+          </View>
+        ) : null}
+
+        <View style={addressStyles.formCard}>
+          <View style={addressStyles.formCardHeader}>
+            <View style={addressStyles.formCardIcon}>
+              <Ionicons
+                color={addressPalette.deepBlue}
+                name="map-outline"
+                size={19}
+              />
+            </View>
+
+            <View>
+              <Text style={addressStyles.formCardTitle}>
+                Información de entrega
+              </Text>
+              <Text style={addressStyles.formCardSubtitle}>
+                Completa los datos de la dirección
+              </Text>
+            </View>
+          </View>
+
+          <View style={addressStyles.field}>
+            <Text style={addressStyles.fieldLabel}>
+              Nombre de la dirección
+            </Text>
+
+            <View style={addressStyles.inputContainer}>
+              <Ionicons
+                color={addressPalette.muted}
+                name="bookmark-outline"
+                size={17}
+              />
+              <TextInput
+                onChangeText={setLabel}
+                placeholder="Casa, Trabajo..."
+                placeholderTextColor="#8A94A3"
+                style={addressStyles.input}
+                value={label}
+              />
+            </View>
+          </View>
+
+          <View style={addressStyles.field}>
+            <Text style={addressStyles.fieldLabel}>Dirección</Text>
+
+            <View style={addressStyles.inputContainer}>
+              <Ionicons
+                color={addressPalette.muted}
+                name="location-outline"
+                size={17}
+              />
+              <TextInput
+                onChangeText={setAddressLine}
+                placeholder="Calle, avenida, zona..."
+                placeholderTextColor="#8A94A3"
+                style={addressStyles.input}
+                value={addressLine}
+              />
+            </View>
+          </View>
+
+          <View style={addressStyles.doubleFieldRow}>
+            <View style={addressStyles.doubleField}>
+              <Text style={addressStyles.fieldLabel}>Municipio</Text>
+              <TextInput
+                onChangeText={setMunicipality}
+                placeholder="Municipio"
+                placeholderTextColor="#8A94A3"
+                style={addressStyles.simpleInput}
+                value={municipality}
+              />
+            </View>
+
+            <View style={addressStyles.doubleField}>
+              <Text style={addressStyles.fieldLabel}>Departamento</Text>
+              <TextInput
+                onChangeText={setDepartment}
+                placeholder="Departamento"
+                placeholderTextColor="#8A94A3"
+                style={addressStyles.simpleInput}
+                value={department}
+              />
+            </View>
+          </View>
+
+          <View style={addressStyles.field}>
+            <Text style={addressStyles.fieldLabel}>Teléfono de contacto</Text>
+
+            <View style={addressStyles.inputContainer}>
+              <Ionicons
+                color={addressPalette.muted}
+                name="call-outline"
+                size={17}
+              />
+              <TextInput
+                keyboardType="phone-pad"
+                onChangeText={setPhone}
+                placeholder="Número de teléfono"
+                placeholderTextColor="#8A94A3"
+                style={addressStyles.input}
+                value={phone}
+              />
+            </View>
+          </View>
+        </View>
+
+        <Pressable
+          onPress={() => setIsDefault((value) => !value)}
+          style={({ pressed }) => [
+            addressStyles.defaultSelector,
+            isDefault ? addressStyles.defaultSelectorActive : null,
+            pressed ? addressStyles.pressed : null,
+          ]}
+        >
+          <View
+            style={[
+              addressStyles.defaultSelectorIcon,
+              isDefault
+                ? addressStyles.defaultSelectorIconActive
+                : null,
+            ]}
+          >
+            <Ionicons
+              color={
+                isDefault
+                  ? addressPalette.white
+                  : addressPalette.deepBlue
+              }
+              name={isDefault ? "checkmark" : "star-outline"}
+              size={18}
+            />
+          </View>
+
+          <View style={addressStyles.defaultSelectorText}>
+            <Text style={addressStyles.defaultSelectorTitle}>
+              Dirección principal
+            </Text>
+            <Text style={addressStyles.defaultSelectorSubtitle}>
+              {isDefault
+                ? "Esta será tu dirección predeterminada"
+                : "Usar esta dirección como predeterminada"}
+            </Text>
+          </View>
+
+          <Ionicons
+            color={addressPalette.deepBlue}
+            name={isDefault ? "checkmark-circle" : "ellipse-outline"}
+            size={21}
+          />
+        </Pressable>
+
+        <Pressable
+          onPress={save}
+          style={({ pressed }) => [
+            addressStyles.saveAddressButton,
+            pressed ? addressStyles.pressed : null,
+          ]}
+        >
+          <View style={addressStyles.saveAddressIcon}>
+            <Ionicons
+              color={addressPalette.deepBlue}
+              name={isCreate ? "add" : "checkmark"}
+              size={19}
+            />
+          </View>
+
+          <Text style={addressStyles.saveAddressText}>
+            {isCreate ? "Guardar dirección" : "Guardar cambios"}
+          </Text>
+
+          <Ionicons
+            color={addressPalette.white}
+            name="arrow-forward"
+            size={18}
+          />
+        </Pressable>
+      </View>
     </ScrollView>
   );
 }
@@ -912,80 +1290,553 @@ const accountStyles = StyleSheet.create({
   },
 });
 
-const styles = StyleSheet.create({
-  button: {
-    alignItems: "center",
-    backgroundColor: colors.danger,
-    borderRadius: radius.md,
-    minHeight: 48,
-    justifyContent: "center",
-    marginTop: spacing.sm,
-    paddingHorizontal: spacing.md,
-  },
-  buttonText: {
-    color: colors.surface,
-    fontSize: typography.body,
-    fontWeight: "700",
-  },
+const addressPalette = {
+  deepBlue: "#3E668F",
+  dreamyBlue: "#81A9EE",
+  silkyLilac: "#AAB4E7",
+  butterHoney: "#FFDB83",
+  vanillaMilk: "#FFF2D0",
+  white: "#FFFFFF",
+  text: "#172033",
+  muted: "#687286",
+  border: "#DDE3EE",
+  danger: "#B94343",
+  success: "#247A52",
+};
+
+const addressStyles = StyleSheet.create({
   container: {
-    backgroundColor: colors.background,
+    backgroundColor: addressPalette.vanillaMilk,
+    flexGrow: 1,
+    gap: 10,
+    paddingBottom: 28,
+  },
+
+  hero: {
+    backgroundColor: addressPalette.deepBlue,
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
+    minHeight: 148,
+    overflow: "hidden",
+    paddingBottom: 20,
+    paddingHorizontal: 18,
+    paddingTop: 30,
+  },
+
+  formHero: {
+    backgroundColor: addressPalette.deepBlue,
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
+    minHeight: 145,
+    overflow: "hidden",
+    paddingBottom: 20,
+    paddingHorizontal: 18,
+    paddingTop: 30,
+  },
+
+  heroCircleOne: {
+    backgroundColor: addressPalette.dreamyBlue,
+    borderRadius: 90,
+    height: 155,
+    opacity: 0.16,
+    position: "absolute",
+    right: -48,
+    top: -58,
+    width: 155,
+  },
+
+  heroCircleTwo: {
+    backgroundColor: addressPalette.butterHoney,
+    borderRadius: 55,
+    bottom: -45,
+    height: 100,
+    opacity: 0.13,
+    position: "absolute",
+    right: 60,
+    width: 100,
+  },
+
+  heroRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+
+  heroText: {
     flex: 1,
-    gap: spacing.sm,
-    padding: spacing.lg,
+    paddingRight: 12,
   },
-  input: {
-    borderColor: colors.border,
-    borderRadius: radius.md,
+
+  brand: {
+    color: addressPalette.butterHoney,
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 1.5,
+  },
+
+  heroTitle: {
+    color: addressPalette.white,
+    fontSize: 23,
+    fontWeight: "900",
+    marginTop: 3,
+  },
+
+  heroSubtitle: {
+    color: "#EAF1F8",
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 6,
+    maxWidth: "95%",
+  },
+
+  heroIcon: {
+    alignItems: "center",
+    backgroundColor: addressPalette.white,
+    borderRadius: 20,
+    height: 40,
+    justifyContent: "center",
+    width: 40,
+  },
+
+  addAddressButton: {
+    alignItems: "center",
+    backgroundColor: addressPalette.deepBlue,
+    borderRadius: 16,
+    flexDirection: "row",
+    gap: 10,
+    marginHorizontal: 12,
+    marginTop: 2,
+    minHeight: 58,
+    paddingHorizontal: 12,
+  },
+
+  addAddressIcon: {
+    alignItems: "center",
+    backgroundColor: addressPalette.butterHoney,
+    borderRadius: 10,
+    height: 34,
+    justifyContent: "center",
+    width: 34,
+  },
+
+  addAddressText: {
+    flex: 1,
+  },
+
+  addAddressTitle: {
+    color: addressPalette.white,
+    fontSize: 13,
+    fontWeight: "900",
+  },
+
+  addAddressSubtitle: {
+    color: "#DDE8F2",
+    fontSize: 10,
+    marginTop: 2,
+  },
+
+  sectionHeading: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginHorizontal: 14,
+    marginTop: 8,
+  },
+
+  sectionTitle: {
+    color: addressPalette.text,
+    fontSize: 14,
+    fontWeight: "900",
+  },
+
+  sectionSubtitle: {
+    color: addressPalette.muted,
+    fontSize: 10,
+    marginTop: 2,
+  },
+
+  countBadge: {
+    alignItems: "center",
+    backgroundColor: "#E7EDF5",
+    borderRadius: 14,
+    height: 28,
+    justifyContent: "center",
+    minWidth: 28,
+    paddingHorizontal: 8,
+  },
+
+  countText: {
+    color: addressPalette.deepBlue,
+    fontSize: 11,
+    fontWeight: "900",
+  },
+
+  addressCard: {
+    backgroundColor: addressPalette.white,
+    borderColor: "#E2E7EE",
+    borderRadius: 18,
     borderWidth: 1,
-    color: colors.text,
-    minHeight: 44,
-    paddingHorizontal: spacing.md,
+    marginHorizontal: 12,
+    padding: 13,
   },
-  label: {
-    color: colors.textMuted,
-    fontSize: typography.caption,
-    fontWeight: "700",
+
+  defaultCard: {
+    borderColor: addressPalette.dreamyBlue,
   },
-  link: {
-    color: colors.primary,
-    fontSize: typography.body,
-    marginTop: spacing.md,
+
+  addressTop: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    gap: 10,
+  },
+
+  locationIcon: {
+    alignItems: "center",
+    backgroundColor: "#EEF3F8",
+    borderRadius: 12,
+    height: 40,
+    justifyContent: "center",
+    width: 40,
+  },
+
+  addressMain: {
+    flex: 1,
+  },
+
+  addressNameRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 7,
+  },
+
+  addressName: {
+    color: addressPalette.text,
+    fontSize: 14,
+    fontWeight: "900",
+  },
+
+  defaultBadge: {
+    alignItems: "center",
+    backgroundColor: "#FFF2C9",
+    borderRadius: 12,
+    flexDirection: "row",
+    gap: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+  },
+
+  defaultBadgeText: {
+    color: addressPalette.deepBlue,
+    fontSize: 9,
+    fontWeight: "900",
+  },
+
+  addressLine: {
+    color: addressPalette.text,
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 5,
+  },
+
+  metaRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 5,
+    marginTop: 4,
+  },
+
+  metaText: {
+    color: addressPalette.muted,
+    flex: 1,
+    fontSize: 10,
+  },
+
+  cardDivider: {
+    backgroundColor: "#EEF1F5",
+    height: 1,
+    marginVertical: 10,
+  },
+
+  actionsRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 7,
+  },
+
+  actionButton: {
+    alignItems: "center",
+    backgroundColor: "#EEF3F8",
+    borderRadius: 10,
+    flexDirection: "row",
+    gap: 5,
+    minHeight: 34,
+    paddingHorizontal: 9,
+  },
+
+  actionText: {
+    color: addressPalette.deepBlue,
+    fontSize: 10,
+    fontWeight: "800",
+  },
+
+  deleteButton: {
+    alignItems: "center",
+    backgroundColor: "#FCEEEE",
+    borderRadius: 10,
+    flexDirection: "row",
+    gap: 5,
+    minHeight: 34,
+    paddingHorizontal: 9,
+  },
+
+  deleteText: {
+    color: addressPalette.danger,
+    fontSize: 10,
+    fontWeight: "800",
+  },
+
+  emptyCard: {
+    alignItems: "center",
+    backgroundColor: addressPalette.white,
+    borderColor: "#E2E7EE",
+    borderRadius: 18,
+    borderWidth: 1,
+    marginHorizontal: 12,
+    marginTop: 4,
+    padding: 24,
+  },
+
+  emptyIcon: {
+    alignItems: "center",
+    backgroundColor: "#EEF3F8",
+    borderRadius: 26,
+    height: 52,
+    justifyContent: "center",
+    marginBottom: 10,
+    width: 52,
+  },
+
+  emptyTitle: {
+    color: addressPalette.text,
+    fontSize: 15,
+    fontWeight: "900",
+  },
+
+  emptyText: {
+    color: addressPalette.muted,
+    fontSize: 11,
+    lineHeight: 17,
+    marginTop: 5,
     textAlign: "center",
   },
-  linkText: { color: colors.primary },
-  loading: { flex: 1 },
-  panel: {
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    gap: spacing.sm,
-    padding: spacing.md,
+
+  formContainer: {
+    backgroundColor: addressPalette.vanillaMilk,
+    flexGrow: 1,
+    paddingBottom: 28,
   },
-  remove: { color: colors.danger },
-  row: { flexDirection: "row", gap: spacing.md },
-  secondaryButton: {
-    alignItems: "center",
-    borderColor: colors.border,
-    borderRadius: radius.md,
+
+  formBody: {
+    gap: 10,
+    marginTop: -8,
+    paddingHorizontal: 12,
+  },
+
+  formCard: {
+    backgroundColor: addressPalette.white,
+    borderColor: "#E2E7EE",
+    borderRadius: 18,
     borderWidth: 1,
+    gap: 12,
+    padding: 14,
+  },
+
+  formCardHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 9,
+    marginBottom: 2,
+  },
+
+  formCardIcon: {
+    alignItems: "center",
+    backgroundColor: "#EEF3F8",
+    borderRadius: 10,
+    height: 36,
+    justifyContent: "center",
+    width: 36,
+  },
+
+  formCardTitle: {
+    color: addressPalette.text,
+    fontSize: 14,
+    fontWeight: "900",
+  },
+
+  formCardSubtitle: {
+    color: addressPalette.muted,
+    fontSize: 10,
+    marginTop: 2,
+  },
+
+  field: {
+    gap: 5,
+  },
+
+  fieldLabel: {
+    color: addressPalette.text,
+    fontSize: 10,
+    fontWeight: "800",
+  },
+
+  inputContainer: {
+    alignItems: "center",
+    backgroundColor: "#FAFBFC",
+    borderColor: addressPalette.border,
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 8,
     minHeight: 44,
+    paddingHorizontal: 11,
+  },
+
+  input: {
+    color: addressPalette.text,
+    flex: 1,
+    fontSize: 12,
+    minHeight: 42,
+    paddingVertical: 0,
+  },
+
+  doubleFieldRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+
+  doubleField: {
+    flex: 1,
+    gap: 5,
+  },
+
+  simpleInput: {
+    backgroundColor: "#FAFBFC",
+    borderColor: addressPalette.border,
+    borderRadius: 12,
+    borderWidth: 1,
+    color: addressPalette.text,
+    fontSize: 11,
+    minHeight: 44,
+    paddingHorizontal: 10,
+  },
+
+  defaultSelector: {
+    alignItems: "center",
+    backgroundColor: addressPalette.white,
+    borderColor: "#E2E7EE",
+    borderRadius: 16,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 9,
+    minHeight: 58,
+    paddingHorizontal: 12,
+  },
+
+  defaultSelectorActive: {
+    backgroundColor: "#F2F6FB",
+    borderColor: addressPalette.dreamyBlue,
+  },
+
+  defaultSelectorIcon: {
+    alignItems: "center",
+    backgroundColor: "#EEF3F8",
+    borderRadius: 10,
+    height: 34,
+    justifyContent: "center",
+    width: 34,
+  },
+
+  defaultSelectorIconActive: {
+    backgroundColor: addressPalette.deepBlue,
+  },
+
+  defaultSelectorText: {
+    flex: 1,
+  },
+
+  defaultSelectorTitle: {
+    color: addressPalette.text,
+    fontSize: 12,
+    fontWeight: "900",
+  },
+
+  defaultSelectorSubtitle: {
+    color: addressPalette.muted,
+    fontSize: 9,
+    marginTop: 2,
+  },
+
+  saveAddressButton: {
+    alignItems: "center",
+    backgroundColor: addressPalette.deepBlue,
+    borderRadius: 15,
+    flexDirection: "row",
+    gap: 9,
+    minHeight: 50,
+    paddingHorizontal: 12,
+  },
+
+  saveAddressIcon: {
+    alignItems: "center",
+    backgroundColor: addressPalette.butterHoney,
+    borderRadius: 9,
+    height: 30,
+    justifyContent: "center",
+    width: 30,
+  },
+
+  saveAddressText: {
+    color: addressPalette.white,
+    flex: 1,
+    fontSize: 13,
+    fontWeight: "900",
+    textAlign: "center",
+  },
+
+  errorBox: {
+    alignItems: "center",
+    backgroundColor: "#FCEEEE",
+    borderRadius: 12,
+    flexDirection: "row",
+    gap: 7,
+    paddingHorizontal: 11,
+    paddingVertical: 9,
+  },
+
+  errorText: {
+    color: addressPalette.danger,
+    flex: 1,
+    fontSize: 10,
+    fontWeight: "700",
+  },
+
+  loadingContainer: {
+    alignItems: "center",
+    backgroundColor: addressPalette.vanillaMilk,
+    flex: 1,
+    gap: 10,
     justifyContent: "center",
   },
-  sectionTitle: {
-    color: colors.text,
-    fontSize: typography.subtitle,
-    fontWeight: "700",
+
+  loadingText: {
+    color: addressPalette.deepBlue,
+    fontSize: 11,
+    fontWeight: "800",
   },
-  success: { color: colors.success },
-  title: {
-    color: colors.text,
-    fontSize: typography.title,
-    fontWeight: "700",
-    marginBottom: spacing.md,
-  },
-  value: {
-    color: colors.text,
-    fontSize: typography.body,
-    marginBottom: spacing.sm,
+
+  pressed: {
+    opacity: 0.76,
   },
 });
