@@ -1,6 +1,13 @@
 import { router, useFocusEffect } from "expo-router";
 import { useCallback } from "react";
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 import { formatDateTime } from "@/shared";
 import { colors, spacing, typography } from "@/theme";
@@ -8,7 +15,14 @@ import { colors, spacing, typography } from "@/theme";
 import { useNotifications } from "../hooks/useNotifications";
 
 export function NotificationsScreen() {
-  const { isLoading, markAllAsRead, markAsRead, notifications, reload, unreadCount } = useNotifications();
+  const {
+    isLoading,
+    markAllAsRead,
+    markAsRead,
+    notifications,
+    reload,
+    unreadCount,
+  } = useNotifications();
 
   useFocusEffect(
     useCallback(() => {
@@ -25,7 +39,7 @@ export function NotificationsScreen() {
       contentContainerStyle={styles.content}
       data={notifications}
       keyExtractor={(item) => item.id}
-      ListHeaderComponent={(
+      ListHeaderComponent={
         <View style={styles.header}>
           <Text style={styles.title}>Notificaciones</Text>
           <Text style={styles.muted}>{unreadCount} sin leer</Text>
@@ -35,8 +49,10 @@ export function NotificationsScreen() {
             </Pressable>
           ) : null}
         </View>
-      )}
-      ListEmptyComponent={<Text style={styles.muted}>No hay notificaciones.</Text>}
+      }
+      ListEmptyComponent={
+        <Text style={styles.muted}>No hay notificaciones.</Text>
+      }
       renderItem={({ item }) => (
         <Pressable
           onPress={async () => {
@@ -44,7 +60,10 @@ export function NotificationsScreen() {
               await markAsRead(item.id);
             }
             if (item.relatedOrderId) {
-              router.push({ pathname: "/(protected)/orders/[id]", params: { id: item.relatedOrderId } });
+              router.push({
+                pathname: "/(protected)/orders/[id]",
+                params: { id: item.relatedOrderId },
+              });
             }
           }}
           style={[styles.panel, item.readAt ? null : styles.unreadPanel]}
@@ -54,9 +73,14 @@ export function NotificationsScreen() {
             <Text style={styles.badge}>{item.readAt ? "leida" : "nueva"}</Text>
           </View>
           <Text>{item.message}</Text>
-          <Text style={styles.muted}>{item.type} - {formatDateTime(item.createdAt)}</Text>
+          <Text style={styles.muted}>
+            {item.type} - {formatDateTime(item.createdAt)}
+          </Text>
           {!item.readAt ? (
-            <Pressable onPress={() => void markAsRead(item.id)} style={styles.secondaryButton}>
+            <Pressable
+              onPress={() => void markAsRead(item.id)}
+              style={styles.secondaryButton}
+            >
               <Text style={styles.linkText}>Marcar como leida</Text>
             </Pressable>
           ) : null}
@@ -67,16 +91,43 @@ export function NotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  badge: { color: colors.primary, fontSize: typography.caption, fontWeight: "700" },
-  content: { backgroundColor: colors.background, gap: spacing.md, padding: spacing.md },
+  badge: {
+    color: colors.primary,
+    fontSize: typography.caption,
+    fontWeight: "700",
+  },
+  content: {
+    backgroundColor: colors.background,
+    gap: spacing.md,
+    padding: spacing.md,
+  },
   header: { gap: spacing.sm },
   linkText: { color: colors.primary, fontWeight: "700" },
   loading: { flex: 1 },
   muted: { color: colors.textMuted },
   name: { color: colors.text, flex: 1, fontWeight: "700" },
-  panel: { borderColor: colors.border, borderRadius: 8, borderWidth: 1, gap: spacing.sm, padding: spacing.md },
-  rowBetween: { alignItems: "center", flexDirection: "row", gap: spacing.md, justifyContent: "space-between" },
-  secondaryButton: { alignItems: "center", borderColor: colors.border, borderRadius: 8, borderWidth: 1, minHeight: 40, justifyContent: "center", paddingHorizontal: spacing.md },
+  panel: {
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  rowBetween: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.md,
+    justifyContent: "space-between",
+  },
+  secondaryButton: {
+    alignItems: "center",
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    minHeight: 40,
+    justifyContent: "center",
+    paddingHorizontal: spacing.md,
+  },
   title: { color: colors.text, fontSize: typography.title, fontWeight: "700" },
   unreadPanel: { borderColor: colors.primary },
 });

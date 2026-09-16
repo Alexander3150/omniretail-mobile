@@ -1,5 +1,6 @@
 import { NotificationType, OrderStatus, type Order } from "@/core";
 import type { RepositoryRegistry } from "@/infrastructure";
+import { showSystemNotification } from "@/modules/notifications";
 
 export type AdvanceOrderStatusResult = {
   advanced: boolean;
@@ -14,13 +15,21 @@ export async function advanceOrderStatusForDemo(repositories: RepositoryRegistry
   }
 
   const updatedOrder = await repositories.orderRepository.updateStatus(order.id, next.status);
+  const notificationMessage = next.message(updatedOrder.number);
+
   await repositories.notificationRepository.create({
     tenantId: order.tenantId,
     customerId: order.customerId,
     type: next.notificationType,
     title: next.title,
-    message: next.message(updatedOrder.number),
+    message: notificationMessage,
     relatedOrderId: updatedOrder.id,
+  });
+
+  await showSystemNotification({
+    title: next.title,
+    body: notificationMessage,
+    orderId: updatedOrder.id,
   });
 
   return { advanced: true, order: updatedOrder };

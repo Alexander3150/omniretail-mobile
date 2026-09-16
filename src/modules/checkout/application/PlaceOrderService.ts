@@ -5,6 +5,7 @@ import { calculateCheckoutTotals } from "./checkoutPricing";
 import type { CheckoutSelection } from "../context/CheckoutProvider";
 import { calculatePrice } from "@/modules/catalog";
 import type { CartLine } from "@/modules/cart";
+import { showSystemNotification } from "@/modules/notifications";
 
 export async function placeOrder(repositories: RepositoryRegistry, session: { tenantId: string; customerId: string }, selection: CheckoutSelection) {
   const cart = await repositories.cartRepository.getOrCreate(session.tenantId, session.customerId);
@@ -107,13 +108,22 @@ export async function placeOrder(repositories: RepositoryRegistry, session: { te
     cardBrandSnapshot: selectedPaymentMethod?.brand,
     cardLast4Snapshot: selectedPaymentMethod?.last4,
   });
+  const notificationTitle = "Pedido confirmado";
+  const notificationMessage = `Tu pedido ${confirmedOrder.number} fue confirmado.`;
+
   await repositories.notificationRepository.create({
     tenantId: session.tenantId,
     customerId: session.customerId,
     type: NotificationType.OrderConfirmed,
-    title: "Pedido confirmado",
-    message: `Tu pedido ${confirmedOrder.number} fue confirmado.`,
+    title: notificationTitle,
+    message: notificationMessage,
     relatedOrderId: confirmedOrder.id,
+  });
+
+  await showSystemNotification({
+    title: notificationTitle,
+    body: notificationMessage,
+    orderId: confirmedOrder.id,
   });
   await repositories.cartRepository.clear(cart.id);
 

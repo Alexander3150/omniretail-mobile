@@ -1,13 +1,16 @@
 import { Stack } from "expo-router";
 
-import { SessionProvider } from "@/modules/auth";
 import { RepositoryProvider } from "@/infrastructure";
+import { SessionProvider } from "@/modules/auth";
+import { NotificationNavigationHandler } from "@/modules/notifications";
 import { colors } from "@/theme";
 
 export default function RootLayout() {
   return (
     <RepositoryProvider>
       <SessionProvider>
+        <NotificationNavigationHandler />
+
         <Stack
           screenOptions={{
             contentStyle: { backgroundColor: colors.background },
