@@ -24,7 +24,7 @@ export default function ProtectedLayout() {
     <CheckoutProvider>
     <Stack>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="products/[id]" options={{ title: "Producto" }} />
+      <Stack.Screen name="products/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="favorites" options={{ title: "Favoritos" }} />
       <Stack.Screen name="notifications" options={{ title: "Notificaciones" }} />
       <Stack.Screen name="checkout/delivery" options={{ title: "Entrega" }} />
