@@ -27,15 +27,8 @@ export function CategoriesScreen() {
   );
   const [query, setQuery] = useState("");
 
-  const {
-    addToCart,
-    categories,
-    currency,
-    error,
-    isLoading,
-    products,
-    toggleFavorite,
-  } = useCommerceCatalog(selectedCategoryId, query);
+  const { addToCart, categories, currency, error, isLoading, products } =
+    useCommerceCatalog(selectedCategoryId, query);
 
   if (isLoading) {
     return (
@@ -259,12 +252,7 @@ export function CategoriesScreen() {
         </View>
       }
       renderItem={({ item }) => (
-        <ProductCard
-          currency={currency}
-          item={item}
-          onAddToCart={addToCart}
-          onToggleFavorite={toggleFavorite}
-        />
+        <ProductCard currency={currency} item={item} onAddToCart={addToCart} />
       )}
     />
   );
@@ -272,8 +260,7 @@ export function CategoriesScreen() {
 
 export function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { addToCart, currency, isLoading, products, reload, toggleFavorite } =
-    useCommerceCatalog();
+  const { addToCart, currency, isLoading, products } = useCommerceCatalog();
   const productVm = products.find((item) => item.product.id === id);
   const [quantity, setQuantity] = useState(1);
   const [message, setMessage] = useState<string | null>(null);
@@ -288,14 +275,6 @@ export function ProductDetailScreen() {
       await addToCart(productVm.product.id);
     }
     setMessage("Producto agregado al carrito.");
-  }
-
-  async function handleFavorite() {
-    if (!productVm) {
-      return;
-    }
-    await toggleFavorite(productVm.product.id);
-    await reload();
   }
 
   if (isLoading) {
@@ -356,9 +335,7 @@ export function ProductDetailScreen() {
         </Text>
       ) : null}
       <Text style={styles.body}>
-        {productVm.available
-          ? `Disponible: ${productVm.availableQuantity}`
-          : "No disponible"}
+        {productVm.available ? "Disponible" : "Agotado"}
       </Text>
       <Text style={styles.sectionTitle}>Cantidad</Text>
       <View style={styles.row}>
@@ -378,11 +355,6 @@ export function ProductDetailScreen() {
           <Text>+</Text>
         </Pressable>
       </View>
-      <Pressable onPress={handleFavorite} style={styles.secondaryButton}>
-        <Text>
-          {productVm.isFavorite ? "Quitar favorito" : "Agregar favorito"}
-        </Text>
-      </Pressable>
       <Pressable
         disabled={!productVm.available}
         onPress={handleAdd}

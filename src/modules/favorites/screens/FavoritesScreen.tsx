@@ -8,7 +8,7 @@ import { colors, spacing, typography } from "@/theme";
 import { useFavorites } from "../hooks/useFavorites";
 
 export function FavoritesScreen() {
-  const { addToCart, currency, isLoading, items, reload, toggleFavorite } = useFavorites();
+  const { addToCart, currency, isLoading, items, reload } = useFavorites();
 
   useFocusEffect(
     useCallback(() => {
@@ -27,7 +27,7 @@ export function FavoritesScreen() {
       keyExtractor={(item) => item.product.id}
       ListHeaderComponent={<Text style={styles.title}>Favoritos</Text>}
       ListEmptyComponent={<Text style={styles.empty}>No tienes favoritos todavia.</Text>}
-      renderItem={({ item }) => <ProductCard currency={currency} item={item} onAddToCart={addToCart} onToggleFavorite={toggleFavorite} />}
+      renderItem={({ item }) => <ProductCard currency={currency} item={item} onAddToCart={addToCart} />}
     />
   );
 }
