@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Link, router, useLocalSearchParams } from "expo-router";
 import { useState, type ReactNode } from "react";
 import {
@@ -298,9 +299,15 @@ export function ResetPasswordScreen() {
 export function ChangePasswordScreen() {
   const { authRepository } = useRepositories();
   const { session } = useSession();
+
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -311,6 +318,7 @@ export function ChangePasswordScreen() {
       newPassword,
       confirmPassword,
     );
+
     if (validationError) {
       setError(validationError);
       return;
@@ -324,12 +332,14 @@ export function ChangePasswordScreen() {
     setError(null);
     setMessage(null);
     setIsSubmitting(true);
+
     try {
       await authRepository.changePassword({
         userId: session.userId,
         currentPassword,
         newPassword,
       });
+
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -342,39 +352,540 @@ export function ChangePasswordScreen() {
   }
 
   return (
-    <AuthForm
-      title="Seguridad"
-      subtitle="Actualiza la seguridad de tu cuenta."
-      error={error}
-      message={message}
+    <ScrollView
+      automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
+      contentContainerStyle={securityStyles.content}
+      keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
     >
-      <AuthTextInput
-        label="Contrasena actual"
-        onChangeText={setCurrentPassword}
-        secureTextEntry
-        value={currentPassword}
-      />
-      <AuthTextInput
-        label="Nueva contrasena"
-        onChangeText={setNewPassword}
-        secureTextEntry
-        value={newPassword}
-      />
-      <AuthTextInput
-        label="Confirmar contrasena"
-        onChangeText={setConfirmPassword}
-        secureTextEntry
-        value={confirmPassword}
-      />
-      <PrimaryButton
-        disabled={isSubmitting}
-        label="Cambiar contrasena"
-        loading={isSubmitting}
-        onPress={handleSubmit}
-      />
-    </AuthForm>
+      <View style={securityStyles.hero}>
+        <View style={securityStyles.heroDecorationOne} />
+        <View style={securityStyles.heroDecorationTwo} />
+
+        <View style={securityStyles.heroTop}>
+          <View style={securityStyles.heroHeading}>
+            <Text style={securityStyles.brand}>FERREPHARMA</Text>
+            <Text style={securityStyles.heroTitle}>Seguridad</Text>
+          </View>
+
+          <View style={securityStyles.heroActions}>
+            <Pressable
+              hitSlop={10}
+              onPress={() => router.back()}
+              style={({ pressed }) => [
+                securityStyles.backButton,
+                pressed ? securityStyles.pressed : null,
+              ]}
+            >
+              <Ionicons
+                color={securityPalette.deepBlue}
+                name="arrow-back"
+                size={20}
+              />
+            </Pressable>
+
+            <View style={securityStyles.heroIcon}>
+              <Ionicons
+                color={securityPalette.deepBlue}
+                name="shield-checkmark-outline"
+                size={23}
+              />
+            </View>
+          </View>
+        </View>
+
+        <Text style={securityStyles.heroSubtitle}>
+          Protege tu cuenta actualizando tu contraseña de acceso.
+        </Text>
+      </View>
+
+      <View style={securityStyles.body}>
+        <View style={securityStyles.infoCard}>
+          <View style={securityStyles.infoIcon}>
+            <Ionicons
+              color={securityPalette.deepBlue}
+              name="lock-closed-outline"
+              size={20}
+            />
+          </View>
+
+          <View style={securityStyles.flex}>
+            <Text style={securityStyles.infoTitle}>Cambiar contraseña</Text>
+
+            <Text style={securityStyles.infoText}>
+              Ingresa tu contraseña actual y define una nueva para mantener
+              protegida tu cuenta.
+            </Text>
+          </View>
+        </View>
+
+        <View style={securityStyles.formCard}>
+          <SecurityPasswordField
+            label="Contraseña actual"
+            onChangeText={setCurrentPassword}
+            onToggleVisibility={() => setShowCurrentPassword((value) => !value)}
+            placeholder="Ingresa tu contraseña actual"
+            showPassword={showCurrentPassword}
+            value={currentPassword}
+          />
+
+          <View style={securityStyles.divider} />
+
+          <SecurityPasswordField
+            label="Nueva contraseña"
+            onChangeText={setNewPassword}
+            onToggleVisibility={() => setShowNewPassword((value) => !value)}
+            placeholder="Escribe tu nueva contraseña"
+            showPassword={showNewPassword}
+            value={newPassword}
+          />
+
+          <SecurityPasswordField
+            label="Confirmar contraseña"
+            onChangeText={setConfirmPassword}
+            onToggleVisibility={() => setShowConfirmPassword((value) => !value)}
+            placeholder="Repite la nueva contraseña"
+            showPassword={showConfirmPassword}
+            value={confirmPassword}
+          />
+        </View>
+
+        {error ? (
+          <View style={securityStyles.errorBox}>
+            <Ionicons
+              color={securityPalette.danger}
+              name="alert-circle-outline"
+              size={18}
+            />
+
+            <Text style={securityStyles.errorText}>{error}</Text>
+          </View>
+        ) : null}
+
+        {message ? (
+          <View style={securityStyles.successBox}>
+            <Ionicons
+              color={securityPalette.success}
+              name="checkmark-circle-outline"
+              size={18}
+            />
+
+            <Text style={securityStyles.successText}>{message}</Text>
+          </View>
+        ) : null}
+
+        <Pressable
+          disabled={isSubmitting}
+          onPress={handleSubmit}
+          style={({ pressed }) => [
+            securityStyles.primaryButton,
+            isSubmitting ? securityStyles.disabled : null,
+            pressed && !isSubmitting ? securityStyles.pressed : null,
+          ]}
+        >
+          <View style={securityStyles.primaryIcon}>
+            {isSubmitting ? (
+              <ActivityIndicator
+                color={securityPalette.deepBlue}
+                size="small"
+              />
+            ) : (
+              <Ionicons
+                color={securityPalette.deepBlue}
+                name="shield-checkmark-outline"
+                size={18}
+              />
+            )}
+          </View>
+
+          <Text style={securityStyles.primaryText}>
+            {isSubmitting ? "Actualizando..." : "Cambiar contraseña"}
+          </Text>
+
+          <Ionicons
+            color={securityPalette.white}
+            name="chevron-forward"
+            size={17}
+          />
+        </Pressable>
+
+        <View style={securityStyles.tipCard}>
+          <Ionicons
+            color={securityPalette.deepBlue}
+            name="information-circle-outline"
+            size={18}
+          />
+
+          <Text style={securityStyles.tipText}>
+            Usa una contraseña diferente a las que utilizas en otras cuentas y
+            evita compartirla con otras personas.
+          </Text>
+        </View>
+      </View>
+    </ScrollView>
   );
 }
+
+function SecurityPasswordField({
+  label,
+  onChangeText,
+  onToggleVisibility,
+  placeholder,
+  showPassword,
+  value,
+}: {
+  label: string;
+  onChangeText(value: string): void;
+  onToggleVisibility(): void;
+  placeholder: string;
+  showPassword: boolean;
+  value: string;
+}) {
+  return (
+    <View style={securityStyles.field}>
+      <Text style={securityStyles.fieldLabel}>{label}</Text>
+
+      <View style={securityStyles.inputShell}>
+        <View style={securityStyles.inputIcon}>
+          <Ionicons
+            color={securityPalette.deepBlue}
+            name="lock-closed-outline"
+            size={16}
+          />
+        </View>
+
+        <TextInput
+          autoCapitalize="none"
+          autoCorrect={false}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor="#8A94A3"
+          secureTextEntry={!showPassword}
+          style={securityStyles.input}
+          value={value}
+        />
+
+        <Pressable
+          hitSlop={8}
+          onPress={onToggleVisibility}
+          style={({ pressed }) => [
+            securityStyles.eyeButton,
+            pressed ? securityStyles.pressed : null,
+          ]}
+        >
+          <Ionicons
+            color={securityPalette.muted}
+            name={showPassword ? "eye-off-outline" : "eye-outline"}
+            size={18}
+          />
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+const securityPalette = {
+  deepBlue: "#3E668F",
+  dreamyBlue: "#81A9EE",
+  silkyLilac: "#AAB4E7",
+  butterHoney: "#FFDB83",
+  vanillaMilk: "#FFF2D0",
+  white: "#FFFFFF",
+  text: "#172033",
+  muted: "#687286",
+  border: "#DDE3EE",
+  danger: "#C2413B",
+  success: "#1E8E5A",
+};
+
+const securityStyles = StyleSheet.create({
+  content: {
+    backgroundColor: securityPalette.vanillaMilk,
+    flexGrow: 1,
+    paddingBottom: 30,
+  },
+
+  hero: {
+    backgroundColor: securityPalette.deepBlue,
+    borderBottomLeftRadius: 27,
+    borderBottomRightRadius: 27,
+    minHeight: 205,
+    overflow: "hidden",
+    paddingBottom: 24,
+    paddingHorizontal: 20,
+    paddingTop: 34,
+  },
+
+  heroDecorationOne: {
+    backgroundColor: securityPalette.dreamyBlue,
+    borderRadius: 100,
+    height: 175,
+    opacity: 0.16,
+    position: "absolute",
+    right: -55,
+    top: -65,
+    width: 175,
+  },
+
+  heroDecorationTwo: {
+    backgroundColor: securityPalette.butterHoney,
+    borderRadius: 60,
+    bottom: -48,
+    height: 110,
+    opacity: 0.14,
+    position: "absolute",
+    right: 55,
+    width: 110,
+  },
+
+  heroTop: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+
+  heroHeading: {
+    flex: 1,
+    paddingRight: 12,
+  },
+
+  heroActions: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 8,
+  },
+
+  backButton: {
+    alignItems: "center",
+    backgroundColor: securityPalette.white,
+    borderRadius: 21,
+    height: 42,
+    justifyContent: "center",
+    width: 42,
+  },
+
+  heroIcon: {
+    alignItems: "center",
+    backgroundColor: securityPalette.butterHoney,
+    borderRadius: 21,
+    height: 42,
+    justifyContent: "center",
+    width: 42,
+  },
+
+  brand: {
+    color: securityPalette.butterHoney,
+    fontSize: 11,
+    fontWeight: "900",
+    letterSpacing: 1.7,
+  },
+
+  heroTitle: {
+    color: securityPalette.white,
+    fontSize: 29,
+    fontWeight: "900",
+    marginTop: 4,
+  },
+
+  heroSubtitle: {
+    color: "#EAF1F8",
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 15,
+    maxWidth: "82%",
+  },
+
+  body: {
+    gap: 11,
+    marginTop: -10,
+    paddingHorizontal: 12,
+  },
+
+  flex: {
+    flex: 1,
+  },
+
+  infoCard: {
+    alignItems: "center",
+    backgroundColor: securityPalette.white,
+    borderColor: securityPalette.border,
+    borderRadius: 17,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 10,
+    padding: 12,
+  },
+
+  infoIcon: {
+    alignItems: "center",
+    backgroundColor: securityPalette.butterHoney,
+    borderRadius: 12,
+    height: 42,
+    justifyContent: "center",
+    width: 42,
+  },
+
+  infoTitle: {
+    color: securityPalette.text,
+    fontSize: 12,
+    fontWeight: "900",
+  },
+
+  infoText: {
+    color: securityPalette.muted,
+    fontSize: 9,
+    lineHeight: 14,
+    marginTop: 3,
+  },
+
+  formCard: {
+    backgroundColor: securityPalette.white,
+    borderColor: securityPalette.border,
+    borderRadius: 18,
+    borderWidth: 1,
+    gap: 12,
+    padding: 13,
+  },
+
+  field: {
+    gap: 6,
+  },
+
+  fieldLabel: {
+    color: securityPalette.text,
+    fontSize: 10,
+    fontWeight: "900",
+  },
+
+  inputShell: {
+    alignItems: "center",
+    backgroundColor: "#FAFBFC",
+    borderColor: securityPalette.silkyLilac,
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: "row",
+    minHeight: 48,
+    paddingHorizontal: 8,
+  },
+
+  inputIcon: {
+    alignItems: "center",
+    backgroundColor: "#EEF3F8",
+    borderRadius: 8,
+    height: 31,
+    justifyContent: "center",
+    width: 31,
+  },
+
+  input: {
+    color: securityPalette.text,
+    flex: 1,
+    fontSize: 11,
+    minHeight: 46,
+    paddingHorizontal: 9,
+    paddingVertical: 0,
+  },
+
+  eyeButton: {
+    alignItems: "center",
+    height: 34,
+    justifyContent: "center",
+    width: 34,
+  },
+
+  divider: {
+    backgroundColor: "#EDF0F4",
+    height: 1,
+  },
+
+  primaryButton: {
+    alignItems: "center",
+    backgroundColor: securityPalette.deepBlue,
+    borderRadius: 15,
+    flexDirection: "row",
+    gap: 9,
+    minHeight: 52,
+    paddingHorizontal: 11,
+  },
+
+  primaryIcon: {
+    alignItems: "center",
+    backgroundColor: securityPalette.butterHoney,
+    borderRadius: 9,
+    height: 32,
+    justifyContent: "center",
+    width: 32,
+  },
+
+  primaryText: {
+    color: securityPalette.white,
+    flex: 1,
+    fontSize: 12,
+    fontWeight: "900",
+    textAlign: "center",
+  },
+
+  errorBox: {
+    alignItems: "center",
+    backgroundColor: "#FFF2F1",
+    borderColor: "#E8A9A5",
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 7,
+    padding: 10,
+  },
+
+  errorText: {
+    color: securityPalette.danger,
+    flex: 1,
+    fontSize: 9,
+    fontWeight: "700",
+  },
+
+  successBox: {
+    alignItems: "center",
+    backgroundColor: "#EFFAF5",
+    borderColor: "#A7D8C1",
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 7,
+    padding: 10,
+  },
+
+  successText: {
+    color: securityPalette.success,
+    flex: 1,
+    fontSize: 9,
+    fontWeight: "700",
+  },
+
+  tipCard: {
+    alignItems: "flex-start",
+    backgroundColor: "#EEF3F8",
+    borderRadius: 13,
+    flexDirection: "row",
+    gap: 8,
+    padding: 11,
+  },
+
+  tipText: {
+    color: securityPalette.muted,
+    flex: 1,
+    fontSize: 9,
+    lineHeight: 14,
+  },
+
+  disabled: {
+    opacity: 0.55,
+  },
+
+  pressed: {
+    opacity: 0.76,
+  },
+});
 
 type AuthFormProps = {
   children: ReactNode;

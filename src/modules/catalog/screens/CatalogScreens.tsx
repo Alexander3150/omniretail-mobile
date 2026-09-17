@@ -14,7 +14,6 @@ import {
 } from "react-native";
 
 import { formatCurrency } from "@/shared";
-import { colors, spacing, typography } from "@/theme";
 
 import { calculatePrice } from "../application/pricing";
 import { ProductCard } from "../components/ProductCard";
@@ -265,26 +264,58 @@ export function ProductDetailScreen() {
   const [quantity, setQuantity] = useState(1);
   const [message, setMessage] = useState<string | null>(null);
   const [imageFailed, setImageFailed] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   async function handleAdd() {
-    if (!productVm || quantity <= 0) {
+    if (!productVm || quantity <= 0 || !productVm.available) {
       return;
     }
 
     for (let index = 0; index < quantity; index += 1) {
       await addToCart(productVm.product.id);
     }
-    setMessage("Producto agregado al carrito.");
+
+    setMessage(
+      quantity === 1
+        ? "Producto agregado al carrito."
+        : `${quantity} productos agregados al carrito.`,
+    );
   }
 
   if (isLoading) {
-    return <ActivityIndicator color={colors.primary} style={styles.loading} />;
+    return (
+      <View style={styles.loadingScreen}>
+        <View style={styles.loadingIcon}>
+          <Ionicons
+            color={productPalette.deepBlue}
+            name="bag-handle-outline"
+            size={28}
+          />
+        </View>
+
+        <ActivityIndicator color={productPalette.deepBlue} size="large" />
+
+        <Text style={styles.loadingText}>Preparando producto...</Text>
+      </View>
+    );
   }
 
   if (!productVm) {
     return (
-      <View style={styles.content}>
-        <Text style={styles.title}>Producto no encontrado</Text>
+      <View style={styles.notFoundScreen}>
+        <View style={styles.notFoundIcon}>
+          <Ionicons
+            color={productPalette.deepBlue}
+            name="cube-outline"
+            size={38}
+          />
+        </View>
+
+        <Text style={styles.notFoundTitle}>Producto no encontrado</Text>
+
+        <Text style={styles.notFoundText}>
+          No pudimos encontrar la información de este producto.
+        </Text>
       </View>
     );
   }
@@ -294,78 +325,355 @@ export function ProductDetailScreen() {
     productVm.price.promotion ? [productVm.price.promotion] : [],
   );
 
+  const selectedImage =
+    productVm.images[selectedImageIndex] ?? productVm.primaryImage;
+
+  const discountPercentage =
+    price.discount > 0 && price.basePrice > 0
+      ? Math.round((price.discount / price.basePrice) * 100)
+      : 0;
+
+  const canDecrease = quantity > 1;
+  const canIncrease =
+    productVm.available && quantity < productVm.availableQuantity;
+
   return (
-    <ScrollView contentContainerStyle={styles.content}>
-      <Image
-        accessibilityLabel={productVm.primaryImage.altText}
-        onError={() => setImageFailed(true)}
-        source={
-          imageFailed
-            ? productVm.primaryImage.fallbackSource
-            : productVm.primaryImage.source
-        }
-        style={styles.detailImage}
-      />
-      {productVm.images.length > 1 ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.mediaStrip}
-        >
-          {productVm.images.map((image) => (
-            <Image
-              accessibilityLabel={image.altText}
-              key={image.media?.id ?? image.altText}
-              source={image.source}
-              style={styles.thumbnail}
+    <ScrollView
+      contentContainerStyle={styles.productContent}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={styles.productHero}>
+        <View style={styles.heroBubbleOne} />
+        <View style={styles.heroBubbleTwo} />
+
+        <View style={styles.productHeroTop}>
+          <View>
+            <Text style={styles.productEyebrow}>FERREPHARMA</Text>
+            <Text style={styles.productHeroTitle}>Detalle del producto</Text>
+          </View>
+
+          <View style={styles.productHeroIcon}>
+            <Ionicons
+              color={productPalette.deepBlue}
+              name="cube-outline"
+              size={23}
             />
-          ))}
-        </ScrollView>
-      ) : null}
-      <Text style={styles.title}>{productVm.product.name}</Text>
-      <Text style={styles.muted}>SKU {productVm.product.sku}</Text>
-      <Text style={styles.body}>{productVm.product.description}</Text>
-      <Text style={styles.price}>
-        {formatCurrency(price.effectivePrice, currency)}
-      </Text>
-      {price.discount > 0 ? (
-        <Text style={styles.muted}>
-          Antes {formatCurrency(price.basePrice, currency)}. Descuento{" "}
-          {formatCurrency(price.discount, currency)}
+          </View>
+        </View>
+
+        <Text style={styles.productHeroSubtitle}>
+          Todo lo que necesitas saber antes de agregarlo a tu compra.
         </Text>
-      ) : null}
-      <Text style={styles.body}>
-        {productVm.available ? "Disponible" : "Agotado"}
-      </Text>
-      <Text style={styles.sectionTitle}>Cantidad</Text>
-      <View style={styles.row}>
-        <Pressable
-          onPress={() => setQuantity(Math.max(1, quantity - 1))}
-          style={styles.smallButton}
-        >
-          <Text>-</Text>
-        </Pressable>
-        <Text style={styles.body}>{quantity}</Text>
-        <Pressable
-          onPress={() =>
-            setQuantity(Math.min(productVm.availableQuantity, quantity + 1))
-          }
-          style={styles.smallButton}
-        >
-          <Text>+</Text>
-        </Pressable>
       </View>
-      <Pressable
-        disabled={!productVm.available}
-        onPress={handleAdd}
-        style={[
-          styles.primaryButton,
-          !productVm.available ? styles.disabled : null,
-        ]}
-      >
-        <Text style={styles.primaryText}>Agregar al carrito</Text>
-      </Pressable>
-      {message ? <Text style={styles.success}>{message}</Text> : null}
+
+      <View style={styles.productBody}>
+        <View style={styles.imageCard}>
+          <View style={styles.imageTopRow}>
+            <View
+              style={[
+                styles.availabilityBadge,
+                !productVm.available ? styles.availabilityBadgeOut : null,
+              ]}
+            >
+              <View
+                style={[
+                  styles.availabilityDot,
+                  !productVm.available ? styles.availabilityDotOut : null,
+                ]}
+              />
+
+              <Text
+                style={[
+                  styles.availabilityText,
+                  !productVm.available ? styles.availabilityTextOut : null,
+                ]}
+              >
+                {productVm.available ? "Disponible" : "Agotado"}
+              </Text>
+            </View>
+
+            {discountPercentage > 0 ? (
+              <View style={styles.discountBadge}>
+                <Ionicons
+                  color={productPalette.deepBlue}
+                  name="pricetag"
+                  size={13}
+                />
+                <Text style={styles.discountBadgeText}>
+                  -{discountPercentage}%
+                </Text>
+              </View>
+            ) : null}
+          </View>
+
+          <Image
+            accessibilityLabel={selectedImage.altText}
+            onError={() => setImageFailed(true)}
+            resizeMode="contain"
+            source={
+              imageFailed
+                ? productVm.primaryImage.fallbackSource
+                : selectedImage.source
+            }
+            style={styles.productImage}
+          />
+        </View>
+
+        {productVm.images.length > 1 ? (
+          <ScrollView
+            contentContainerStyle={styles.thumbnailContent}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.mediaStrip}
+          >
+            {productVm.images.map((image, index) => {
+              const selected = index === selectedImageIndex;
+
+              return (
+                <Pressable
+                  accessibilityLabel={`Ver imagen ${index + 1} de ${productVm.product.name}`}
+                  key={image.media?.id ?? `${image.altText}-${index}`}
+                  onPress={() => {
+                    setSelectedImageIndex(index);
+                    setImageFailed(false);
+                  }}
+                  style={[
+                    styles.thumbnailButton,
+                    selected ? styles.thumbnailButtonSelected : null,
+                  ]}
+                >
+                  <Image
+                    accessibilityLabel={image.altText}
+                    resizeMode="contain"
+                    source={image.source}
+                    style={styles.thumbnail}
+                  />
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        ) : null}
+
+        <View style={styles.productInfoCard}>
+          <View style={styles.skuRow}>
+            <View style={styles.skuBadge}>
+              <Ionicons
+                color={productPalette.deepBlue}
+                name="barcode-outline"
+                size={14}
+              />
+              <Text style={styles.skuText}>SKU {productVm.product.sku}</Text>
+            </View>
+          </View>
+
+          <Text style={styles.productName}>{productVm.product.name}</Text>
+
+          <View style={styles.priceSection}>
+            <Text style={styles.productPrice}>
+              {formatCurrency(price.effectivePrice, currency)}
+            </Text>
+
+            {price.discount > 0 ? (
+              <View style={styles.oldPriceRow}>
+                <Text style={styles.oldPrice}>
+                  {formatCurrency(price.basePrice, currency)}
+                </Text>
+
+                <View style={styles.savingsPill}>
+                  <Text style={styles.savingsText}>
+                    Ahorras {formatCurrency(price.discount, currency)}
+                  </Text>
+                </View>
+              </View>
+            ) : (
+              <Text style={styles.priceCaption}>Precio actual</Text>
+            )}
+          </View>
+        </View>
+
+        <View style={styles.descriptionCard}>
+          <View style={styles.cardHeadingRow}>
+            <View style={styles.cardHeadingIcon}>
+              <Ionicons
+                color={productPalette.deepBlue}
+                name="document-text-outline"
+                size={19}
+              />
+            </View>
+
+            <View style={styles.cardHeadingText}>
+              <Text style={styles.cardTitle}>Descripción</Text>
+              <Text style={styles.cardSubtitle}>
+                Información del producto
+              </Text>
+            </View>
+          </View>
+
+          <Text style={styles.descriptionText}>
+            {productVm.product.description}
+          </Text>
+        </View>
+
+        <View style={styles.purchaseCard}>
+          <View style={styles.purchaseHeader}>
+            <View>
+              <Text style={styles.cardTitle}>Elige la cantidad</Text>
+              <Text style={styles.cardSubtitle}>
+                Selecciona cuánto deseas agregar
+              </Text>
+            </View>
+
+            <View style={styles.quantityIcon}>
+              <Ionicons
+                color={productPalette.deepBlue}
+                name="basket-outline"
+                size={20}
+              />
+            </View>
+          </View>
+
+          <View style={styles.quantityRow}>
+            <Pressable
+              accessibilityLabel="Disminuir cantidad"
+              disabled={!canDecrease}
+              onPress={() => {
+                setQuantity((current) => Math.max(1, current - 1));
+                setMessage(null);
+              }}
+              style={({ pressed }) => [
+                styles.quantityButton,
+                !canDecrease ? styles.quantityButtonDisabled : null,
+                pressed && canDecrease ? styles.pressed : null,
+              ]}
+            >
+              <Ionicons
+                color={
+                  canDecrease
+                    ? productPalette.deepBlue
+                    : productPalette.muted
+                }
+                name="remove"
+                size={22}
+              />
+            </Pressable>
+
+            <View style={styles.quantityValue}>
+              <Text style={styles.quantityNumber}>{quantity}</Text>
+              <Text style={styles.quantityLabel}>
+                {quantity === 1 ? "unidad" : "unidades"}
+              </Text>
+            </View>
+
+            <Pressable
+              accessibilityLabel="Aumentar cantidad"
+              disabled={!canIncrease}
+              onPress={() => {
+                setQuantity((current) =>
+                  Math.min(productVm.availableQuantity, current + 1),
+                );
+                setMessage(null);
+              }}
+              style={({ pressed }) => [
+                styles.quantityButton,
+                !canIncrease ? styles.quantityButtonDisabled : null,
+                pressed && canIncrease ? styles.pressed : null,
+              ]}
+            >
+              <Ionicons
+                color={
+                  canIncrease
+                    ? productPalette.deepBlue
+                    : productPalette.muted
+                }
+                name="add"
+                size={22}
+              />
+            </Pressable>
+          </View>
+
+          <View style={styles.purchaseDivider} />
+
+          <View style={styles.totalRow}>
+            <View>
+              <Text style={styles.totalLabel}>Total estimado</Text>
+              <Text style={styles.totalCaption}>
+                {quantity} {quantity === 1 ? "producto" : "productos"}
+              </Text>
+            </View>
+
+            <Text style={styles.totalPrice}>
+              {formatCurrency(price.effectivePrice * quantity, currency)}
+            </Text>
+          </View>
+
+          <Pressable
+            accessibilityLabel="Agregar al carrito"
+            disabled={!productVm.available}
+            onPress={handleAdd}
+            style={({ pressed }) => [
+              styles.addButton,
+              !productVm.available ? styles.addButtonDisabled : null,
+              pressed && productVm.available ? styles.addButtonPressed : null,
+            ]}
+          >
+            <View style={styles.addButtonIcon}>
+              <Ionicons
+                color={productPalette.deepBlue}
+                name="cart-outline"
+                size={20}
+              />
+            </View>
+
+            <Text style={styles.addButtonText}>
+              {productVm.available ? "Agregar al carrito" : "Producto agotado"}
+            </Text>
+
+            {productVm.available ? (
+              <Ionicons
+                color={productPalette.white}
+                name="arrow-forward"
+                size={19}
+              />
+            ) : null}
+          </Pressable>
+
+          {message ? (
+            <View style={styles.successMessage}>
+              <View style={styles.successIcon}>
+                <Ionicons
+                  color={productPalette.success}
+                  name="checkmark"
+                  size={16}
+                />
+              </View>
+
+              <Text style={styles.successText}>{message}</Text>
+            </View>
+          ) : null}
+        </View>
+
+        <View style={styles.serviceStrip}>
+          <View style={styles.serviceItem}>
+            <Ionicons
+              color={productPalette.deepBlue}
+              name="shield-checkmark-outline"
+              size={20}
+            />
+            <Text style={styles.serviceText}>Compra segura</Text>
+          </View>
+
+          <View style={styles.serviceSeparator} />
+
+          <View style={styles.serviceItem}>
+            <Ionicons
+              color={productPalette.deepBlue}
+              name="bag-check-outline"
+              size={20}
+            />
+            <Text style={styles.serviceText}>Compra fácil</Text>
+          </View>
+        </View>
+      </View>
     </ScrollView>
   );
 }
@@ -450,9 +758,9 @@ const categoryStyles = StyleSheet.create({
 
   brand: {
     color: categoryPalette.butterHoney,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "900",
-    letterSpacing: 1.8,
+    letterSpacing: 1.5,
   },
 
   heroTitle: {
@@ -465,18 +773,18 @@ const categoryStyles = StyleSheet.create({
   heroIcon: {
     alignItems: "center",
     backgroundColor: categoryPalette.white,
-    borderRadius: 23,
-    height: 46,
+    borderRadius: 20,
+    height: 40,
     justifyContent: "center",
-    width: 46,
+    width: 40,
   },
 
   heroDescription: {
     color: "#EAF1F8",
     fontSize: 12,
     lineHeight: 18,
-    marginTop: 10,
-    maxWidth: "82%",
+    marginTop: 4,
+    maxWidth: "90%",
   },
 
   searchBox: {
@@ -526,7 +834,7 @@ const categoryStyles = StyleSheet.create({
 
   sectionTitle: {
     color: categoryPalette.text,
-    fontSize: 21,
+    fontSize: 18,
     fontWeight: "900",
     marginTop: 2,
   },
@@ -670,87 +978,586 @@ const categoryStyles = StyleSheet.create({
   },
 });
 
+const productPalette = {
+  deepBlue: "#3E668F",
+  dreamyBlue: "#81A9EE",
+  silkyLilac: "#AAB4E7",
+  butterHoney: "#FFDB83",
+  vanillaMilk: "#FFF2D0",
+  white: "#FFFFFF",
+  text: "#172033",
+  muted: "#687286",
+  border: "#DDE3EE",
+  success: "#2E7D5A",
+  danger: "#B94343",
+};
+
 const styles = StyleSheet.create({
-  body: { color: colors.text, fontSize: typography.body },
-  categoryPill: {
-    borderColor: colors.border,
-    borderRadius: 8,
-    borderWidth: 1,
-    marginRight: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+  loading: {
+    flex: 1,
   },
-  categorySelected: { backgroundColor: colors.accent },
-  categoryText: { color: colors.text },
-  content: {
-    backgroundColor: colors.background,
-    gap: spacing.md,
-    padding: spacing.md,
-  },
-  detailImage: {
-    backgroundColor: colors.border,
-    borderRadius: 8,
-    height: 220,
-    width: "100%",
-  },
-  disabled: { opacity: 0.45 },
-  empty: { color: colors.textMuted, textAlign: "center" },
-  error: { color: colors.danger },
-  header: { gap: spacing.md },
-  input: {
-    borderColor: colors.border,
-    borderRadius: 8,
-    borderWidth: 1,
-    color: colors.text,
-    minHeight: 44,
-    paddingHorizontal: spacing.md,
-  },
-  loading: { flex: 1 },
-  mediaStrip: { flexGrow: 0 },
-  muted: { color: colors.textMuted },
-  price: {
-    color: colors.text,
-    fontSize: typography.subtitle,
-    fontWeight: "700",
-  },
-  primaryButton: {
+
+  loadingScreen: {
     alignItems: "center",
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    minHeight: 48,
+    backgroundColor: productPalette.vanillaMilk,
+    flex: 1,
+    gap: 14,
     justifyContent: "center",
   },
-  primaryText: { color: colors.surface, fontWeight: "700" },
-  row: { alignItems: "center", flexDirection: "row", gap: spacing.md },
-  secondaryButton: {
+
+  loadingIcon: {
     alignItems: "center",
-    borderColor: colors.border,
-    borderRadius: 8,
-    borderWidth: 1,
-    minHeight: 44,
+    backgroundColor: productPalette.white,
+    borderRadius: 26,
+    height: 52,
     justifyContent: "center",
+    width: 52,
   },
-  sectionTitle: {
-    color: colors.text,
-    fontSize: typography.subtitle,
-    fontWeight: "700",
+
+  loadingText: {
+    color: productPalette.deepBlue,
+    fontSize: 13,
+    fontWeight: "800",
   },
-  smallButton: {
+
+  notFoundScreen: {
     alignItems: "center",
-    borderColor: colors.border,
+    backgroundColor: productPalette.vanillaMilk,
+    flex: 1,
+    justifyContent: "center",
+    padding: 28,
+  },
+
+  notFoundIcon: {
+    alignItems: "center",
+    backgroundColor: productPalette.white,
+    borderRadius: 36,
+    height: 72,
+    justifyContent: "center",
+    marginBottom: 18,
+    width: 72,
+  },
+
+  notFoundTitle: {
+    color: productPalette.text,
+    fontSize: 23,
+    fontWeight: "900",
+  },
+
+  notFoundText: {
+    color: productPalette.muted,
+    fontSize: 13,
+    lineHeight: 20,
+    marginTop: 8,
+    textAlign: "center",
+  },
+
+  productContent: {
+    backgroundColor: productPalette.vanillaMilk,
+    flexGrow: 1,
+    paddingBottom: 34,
+  },
+
+  productHero: {
+    backgroundColor: productPalette.deepBlue,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    minHeight: 132,
+    overflow: "hidden",
+    paddingBottom: 16,
+    paddingHorizontal: 18,
+    paddingTop: 30,
+  },
+
+  heroBubbleOne: {
+    backgroundColor: productPalette.dreamyBlue,
+    borderRadius: 100,
+    height: 180,
+    opacity: 0.15,
+    position: "absolute",
+    right: -60,
+    top: -70,
+    width: 180,
+  },
+
+  heroBubbleTwo: {
+    backgroundColor: productPalette.butterHoney,
+    borderRadius: 70,
+    bottom: -60,
+    height: 130,
+    opacity: 0.14,
+    position: "absolute",
+    right: 65,
+    width: 130,
+  },
+
+  productHeroTop: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+
+  productEyebrow: {
+    color: productPalette.butterHoney,
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 1.5,
+  },
+
+  productHeroTitle: {
+    color: productPalette.white,
+    fontSize: 18,
+    fontWeight: "900",
+    marginTop: 4,
+  },
+
+  productHeroSubtitle: {
+    color: "#EAF1F8",
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 4,
+    maxWidth: "90%",
+  },
+
+  productHeroIcon: {
+    alignItems: "center",
+    backgroundColor: productPalette.white,
+    borderRadius: 20,
+    height: 40,
+    justifyContent: "center",
+    width: 40,
+  },
+
+  productBody: {
+    gap: 9,
+    marginTop: -8,
+    paddingHorizontal: 12,
+  },
+
+  imageCard: {
+    backgroundColor: productPalette.white,
+    borderColor: "#E5E9F0",
+    borderRadius: 18,
+    borderWidth: 1,
+    minHeight: 184,
+    overflow: "hidden",
+    padding: 10,
+  },
+
+  imageTopRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    zIndex: 2,
+  },
+
+  availabilityBadge: {
+    alignItems: "center",
+    alignSelf: "flex-start",
+    backgroundColor: "#EAF6EF",
+    borderRadius: 14,
+    flexDirection: "row",
+    gap: 5,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+  },
+
+  availabilityBadgeOut: {
+    backgroundColor: "#FCECEC",
+  },
+
+  availabilityDot: {
+    backgroundColor: productPalette.success,
+    borderRadius: 4,
+    height: 8,
+    width: 8,
+  },
+
+  availabilityDotOut: {
+    backgroundColor: productPalette.danger,
+  },
+
+  availabilityText: {
+    color: productPalette.success,
+    fontSize: 11,
+    fontWeight: "900",
+  },
+
+  availabilityTextOut: {
+    color: productPalette.danger,
+  },
+
+  discountBadge: {
+    alignItems: "center",
+    backgroundColor: productPalette.butterHoney,
+    borderRadius: 20,
+    flexDirection: "row",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+
+  discountBadgeText: {
+    color: productPalette.deepBlue,
+    fontSize: 11,
+    fontWeight: "900",
+  },
+
+  productImage: {
+    alignSelf: "center",
+    height: 145,
+    marginTop: -2,
+    width: "92%",
+  },
+
+  mediaStrip: {
+    flexGrow: 0,
+  },
+
+  thumbnailContent: {
+    gap: 9,
+    paddingHorizontal: 2,
+    paddingVertical: 2,
+  },
+
+  thumbnailButton: {
+    alignItems: "center",
+    backgroundColor: productPalette.white,
+    borderColor: productPalette.border,
+    borderRadius: 14,
+    borderWidth: 1,
+    height: 70,
+    justifyContent: "center",
+    overflow: "hidden",
+    width: 70,
+  },
+
+  thumbnailButtonSelected: {
+    borderColor: productPalette.deepBlue,
+    borderWidth: 2,
+  },
+
+  thumbnail: {
+    height: 58,
+    width: 58,
+  },
+
+  productInfoCard: {
+    backgroundColor: productPalette.white,
+    borderColor: "#E5E9F0",
+    borderRadius: 17,
+    borderWidth: 1,
+    padding: 12,
+  },
+
+  skuRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    marginBottom: 6,
+  },
+
+  skuBadge: {
+    alignItems: "center",
+    backgroundColor: "#EEF3F8",
+    borderRadius: 9,
+    flexDirection: "row",
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+
+  skuText: {
+    color: productPalette.deepBlue,
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.4,
+  },
+
+  productName: {
+    color: productPalette.text,
+    fontSize: 18,
+    fontWeight: "900",
+    lineHeight: 22,
+  },
+
+  priceSection: {
+    borderTopColor: "#EEF1F5",
+    borderTopWidth: 1,
+    marginTop: 6,
+    paddingTop: 6,
+  },
+
+  productPrice: {
+    color: productPalette.deepBlue,
+    fontSize: 23,
+    fontWeight: "900",
+  },
+
+  oldPriceRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 9,
+    marginTop: 7,
+  },
+
+  oldPrice: {
+    color: productPalette.muted,
+    fontSize: 13,
+    textDecorationLine: "line-through",
+  },
+
+  savingsPill: {
+    backgroundColor: "#FFF4D6",
+    borderRadius: 10,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+  },
+
+  savingsText: {
+    color: productPalette.deepBlue,
+    fontSize: 10,
+    fontWeight: "800",
+  },
+
+  priceCaption: {
+    color: productPalette.muted,
+    fontSize: 11,
+    marginTop: 4,
+  },
+
+  descriptionCard: {
+    backgroundColor: productPalette.white,
+    borderColor: "#E5E9F0",
+    borderRadius: 17,
+    borderWidth: 1,
+    padding: 12,
+  },
+
+  cardHeadingRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 8,
+  },
+
+  cardHeadingIcon: {
+    alignItems: "center",
+    backgroundColor: "#EEF3F8",
     borderRadius: 8,
+    height: 28,
+    justifyContent: "center",
+    width: 28,
+  },
+
+  cardHeadingText: {
+    flex: 1,
+  },
+
+  cardTitle: {
+    color: productPalette.text,
+    fontSize: 15,
+    fontWeight: "900",
+  },
+
+  cardSubtitle: {
+    color: productPalette.muted,
+    fontSize: 11,
+    marginTop: 2,
+  },
+
+  descriptionText: {
+    color: productPalette.muted,
+    fontSize: 11,
+    lineHeight: 17,
+    marginTop: 7,
+  },
+
+  purchaseCard: {
+    backgroundColor: productPalette.white,
+    borderColor: "#E5E9F0",
+    borderRadius: 17,
+    borderWidth: 1,
+    padding: 12,
+  },
+
+  purchaseHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+
+  quantityIcon: {
+    alignItems: "center",
+    backgroundColor: "#FFF4D6",
+    borderRadius: 8,
+    height: 28,
+    justifyContent: "center",
+    width: 28,
+  },
+
+  quantityRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 8,
+  },
+
+  quantityButton: {
+    alignItems: "center",
+    backgroundColor: "#EEF3F8",
+    borderColor: "#DCE4ED",
+    borderRadius: 12,
     borderWidth: 1,
     height: 40,
     justifyContent: "center",
     width: 40,
   },
-  success: { color: colors.success },
-  thumbnail: {
-    backgroundColor: colors.border,
-    borderRadius: 8,
-    height: 64,
-    marginRight: spacing.sm,
-    width: 64,
+
+  quantityButtonDisabled: {
+    opacity: 0.4,
   },
-  title: { color: colors.text, fontSize: typography.title, fontWeight: "700" },
+
+  quantityValue: {
+    alignItems: "center",
+    minWidth: 70,
+  },
+
+  quantityNumber: {
+    color: productPalette.text,
+    fontSize: 18,
+    fontWeight: "900",
+  },
+
+  quantityLabel: {
+    color: productPalette.muted,
+    fontSize: 10,
+    marginTop: 1,
+  },
+
+  purchaseDivider: {
+    backgroundColor: "#EEF1F5",
+    height: 1,
+    marginVertical: 7,
+  },
+
+  totalRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+
+  totalLabel: {
+    color: productPalette.text,
+    fontSize: 13,
+    fontWeight: "800",
+  },
+
+  totalCaption: {
+    color: productPalette.muted,
+    fontSize: 10,
+    marginTop: 2,
+  },
+
+  totalPrice: {
+    color: productPalette.deepBlue,
+    fontSize: 18,
+    fontWeight: "900",
+  },
+
+  addButton: {
+    alignItems: "center",
+    backgroundColor: productPalette.deepBlue,
+    borderRadius: 14,
+    flexDirection: "row",
+    gap: 10,
+    justifyContent: "center",
+    marginTop: 8,
+    minHeight: 46,
+    paddingHorizontal: 12,
+  },
+
+  addButtonDisabled: {
+    backgroundColor: productPalette.silkyLilac,
+  },
+
+  addButtonPressed: {
+    opacity: 0.86,
+  },
+
+  addButtonIcon: {
+    alignItems: "center",
+    backgroundColor: productPalette.butterHoney,
+    borderRadius: 8,
+    height: 28,
+    justifyContent: "center",
+    width: 28,
+  },
+
+  addButtonText: {
+    color: productPalette.white,
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "900",
+    textAlign: "center",
+  },
+
+  successMessage: {
+    alignItems: "center",
+    backgroundColor: "#EAF6EF",
+    borderRadius: 13,
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+
+  successIcon: {
+    alignItems: "center",
+    backgroundColor: productPalette.white,
+    borderRadius: 12,
+    height: 24,
+    justifyContent: "center",
+    width: 24,
+  },
+
+  successText: {
+    color: productPalette.success,
+    flex: 1,
+    fontSize: 11,
+    fontWeight: "800",
+  },
+
+  serviceStrip: {
+    alignItems: "center",
+    backgroundColor: "#E8EEF7",
+    borderRadius: 16,
+    flexDirection: "row",
+    justifyContent: "space-evenly",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+
+  serviceItem: {
+    alignItems: "center",
+    flex: 1,
+    gap: 6,
+  },
+
+  serviceSeparator: {
+    backgroundColor: "#CAD4E0",
+    height: 30,
+    width: 1,
+  },
+
+  serviceText: {
+    color: productPalette.deepBlue,
+    fontSize: 10,
+    fontWeight: "800",
+  },
+
+  pressed: {
+    opacity: 0.72,
+  },
 });
+
