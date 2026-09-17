@@ -27,10 +27,10 @@ export default function ProtectedLayout() {
       <Stack.Screen name="products/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="favorites" options={{ title: "Favoritos" }} />
       <Stack.Screen name="notifications" options={{ headerShown: false }} />
-      <Stack.Screen name="checkout/delivery" options={{ title: "Entrega" }} />
-      <Stack.Screen name="checkout/payment" options={{ title: "Pago" }} />
-      <Stack.Screen name="checkout/review" options={{ title: "Revisar pedido" }} />
-      <Stack.Screen name="checkout/success" options={{ title: "Pedido confirmado" }} />
+      <Stack.Screen name="checkout/delivery" options={{ headerShown: false }} />
+      <Stack.Screen name="checkout/payment" options={{ headerShown: false }} />
+      <Stack.Screen name="checkout/review" options={{ headerShown: false }} />
+      <Stack.Screen name="checkout/success" options={{ headerShown: false }} />
       <Stack.Screen name="orders/[id]" options={{ title: "Detalle de pedido" }} />
       <Stack.Screen name="addresses/index" options={{ headerShown: false }} />
       <Stack.Screen name="addresses/new" options={{ headerShown: false }} />
