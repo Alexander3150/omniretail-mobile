@@ -15,7 +15,11 @@ export default function Index() {
     );
   }
 
-  return <Redirect href={isAuthenticated ? "/(protected)/(tabs)" : "/(auth)/login"} />;
+  return (
+    <Redirect
+      href={isAuthenticated ? "/(protected)/(tabs)" : "/(shop)"}
+    />
+  );
 }
 
 const styles = StyleSheet.create({

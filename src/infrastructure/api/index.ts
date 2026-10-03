@@ -9,3 +9,4 @@ export type { ApiMode } from "./config";
 
 export { apiClient, createApiClient } from "./createApiClient";
 export * from "./auth";
+export * from "./catalog";

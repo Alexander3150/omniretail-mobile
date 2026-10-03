@@ -14,11 +14,11 @@ import {
 } from "react-native";
 
 import { formatCurrency } from "@/shared";
-import { colors, spacing, typography } from "@/theme";
 
 import { calculatePrice } from "../application/pricing";
 import { ProductCard } from "../components/ProductCard";
 import { useCommerceCatalog } from "../hooks/useCommerceCatalog";
+import { useProductDetail } from "../hooks/useProductDetail";
 
 export function CategoriesScreen() {
   const params = useLocalSearchParams<{ categoryId?: string }>();
@@ -260,8 +260,12 @@ export function CategoriesScreen() {
 
 export function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { addToCart, currency, isLoading, products } = useCommerceCatalog();
-  const productVm = products.find((item) => item.product.id === id);
+  const { addToCart, currency } = useCommerceCatalog();
+  const {
+    error: detailError,
+    isLoading,
+    product: productVm,
+  } = useProductDetail(id);
   const [quantity, setQuantity] = useState(1);
   const [message, setMessage] = useState<string | null>(null);
   const [imageFailed, setImageFailed] = useState(false);
@@ -274,17 +278,30 @@ export function ProductDetailScreen() {
     for (let index = 0; index < quantity; index += 1) {
       await addToCart(productVm.product.id);
     }
+
     setMessage("Producto agregado al carrito.");
   }
 
   if (isLoading) {
-    return <ActivityIndicator color={colors.primary} style={styles.loading} />;
+    return (
+      <View style={detailStyles.loadingContainer}>
+        <ActivityIndicator color={categoryPalette.deepBlue} size="large" />
+        <Text style={detailStyles.loadingText}>Preparando producto...</Text>
+      </View>
+    );
   }
 
   if (!productVm) {
     return (
-      <View style={styles.content}>
-        <Text style={styles.title}>Producto no encontrado</Text>
+      <View style={detailStyles.loadingContainer}>
+        <Ionicons
+          color={categoryPalette.deepBlue}
+          name="cube-outline"
+          size={48}
+        />
+        <Text style={detailStyles.notFoundTitle}>
+          {detailError ?? "Producto no encontrado"}
+        </Text>
       </View>
     );
   }
@@ -295,77 +312,208 @@ export function ProductDetailScreen() {
   );
 
   return (
-    <ScrollView contentContainerStyle={styles.content}>
-      <Image
-        accessibilityLabel={productVm.primaryImage.altText}
-        onError={() => setImageFailed(true)}
-        source={
-          imageFailed
-            ? productVm.primaryImage.fallbackSource
-            : productVm.primaryImage.source
-        }
-        style={styles.detailImage}
-      />
+    <ScrollView
+      contentContainerStyle={detailStyles.content}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={detailStyles.hero}>
+        <View style={detailStyles.decorationOne} />
+        <View style={detailStyles.decorationTwo} />
+
+        <Text style={detailStyles.brand}>FERREPHARMA</Text>
+        <Text style={detailStyles.heroTitle}>Detalle del producto</Text>
+        <Text style={detailStyles.heroDescription}>
+          Información, disponibilidad y precio del producto.
+        </Text>
+      </View>
+
+      <View style={detailStyles.imageCard}>
+        <Image
+          accessibilityLabel={productVm.primaryImage.altText}
+          onError={() => setImageFailed(true)}
+          resizeMode="contain"
+          source={
+            imageFailed
+              ? productVm.primaryImage.fallbackSource
+              : productVm.primaryImage.source
+          }
+          style={detailStyles.detailImage}
+        />
+
+        {productVm.price.discount > 0 ? (
+          <View style={detailStyles.offerBadge}>
+            <Ionicons
+              color={categoryPalette.deepBlue}
+              name="flash"
+              size={13}
+            />
+            <Text style={detailStyles.offerText}>OFERTA</Text>
+          </View>
+        ) : null}
+      </View>
+
       {productVm.images.length > 1 ? (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={styles.mediaStrip}
+          style={detailStyles.mediaStrip}
         >
           {productVm.images.map((image) => (
             <Image
               accessibilityLabel={image.altText}
               key={image.media?.id ?? image.altText}
+              resizeMode="contain"
               source={image.source}
-              style={styles.thumbnail}
+              style={detailStyles.thumbnail}
             />
           ))}
         </ScrollView>
       ) : null}
-      <Text style={styles.title}>{productVm.product.name}</Text>
-      <Text style={styles.muted}>SKU {productVm.product.sku}</Text>
-      <Text style={styles.body}>{productVm.product.description}</Text>
-      <Text style={styles.price}>
-        {formatCurrency(price.effectivePrice, currency)}
-      </Text>
-      {price.discount > 0 ? (
-        <Text style={styles.muted}>
-          Antes {formatCurrency(price.basePrice, currency)}. Descuento{" "}
-          {formatCurrency(price.discount, currency)}
+
+      <View style={detailStyles.infoCard}>
+        <Text style={detailStyles.eyebrow}>PRODUCTO</Text>
+
+        <Text style={detailStyles.title}>
+          {productVm.product.name}
         </Text>
-      ) : null}
-      <Text style={styles.body}>
-        {productVm.available ? "Disponible" : "Agotado"}
-      </Text>
-      <Text style={styles.sectionTitle}>Cantidad</Text>
-      <View style={styles.row}>
-        <Pressable
-          onPress={() => setQuantity(Math.max(1, quantity - 1))}
-          style={styles.smallButton}
-        >
-          <Text>-</Text>
-        </Pressable>
-        <Text style={styles.body}>{quantity}</Text>
-        <Pressable
-          onPress={() =>
-            setQuantity(Math.min(productVm.availableQuantity, quantity + 1))
-          }
-          style={styles.smallButton}
-        >
-          <Text>+</Text>
-        </Pressable>
+
+        <View style={detailStyles.skuRow}>
+          <Ionicons
+            color={categoryPalette.muted}
+            name="barcode-outline"
+            size={16}
+          />
+          <Text style={detailStyles.muted}>
+            SKU {productVm.product.sku}
+          </Text>
+        </View>
+
+        {productVm.product.description ? (
+          <Text style={detailStyles.description}>
+            {productVm.product.description}
+          </Text>
+        ) : null}
+
+        <View style={detailStyles.divider} />
+
+        <View style={detailStyles.priceRow}>
+          <View>
+            <Text style={detailStyles.priceLabel}>Precio</Text>
+            <Text style={detailStyles.price}>
+              {formatCurrency(price.effectivePrice, currency)}
+            </Text>
+          </View>
+
+          <View
+            style={[
+              detailStyles.stockBadge,
+              !productVm.available ? detailStyles.stockBadgeEmpty : null,
+            ]}
+          >
+            <View
+              style={[
+                detailStyles.stockDot,
+                !productVm.available ? detailStyles.stockDotEmpty : null,
+              ]}
+            />
+            <Text
+              style={[
+                detailStyles.stockText,
+                !productVm.available ? detailStyles.stockTextEmpty : null,
+              ]}
+            >
+              {productVm.available ? "Disponible" : "Agotado"}
+            </Text>
+          </View>
+        </View>
+
+        {price.discount > 0 ? (
+          <Text style={detailStyles.discountText}>
+            Antes {formatCurrency(price.basePrice, currency)} · Ahorras{" "}
+            {formatCurrency(price.discount, currency)}
+          </Text>
+        ) : null}
       </View>
-      <Pressable
-        disabled={!productVm.available}
-        onPress={handleAdd}
-        style={[
-          styles.primaryButton,
-          !productVm.available ? styles.disabled : null,
-        ]}
-      >
-        <Text style={styles.primaryText}>Agregar al carrito</Text>
-      </Pressable>
-      {message ? <Text style={styles.success}>{message}</Text> : null}
+
+      <View style={detailStyles.purchaseCard}>
+        <View style={detailStyles.quantityHeader}>
+          <View>
+            <Text style={detailStyles.eyebrow}>SELECCIONA</Text>
+            <Text style={detailStyles.sectionTitle}>Cantidad</Text>
+          </View>
+
+          <Text style={detailStyles.availableText}>
+            {productVm.availableQuantity} disponibles
+          </Text>
+        </View>
+
+        <View style={detailStyles.quantityRow}>
+          <Pressable
+            accessibilityLabel="Disminuir cantidad"
+            onPress={() => setQuantity(Math.max(1, quantity - 1))}
+            style={({ pressed }) => [
+              detailStyles.quantityButton,
+              pressed ? detailStyles.pressed : null,
+            ]}
+          >
+            <Ionicons
+              color={categoryPalette.deepBlue}
+              name="remove"
+              size={21}
+            />
+          </Pressable>
+
+          <View style={detailStyles.quantityValue}>
+            <Text style={detailStyles.quantityText}>{quantity}</Text>
+          </View>
+
+          <Pressable
+            accessibilityLabel="Aumentar cantidad"
+            disabled={!productVm.available}
+            onPress={() =>
+              setQuantity(
+                Math.min(productVm.availableQuantity, quantity + 1),
+              )
+            }
+            style={({ pressed }) => [
+              detailStyles.quantityButton,
+              pressed ? detailStyles.pressed : null,
+            ]}
+          >
+            <Ionicons
+              color={categoryPalette.deepBlue}
+              name="add"
+              size={21}
+            />
+          </Pressable>
+        </View>
+
+        <Pressable
+          disabled={!productVm.available}
+          onPress={handleAdd}
+          style={({ pressed }) => [
+            detailStyles.primaryButton,
+            !productVm.available ? detailStyles.disabled : null,
+            pressed ? detailStyles.pressed : null,
+          ]}
+        >
+          <Ionicons color={categoryPalette.white} name="cart-outline" size={20} />
+          <Text style={detailStyles.primaryText}>
+            Agregar al carrito
+          </Text>
+        </Pressable>
+
+        {message ? (
+          <View style={detailStyles.successBox}>
+            <Ionicons
+              color="#27845B"
+              name="checkmark-circle"
+              size={18}
+            />
+            <Text style={detailStyles.success}>{message}</Text>
+          </View>
+        ) : null}
+      </View>
     </ScrollView>
   );
 }
@@ -670,87 +818,354 @@ const categoryStyles = StyleSheet.create({
   },
 });
 
-const styles = StyleSheet.create({
-  body: { color: colors.text, fontSize: typography.body },
-  categoryPill: {
-    borderColor: colors.border,
-    borderRadius: 8,
-    borderWidth: 1,
-    marginRight: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  categorySelected: { backgroundColor: colors.accent },
-  categoryText: { color: colors.text },
+
+const detailStyles = StyleSheet.create({
   content: {
-    backgroundColor: colors.background,
-    gap: spacing.md,
-    padding: spacing.md,
+    backgroundColor: categoryPalette.vanillaMilk,
+    flexGrow: 1,
+    paddingBottom: 34,
   },
+
+  loadingContainer: {
+    alignItems: "center",
+    backgroundColor: categoryPalette.vanillaMilk,
+    flex: 1,
+    gap: 12,
+    justifyContent: "center",
+  },
+
+  loadingText: {
+    color: categoryPalette.deepBlue,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+
+  notFoundTitle: {
+    color: categoryPalette.text,
+    fontSize: 20,
+    fontWeight: "900",
+  },
+
+  hero: {
+    backgroundColor: categoryPalette.deepBlue,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    minHeight: 175,
+    overflow: "hidden",
+    paddingBottom: 28,
+    paddingHorizontal: 22,
+    paddingTop: 45,
+  },
+
+  decorationOne: {
+    backgroundColor: categoryPalette.dreamyBlue,
+    borderRadius: 100,
+    height: 180,
+    opacity: 0.17,
+    position: "absolute",
+    right: -55,
+    top: -65,
+    width: 180,
+  },
+
+  decorationTwo: {
+    backgroundColor: categoryPalette.butterHoney,
+    borderRadius: 55,
+    bottom: -55,
+    height: 110,
+    opacity: 0.15,
+    position: "absolute",
+    right: 70,
+    width: 110,
+  },
+
+  brand: {
+    color: categoryPalette.butterHoney,
+    fontSize: 11,
+    fontWeight: "900",
+    letterSpacing: 1.8,
+  },
+
+  heroTitle: {
+    color: categoryPalette.white,
+    fontSize: 29,
+    fontWeight: "900",
+    marginTop: 4,
+  },
+
+  heroDescription: {
+    color: "#EAF1F8",
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 8,
+  },
+
+  imageCard: {
+    backgroundColor: categoryPalette.white,
+    borderColor: categoryPalette.silkyLilac,
+    borderRadius: 24,
+    borderWidth: 1,
+    marginHorizontal: 18,
+    marginTop: -22,
+    overflow: "hidden",
+    padding: 16,
+    position: "relative",
+  },
+
   detailImage: {
-    backgroundColor: colors.border,
-    borderRadius: 8,
-    height: 220,
+    height: 225,
     width: "100%",
   },
-  disabled: { opacity: 0.45 },
-  empty: { color: colors.textMuted, textAlign: "center" },
-  error: { color: colors.danger },
-  header: { gap: spacing.md },
-  input: {
-    borderColor: colors.border,
-    borderRadius: 8,
-    borderWidth: 1,
-    color: colors.text,
-    minHeight: 44,
-    paddingHorizontal: spacing.md,
-  },
-  loading: { flex: 1 },
-  mediaStrip: { flexGrow: 0 },
-  muted: { color: colors.textMuted },
-  price: {
-    color: colors.text,
-    fontSize: typography.subtitle,
-    fontWeight: "700",
-  },
-  primaryButton: {
+
+  offerBadge: {
     alignItems: "center",
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    minHeight: 48,
-    justifyContent: "center",
+    backgroundColor: categoryPalette.butterHoney,
+    borderRadius: 12,
+    flexDirection: "row",
+    gap: 4,
+    left: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    position: "absolute",
+    top: 14,
   },
-  primaryText: { color: colors.surface, fontWeight: "700" },
-  row: { alignItems: "center", flexDirection: "row", gap: spacing.md },
-  secondaryButton: {
-    alignItems: "center",
-    borderColor: colors.border,
-    borderRadius: 8,
-    borderWidth: 1,
-    minHeight: 44,
-    justifyContent: "center",
+
+  offerText: {
+    color: categoryPalette.deepBlue,
+    fontSize: 9,
+    fontWeight: "900",
   },
-  sectionTitle: {
-    color: colors.text,
-    fontSize: typography.subtitle,
-    fontWeight: "700",
+
+  mediaStrip: {
+    flexGrow: 0,
+    marginHorizontal: 18,
+    marginTop: 10,
   },
-  smallButton: {
-    alignItems: "center",
-    borderColor: colors.border,
-    borderRadius: 8,
-    borderWidth: 1,
-    height: 40,
-    justifyContent: "center",
-    width: 40,
-  },
-  success: { color: colors.success },
+
   thumbnail: {
-    backgroundColor: colors.border,
-    borderRadius: 8,
+    backgroundColor: categoryPalette.white,
+    borderColor: categoryPalette.border,
+    borderRadius: 12,
+    borderWidth: 1,
     height: 64,
-    marginRight: spacing.sm,
+    marginRight: 8,
     width: 64,
   },
-  title: { color: colors.text, fontSize: typography.title, fontWeight: "700" },
+
+  infoCard: {
+    backgroundColor: categoryPalette.white,
+    borderColor: categoryPalette.border,
+    borderRadius: 22,
+    borderWidth: 1,
+    marginHorizontal: 18,
+    marginTop: 16,
+    padding: 20,
+  },
+
+  eyebrow: {
+    color: categoryPalette.dreamyBlue,
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 1.5,
+  },
+
+  title: {
+    color: categoryPalette.text,
+    fontSize: 25,
+    fontWeight: "900",
+    lineHeight: 31,
+    marginTop: 5,
+  },
+
+  skuRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 6,
+    marginTop: 8,
+  },
+
+  muted: {
+    color: categoryPalette.muted,
+    fontSize: 11,
+    fontWeight: "600",
+  },
+
+  description: {
+    color: categoryPalette.muted,
+    fontSize: 13,
+    lineHeight: 20,
+    marginTop: 16,
+  },
+
+  divider: {
+    backgroundColor: categoryPalette.border,
+    height: 1,
+    marginVertical: 18,
+  },
+
+  priceRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+
+  priceLabel: {
+    color: categoryPalette.muted,
+    fontSize: 10,
+    fontWeight: "700",
+  },
+
+  price: {
+    color: categoryPalette.deepBlue,
+    fontSize: 27,
+    fontWeight: "900",
+    marginTop: 2,
+  },
+
+  stockBadge: {
+    alignItems: "center",
+    backgroundColor: "#EAF7EF",
+    borderRadius: 16,
+    flexDirection: "row",
+    gap: 6,
+    paddingHorizontal: 11,
+    paddingVertical: 8,
+  },
+
+  stockBadgeEmpty: {
+    backgroundColor: "#FFF0F0",
+  },
+
+  stockDot: {
+    backgroundColor: "#27845B",
+    borderRadius: 5,
+    height: 9,
+    width: 9,
+  },
+
+  stockDotEmpty: {
+    backgroundColor: categoryPalette.danger,
+  },
+
+  stockText: {
+    color: "#27845B",
+    fontSize: 10,
+    fontWeight: "900",
+  },
+
+  stockTextEmpty: {
+    color: categoryPalette.danger,
+  },
+
+  discountText: {
+    color: categoryPalette.muted,
+    fontSize: 10,
+    marginTop: 8,
+  },
+
+  purchaseCard: {
+    backgroundColor: categoryPalette.white,
+    borderColor: categoryPalette.border,
+    borderRadius: 22,
+    borderWidth: 1,
+    marginHorizontal: 18,
+    marginTop: 14,
+    padding: 20,
+  },
+
+  quantityHeader: {
+    alignItems: "flex-end",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+
+  sectionTitle: {
+    color: categoryPalette.text,
+    fontSize: 20,
+    fontWeight: "900",
+    marginTop: 2,
+  },
+
+  availableText: {
+    color: categoryPalette.muted,
+    fontSize: 10,
+    fontWeight: "700",
+  },
+
+  quantityRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 17,
+  },
+
+  quantityButton: {
+    alignItems: "center",
+    backgroundColor: "#F3F6FB",
+    borderColor: categoryPalette.silkyLilac,
+    borderRadius: 13,
+    borderWidth: 1,
+    height: 48,
+    justifyContent: "center",
+    width: 48,
+  },
+
+  quantityValue: {
+    alignItems: "center",
+    backgroundColor: categoryPalette.white,
+    borderColor: categoryPalette.border,
+    borderRadius: 13,
+    borderWidth: 1,
+    height: 48,
+    justifyContent: "center",
+    minWidth: 62,
+  },
+
+  quantityText: {
+    color: categoryPalette.text,
+    fontSize: 17,
+    fontWeight: "900",
+  },
+
+  primaryButton: {
+    alignItems: "center",
+    backgroundColor: categoryPalette.deepBlue,
+    borderRadius: 15,
+    flexDirection: "row",
+    gap: 8,
+    justifyContent: "center",
+    marginTop: 18,
+    minHeight: 54,
+  },
+
+  primaryText: {
+    color: categoryPalette.white,
+    fontSize: 13,
+    fontWeight: "900",
+  },
+
+  successBox: {
+    alignItems: "center",
+    backgroundColor: "#EAF7EF",
+    borderRadius: 12,
+    flexDirection: "row",
+    gap: 7,
+    marginTop: 12,
+    padding: 11,
+  },
+
+  success: {
+    color: "#27845B",
+    flex: 1,
+    fontSize: 11,
+    fontWeight: "700",
+  },
+
+  disabled: {
+    opacity: 0.45,
+  },
+
+  pressed: {
+    opacity: 0.8,
+  },
 });

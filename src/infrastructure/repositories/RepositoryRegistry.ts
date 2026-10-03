@@ -19,7 +19,10 @@ import type {
 
 import {
   ApiAuthRepository,
+  ApiCategoryRepository,
   ApiCustomerRepository,
+  ApiProductAvailabilityRepository,
+  ApiProductRepository,
   ApiTokenStorage,
   apiConfig,
   createApiClient,
@@ -110,6 +113,17 @@ export function createRepositoryRegistry(): RepositoryRegistry {
     apiConfig.tenantSlug,
   );
 
+  const apiCategoryRepository = new ApiCategoryRepository();
+  const apiProductAvailabilityRepository =
+    new ApiProductAvailabilityRepository();
+
+  const apiProductRepository = new ApiProductRepository(
+    apiClient,
+    apiConfig.tenantSlug,
+    apiCategoryRepository,
+    apiProductAvailabilityRepository,
+  );
+
   return {
     authRepository: isApiMode()
       ? apiAuthRepository
@@ -117,11 +131,17 @@ export function createRepositoryRegistry(): RepositoryRegistry {
     customerRepository: isApiMode()
       ? apiCustomerRepository
       : mockCustomerRepository,
-    productRepository: new MockProductRepository(databaseStore),
+    productRepository: isApiMode()
+      ? apiProductRepository
+      : new MockProductRepository(databaseStore),
     productMediaRepository: new MockProductMediaRepository(databaseStore),
-    categoryRepository: new MockCategoryRepository(databaseStore),
+    categoryRepository: isApiMode()
+      ? apiCategoryRepository
+      : new MockCategoryRepository(databaseStore),
     promotionRepository: new MockPromotionRepository(databaseStore),
-    productAvailabilityRepository: new MockProductAvailabilityRepository(databaseStore),
+    productAvailabilityRepository: isApiMode()
+      ? apiProductAvailabilityRepository
+      : new MockProductAvailabilityRepository(databaseStore),
     addressRepository: new MockAddressRepository(databaseStore),
     favoriteRepository: new MockFavoriteRepository(databaseStore),
     cartRepository: new MockCartRepository(databaseStore),
