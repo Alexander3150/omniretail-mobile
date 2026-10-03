@@ -1,6 +1,7 @@
 import { Redirect, Stack } from "expo-router";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 
+import { isApiMode } from "@/infrastructure";
 import { useSession } from "@/modules/auth";
 import { colors } from "@/theme";
 
@@ -22,9 +23,19 @@ export default function AuthLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="login" options={{ title: "Login" }} />
-      <Stack.Screen name="register" options={{ title: "Registro" }} />
-      <Stack.Screen name="forgot-password" options={{ title: "Recuperar clave" }} />
-      <Stack.Screen name="reset-password" options={{ title: "Restablecer clave" }} />
+      {!isApiMode() ? (
+        <>
+          <Stack.Screen name="register" options={{ title: "Registro" }} />
+          <Stack.Screen
+            name="forgot-password"
+            options={{ title: "Recuperar clave" }}
+          />
+          <Stack.Screen
+            name="reset-password"
+            options={{ title: "Restablecer clave" }}
+          />
+        </>
+      ) : null}
     </Stack>
   );
 }
