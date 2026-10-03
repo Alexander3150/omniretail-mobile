@@ -11,17 +11,20 @@ type ApiClientOptions = {
   baseUrl: string;
   timeoutMs?: number;
   getToken?: ApiTokenProvider;
+  onUnauthorized?: () => Promise<void> | void;
 };
 
 export class ApiClient {
   private readonly baseUrl: string;
   private readonly timeoutMs: number;
   private readonly getToken?: ApiTokenProvider;
+  private readonly onUnauthorized?: () => Promise<void> | void;
 
   constructor(options: ApiClientOptions) {
     this.baseUrl = options.baseUrl.replace(/\/+$/, "");
     this.timeoutMs = options.timeoutMs ?? 10_000;
     this.getToken = options.getToken;
+    this.onUnauthorized = options.onUnauthorized;
   }
 
   async request<T>(
@@ -122,6 +125,10 @@ export class ApiClient {
       const payload = this.parseResponseBody(text);
 
       if (!response.ok) {
+        if (response.status === 401 && token && this.onUnauthorized) {
+          await this.onUnauthorized();
+        }
+
         throw this.createApiError(response, payload);
       }
 

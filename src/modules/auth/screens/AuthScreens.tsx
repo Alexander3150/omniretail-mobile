@@ -11,7 +11,7 @@ import {
   View,
 } from "react-native";
 
-import { DEMO_RESET_CODE, useRepositories } from "@/infrastructure";
+import { ApiError, DEMO_RESET_CODE, isApiMode, useRepositories } from "@/infrastructure";
 import { radius, spacing, typography } from "@/theme";
 
 import { useSession } from "../hooks/useSession";
@@ -24,8 +24,12 @@ import {
 
 export function LoginScreen() {
   const { login } = useSession();
-  const [email, setEmail] = useState("cliente@demo.com");
-  const [password, setPassword] = useState("Demo1234");
+  const [email, setEmail] = useState(
+    isApiMode() ? "" : "cliente@demo.com",
+  );
+  const [password, setPassword] = useState(
+    isApiMode() ? "" : "Demo1234",
+  );
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -42,8 +46,22 @@ export function LoginScreen() {
     try {
       await login({ email: email.trim(), password });
       router.replace("/(protected)/(tabs)");
-    } catch {
-      setError("Correo o contrasena incorrectos.");
+    } catch (error) {
+      if (error instanceof ApiError) {
+        if (error.code === "NETWORK_ERROR") {
+          setError("No se pudo conectar con el servidor.");
+        } else if (error.code === "REQUEST_TIMEOUT") {
+          setError("El servidor tardó demasiado en responder.");
+        } else if (error.status === 401) {
+          setError("Correo o contraseña incorrectos.");
+        } else if (error.status === 400) {
+          setError(error.message || "Revisa los datos ingresados.");
+        } else {
+          setError(error.message || "No se pudo iniciar sesión.");
+        }
+      } else {
+        setError("No se pudo iniciar sesión.");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -74,8 +92,15 @@ export function LoginScreen() {
         loading={isSubmitting}
         onPress={handleSubmit}
       />
-      <InlineLink href="/(auth)/register" label="Crear cuenta" />
-      <InlineLink href="/(auth)/forgot-password" label="Recuperar contrasena" />
+      {!isApiMode() ? (
+        <>
+          <InlineLink href="/(auth)/register" label="Crear cuenta" />
+          <InlineLink
+            href="/(auth)/forgot-password"
+            label="Recuperar contrasena"
+          />
+        </>
+      ) : null}
     </AuthForm>
   );
 }

@@ -13,7 +13,7 @@ import {
 } from "react-native";
 
 import { useSession } from "@/modules/auth";
-import { useRepositories } from "@/infrastructure";
+import { isApiMode, useRepositories } from "@/infrastructure";
 import { colors, radius, spacing, typography } from "@/theme";
 
 export function AccountScreen() {
@@ -101,32 +101,34 @@ export function AccountScreen() {
         />
       </AccountSection>
 
-      <AccountSection title="Cuenta y seguridad">
-        <AccountMenuItem
-          icon="shield-checkmark-outline"
-          iconBackground="#EEF1FF"
-          label="Seguridad"
-          description="Contraseña y protección"
-          route="/(protected)/account/security"
-        />
+      {!isApiMode() ? (
+        <AccountSection title="Cuenta y seguridad">
+          <AccountMenuItem
+            icon="shield-checkmark-outline"
+            iconBackground="#EEF1FF"
+            label="Seguridad"
+            description="Contraseña y protección"
+            route="/(protected)/account/security"
+          />
 
-        <AccountMenuItem
-          icon="location-outline"
-          iconBackground="#FFF5DA"
-          label="Mis direcciones"
-          description="Administra lugares de entrega"
-          route="/(protected)/addresses"
-        />
+          <AccountMenuItem
+            icon="location-outline"
+            iconBackground="#FFF5DA"
+            label="Mis direcciones"
+            description="Administra lugares de entrega"
+            route="/(protected)/addresses"
+          />
 
-        <AccountMenuItem
-          icon="card-outline"
-          iconBackground="#EAF7F3"
-          label="Métodos de pago"
-          description="Administra tus tarjetas"
-          route="/(protected)/account/payment-methods"
-          isLast
-        />
-      </AccountSection>
+          <AccountMenuItem
+            icon="card-outline"
+            iconBackground="#EAF7F3"
+            label="Métodos de pago"
+            description="Administra tus tarjetas"
+            route="/(protected)/account/payment-methods"
+            isLast
+          />
+        </AccountSection>
+      ) : null}
 
       <AccountSection title="Preferencias y ayuda">
         <AccountMenuItem
@@ -137,13 +139,15 @@ export function AccountScreen() {
           route="/(protected)/notifications"
         />
 
-        <AccountMenuItem
-          icon="storefront-outline"
-          iconBackground="#EAF1FF"
-          label="Sucursales"
-          description="Encuentra una tienda cercana"
-          route="/(protected)/branches"
-        />
+        {!isApiMode() ? (
+          <AccountMenuItem
+            icon="storefront-outline"
+            iconBackground="#EAF1FF"
+            label="Sucursales"
+            description="Encuentra una tienda cercana"
+            route="/(protected)/branches"
+          />
+        ) : null}
 
         <AccountMenuItem
           icon="help-circle-outline"

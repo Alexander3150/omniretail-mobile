@@ -46,24 +46,37 @@ export function SessionProvider({ children }: PropsWithChildren) {
     let isMounted = true;
 
     async function bootstrapSession() {
-      const currentSession = await authRepository.getCurrentSession();
-      const currentCustomer = currentSession ? await customerRepository.getById(currentSession.customerId) : null;
+      try {
+        const currentSession = await authRepository.getCurrentSession();
+        const currentCustomer = currentSession
+          ? await customerRepository.getById(currentSession.customerId)
+          : null;
 
-      if (!isMounted) {
-        return;
+        if (!isMounted) {
+          return;
+        }
+
+        if (currentSession && !currentCustomer) {
+          await authRepository.logout();
+          setSession(null);
+          setCustomer(null);
+          return;
+        }
+
+        setSession(currentSession);
+        setCustomer(currentCustomer);
+      } catch (error) {
+        console.warn("No se pudo restaurar la sesión inicial:", error);
+
+        if (isMounted) {
+          setSession(null);
+          setCustomer(null);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
-
-      if (currentSession && !currentCustomer) {
-        await authRepository.logout();
-        setSession(null);
-        setCustomer(null);
-        setIsLoading(false);
-        return;
-      }
-
-      setSession(currentSession);
-      setCustomer(currentCustomer);
-      setIsLoading(false);
     }
 
     void bootstrapSession();

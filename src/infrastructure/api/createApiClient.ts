@@ -3,11 +3,13 @@ import { apiConfig } from "./config";
 
 export function createApiClient(
   getToken?: ApiTokenProvider,
+  onUnauthorized?: () => Promise<void> | void,
 ): ApiClient {
   return new ApiClient({
     baseUrl: apiConfig.baseUrl,
     timeoutMs: apiConfig.timeoutMs,
     getToken,
+    onUnauthorized,
   });
 }
 

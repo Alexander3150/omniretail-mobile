@@ -17,6 +17,14 @@ import type {
   PromotionRepository,
 } from "@/core";
 
+import {
+  ApiAuthRepository,
+  ApiCustomerRepository,
+  ApiTokenStorage,
+  apiConfig,
+  createApiClient,
+  isApiMode,
+} from "../api";
 import { MockCredentialStore } from "../mock/auth";
 import { MockDatabaseStore } from "../mock/database";
 import {
@@ -74,9 +82,41 @@ export function createRepositoryRegistry(): RepositoryRegistry {
   const credentialStore = new MockCredentialStore(secureStorage);
   const sessionStorage = new SessionStorage(secureStorage);
 
+  const mockAuthRepository = new MockAuthRepository(
+    databaseStore,
+    credentialStore,
+    sessionStorage,
+  );
+  const mockCustomerRepository = new MockCustomerRepository(databaseStore);
+
+  const apiTokenStorage = new ApiTokenStorage(secureStorage);
+  const apiCustomerRepository = new ApiCustomerRepository();
+
+  const clearApiSession = async () => {
+    await apiTokenStorage.clearToken();
+    await sessionStorage.clearSession();
+    apiCustomerRepository.clearCurrentCustomer();
+  };
+
+  const apiClient = createApiClient(
+    () => apiTokenStorage.getToken(),
+    clearApiSession,
+  );
+  const apiAuthRepository = new ApiAuthRepository(
+    apiClient,
+    apiTokenStorage,
+    sessionStorage,
+    apiCustomerRepository,
+    apiConfig.tenantSlug,
+  );
+
   return {
-    authRepository: new MockAuthRepository(databaseStore, credentialStore, sessionStorage),
-    customerRepository: new MockCustomerRepository(databaseStore),
+    authRepository: isApiMode()
+      ? apiAuthRepository
+      : mockAuthRepository,
+    customerRepository: isApiMode()
+      ? apiCustomerRepository
+      : mockCustomerRepository,
     productRepository: new MockProductRepository(databaseStore),
     productMediaRepository: new MockProductMediaRepository(databaseStore),
     categoryRepository: new MockCategoryRepository(databaseStore),
