@@ -39,20 +39,70 @@ export class ApiClient {
     }
 
     const controller = new AbortController();
-    const timeout = setTimeout(
-      () => controller.abort(),
-      options.timeoutMs ?? this.timeoutMs,
-    );
+    let isTimeout = false;
+
+    const handleExternalAbort = () => {
+      controller.abort();
+    };
+
+    if (options.signal?.aborted) {
+      controller.abort();
+    } else {
+      options.signal?.addEventListener(
+        "abort",
+        handleExternalAbort,
+        { once: true },
+      );
+    }
+
+    const timeout = setTimeout(() => {
+      isTimeout = true;
+      controller.abort();
+    }, options.timeoutMs ?? this.timeoutMs);
 
     try {
       const headers = new Headers(options.headers);
       headers.set("Accept", "application/json");
 
+      let body: BodyInit | undefined;
+
       if (options.body !== undefined) {
-        headers.set("Content-Type", "application/json");
+        const isFormData =
+          typeof FormData !== "undefined" &&
+          options.body instanceof FormData;
+
+        if (isFormData) {
+          body = options.body as FormData;
+        } else if (typeof options.body === "string") {
+          body = options.body;
+
+          if (!headers.has("Content-Type")) {
+            headers.set("Content-Type", "application/json");
+          }
+        } else {
+          body = JSON.stringify(options.body);
+
+          if (!headers.has("Content-Type")) {
+            headers.set("Content-Type", "application/json");
+          }
+        }
       }
 
-      const token = this.getToken ? await this.getToken() : null;
+      let token: string | null = null;
+
+      if (this.getToken) {
+        try {
+          token = await this.getToken();
+        } catch {
+          throw new ApiError(
+            "No se pudo obtener el token de autenticación.",
+            {
+              status: 0,
+              code: "AUTH_TOKEN_ERROR",
+            },
+          );
+        }
+      }
 
       if (token) {
         headers.set("Authorization", `Bearer ${token}`);
@@ -63,10 +113,7 @@ export class ApiClient {
         {
           ...options,
           headers,
-          body:
-            options.body === undefined
-              ? undefined
-              : JSON.stringify(options.body),
+          body,
           signal: controller.signal,
         },
       );
@@ -85,9 +132,19 @@ export class ApiClient {
       }
 
       if (error instanceof Error && error.name === "AbortError") {
-        throw new ApiError("La solicitud tardó demasiado tiempo.", {
+        if (isTimeout) {
+          throw new ApiError(
+            "La solicitud tardó demasiado tiempo.",
+            {
+              status: 0,
+              code: "REQUEST_TIMEOUT",
+            },
+          );
+        }
+
+        throw new ApiError("La solicitud fue cancelada.", {
           status: 0,
-          code: "REQUEST_TIMEOUT",
+          code: "REQUEST_CANCELLED",
         });
       }
 
@@ -97,6 +154,10 @@ export class ApiClient {
       });
     } finally {
       clearTimeout(timeout);
+      options.signal?.removeEventListener(
+        "abort",
+        handleExternalAbort,
+      );
     }
   }
 
@@ -119,6 +180,40 @@ export class ApiClient {
       ...options,
       method: "POST",
       body,
+    });
+  }
+
+  put<T>(
+    path: string,
+    body?: unknown,
+    options: Omit<ApiRequestOptions, "method" | "body"> = {},
+  ): Promise<T> {
+    return this.request<T>(path, {
+      ...options,
+      method: "PUT",
+      body,
+    });
+  }
+
+  patch<T>(
+    path: string,
+    body?: unknown,
+    options: Omit<ApiRequestOptions, "method" | "body"> = {},
+  ): Promise<T> {
+    return this.request<T>(path, {
+      ...options,
+      method: "PATCH",
+      body,
+    });
+  }
+
+  delete<T>(
+    path: string,
+    options: Omit<ApiRequestOptions, "method" | "body"> = {},
+  ): Promise<T> {
+    return this.request<T>(path, {
+      ...options,
+      method: "DELETE",
     });
   }
 
