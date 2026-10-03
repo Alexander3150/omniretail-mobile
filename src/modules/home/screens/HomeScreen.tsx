@@ -318,7 +318,7 @@ export function HomeScreen() {
                     <Text style={styles.sectionTitle}>Categorías</Text>
                   </View>
 
-                  <Link asChild href="/(protected)/(tabs)/categories">
+                  <Link asChild href="/(shop)/categories">
                     <Pressable style={styles.seeAllButton}>
                       <Text style={styles.seeAll}>Ver todas</Text>
                       <Ionicons
@@ -343,7 +343,7 @@ export function HomeScreen() {
                     <Link
                       asChild
                       href={{
-                        pathname: "/(protected)/(tabs)/categories",
+                        pathname: "/(shop)/categories",
                         params: { categoryId: item.id },
                       }}
                     >
@@ -459,10 +459,10 @@ const homeBanners: {
   icon: HomeIconName;
   smallIcon: HomeSmallIconName;
   href:
-    | "/(protected)/(tabs)/categories"
+    | "/(shop)/categories"
     | "/(protected)/(tabs)/orders"
     | {
-        pathname: "/(protected)/(tabs)/categories";
+        pathname: "/(shop)/categories";
         params: { categoryId: string };
       };
 }[] = [
@@ -475,7 +475,7 @@ const homeBanners: {
     buttonLabel: "Ver categorías",
     icon: "storefront-outline",
     smallIcon: "sparkles-outline",
-    href: "/(protected)/(tabs)/categories",
+    href: "/(shop)/categories",
   },
   {
     id: "tools",
@@ -487,7 +487,7 @@ const homeBanners: {
     icon: "hammer-outline",
     smallIcon: "construct-outline",
     href: {
-      pathname: "/(protected)/(tabs)/categories",
+      pathname: "/(shop)/categories",
       params: { categoryId: "category-tools" },
     },
   },

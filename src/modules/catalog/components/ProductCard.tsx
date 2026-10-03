@@ -47,7 +47,7 @@ export function ProductCard({ currency, item, onAddToCart }: ProductCardProps) {
     <Pressable
       onPress={() =>
         router.push({
-          pathname: "/(protected)/products/[id]",
+          pathname: "/(shop)/products/[id]",
           params: { id: item.product.id },
         })
       }

@@ -1,10 +1,22 @@
-import { useCallback, useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import type { Category } from "@/core";
-import { useRepositories } from "@/infrastructure";
+import {
+  apiConfig,
+  isApiMode,
+  useRepositories,
+} from "@/infrastructure";
 import { useSession } from "@/modules/auth";
 
-import { createProductCardViewModel, type ProductCardViewModel } from "../application/productViewModels";
+import {
+  createProductCardViewModel,
+  type ProductCardViewModel,
+} from "../application/productViewModels";
 
 type CatalogState = {
   businessName: string;
@@ -15,60 +27,180 @@ type CatalogState = {
   error: string | null;
 };
 
-export function useCommerceCatalog(categoryId?: string, query = "") {
+export function useCommerceCatalog(
+  categoryId?: string,
+  query = "",
+) {
   const repositories = useRepositories();
   const { session } = useSession();
-  const [state, setState] = useState<CatalogState>({ businessName: "", currency: "GTQ", categories: [], products: [], isLoading: true, error: null });
+
+  const [state, setState] = useState<CatalogState>({
+    businessName: "",
+    currency: "GTQ",
+    categories: [],
+    products: [],
+    isLoading: true,
+    error: null,
+  });
 
   const load = useCallback(async () => {
-    if (!session) {
+    const apiMode = isApiMode();
+
+    if (!apiMode && !session) {
+      setState((current) => ({
+        ...current,
+        isLoading: false,
+      }));
       return;
     }
 
-    setState((current) => ({ ...current, isLoading: true, error: null }));
+    setState((current) => ({
+      ...current,
+      isLoading: true,
+      error: null,
+    }));
+
     try {
-      const business = await repositories.businessConfigRepository.getCurrent();
-      const categories = await repositories.categoryRepository.getAll(session.tenantId);
-      const products = query.trim()
-        ? await repositories.productRepository.search({ tenantId: session.tenantId, query, categoryId })
-        : categoryId
-          ? await repositories.productRepository.getByCategory(session.tenantId, categoryId)
-          : await repositories.productRepository.getAll(session.tenantId);
-      const promotions = await repositories.promotionRepository.getActive(session.tenantId);
-      const favorites = await repositories.favoriteRepository.getByCustomer(session.tenantId, session.customerId);
-      const media = (await Promise.all(products.map((product) => repositories.productMediaRepository.getByProduct(product.id)))).flat();
-      const availability = (await Promise.all(products.map((product) => repositories.productAvailabilityRepository.getByProduct(session.tenantId, product.id)))).flat();
-      const favoriteIds = favorites.map((favorite) => favorite.productId);
+      const tenantId =
+        session?.tenantId ?? apiConfig.tenantSlug;
+
+      const businessName = apiMode
+        ? "FERREPHARMA"
+        : (
+            await repositories.businessConfigRepository.getCurrent()
+          ).name;
+
+      const allProducts =
+        await repositories.productRepository.getAll(tenantId);
+
+      const categories =
+        await repositories.categoryRepository.getAll(tenantId);
+
+      const promotions = apiMode
+        ? []
+        : await repositories.promotionRepository.getActive(
+            tenantId,
+          );
+
+      const favorites = session
+        ? await repositories.favoriteRepository.getByCustomer(
+            session.tenantId,
+            session.customerId,
+          )
+        : [];
+
+      const media = apiMode
+        ? []
+        : (
+            await Promise.all(
+              allProducts.map((product) =>
+                repositories.productMediaRepository.getByProduct(
+                  product.id,
+                ),
+              ),
+            )
+          ).flat();
+
+      const availability = (
+        await Promise.all(
+          allProducts.map((product) =>
+            repositories.productAvailabilityRepository.getByProduct(
+              tenantId,
+              product.id,
+            ),
+          ),
+        )
+      ).flat();
+
+      const favoriteIds = favorites.map(
+        (favorite) => favorite.productId,
+      );
 
       setState({
-        businessName: business.name,
-        currency: business.currency,
+        businessName,
+        currency: "GTQ",
         categories,
-        products: products.map((product) => createProductCardViewModel(product, media, promotions, availability, favoriteIds)),
+        products: allProducts.map((product) =>
+          createProductCardViewModel(
+            product,
+            media,
+            promotions,
+            availability,
+            favoriteIds,
+          ),
+        ),
         isLoading: false,
         error: null,
       });
     } catch {
-      setState((current) => ({ ...current, isLoading: false, error: "No se pudo cargar el catalogo." }));
+      setState((current) => ({
+        ...current,
+        isLoading: false,
+        error: "No se pudo cargar el catalogo.",
+      }));
     }
-  }, [categoryId, query, repositories, session]);
+  }, [repositories, session]);
 
   useEffect(() => {
     const timeout = setTimeout(() => void load(), 0);
+
     return () => clearTimeout(timeout);
   }, [load]);
+
+  const filteredProducts = useMemo(() => {
+    const normalizedQuery =
+      query.trim().toLocaleLowerCase();
+
+    return state.products.filter((item) => {
+      const product = item.product;
+
+      const matchesCategory =
+        !categoryId ||
+        product.categoryId === categoryId;
+
+      const matchesQuery =
+        !normalizedQuery ||
+        product.name
+          .toLocaleLowerCase()
+          .includes(normalizedQuery) ||
+        product.sku
+          .toLocaleLowerCase()
+          .includes(normalizedQuery) ||
+        product.description
+          ?.toLocaleLowerCase()
+          .includes(normalizedQuery);
+
+      return matchesCategory && matchesQuery;
+    });
+  }, [categoryId, query, state.products]);
 
   async function toggleFavorite(productId: string) {
     if (!session) {
       return;
     }
 
-    const exists = await repositories.favoriteRepository.isFavorite(session.tenantId, session.customerId, productId);
+    const exists =
+      await repositories.favoriteRepository.isFavorite(
+        session.tenantId,
+        session.customerId,
+        productId,
+      );
+
     if (exists) {
-      await repositories.favoriteRepository.remove(session.tenantId, session.customerId, productId);
+      await repositories.favoriteRepository.remove(
+        session.tenantId,
+        session.customerId,
+        productId,
+      );
     } else {
-      await repositories.favoriteRepository.add({ tenantId: session.tenantId, customerId: session.customerId, productId, createdAt: new Date().toISOString() });
+      await repositories.favoriteRepository.add({
+        tenantId: session.tenantId,
+        customerId: session.customerId,
+        productId,
+        createdAt: new Date().toISOString(),
+      });
     }
+
     await load();
   }
 
@@ -77,35 +209,81 @@ export function useCommerceCatalog(categoryId?: string, query = "") {
       return;
     }
 
-    const product = await repositories.productRepository.getById(productId);
+    const product =
+      await repositories.productRepository.getById(productId);
+
     if (!product) {
       return;
     }
 
-    const availability = await repositories.productAvailabilityRepository.getByProduct(session.tenantId, product.id);
-    const availableQuantity = availability.reduce((sum, item) => sum + item.availableQuantity, 0);
-    const cart = await repositories.cartRepository.getOrCreate(session.tenantId, session.customerId);
-    const cartItems = await repositories.cartRepository.getItems(cart.id);
+    const availability =
+      await repositories.productAvailabilityRepository.getByProduct(
+        session.tenantId,
+        product.id,
+      );
+
+    const availableQuantity = availability.reduce(
+      (sum, item) => sum + item.availableQuantity,
+      0,
+    );
+
+    const cart =
+      await repositories.cartRepository.getOrCreate(
+        session.tenantId,
+        session.customerId,
+      );
+
+    const cartItems =
+      await repositories.cartRepository.getItems(cart.id);
+
     const currentQuantity = cartItems
-      .filter((item) => item.cartId === cart.id && item.productId === product.id)
+      .filter(
+        (item) =>
+          item.cartId === cart.id &&
+          item.productId === product.id,
+      )
       .reduce((sum, item) => sum + item.quantity, 0);
 
-    if (availableQuantity <= 0 || currentQuantity >= availableQuantity) {
+    if (
+      availableQuantity <= 0 ||
+      currentQuantity >= availableQuantity
+    ) {
       return;
     }
 
-    const promotions = await repositories.promotionRepository.getByProduct(session.tenantId, product.id);
-    const viewModel = createProductCardViewModel(product, [], promotions, availability, []);
+    const promotions = isApiMode()
+      ? []
+      : await repositories.promotionRepository.getByProduct(
+          session.tenantId,
+          product.id,
+        );
+
+    const viewModel = createProductCardViewModel(
+      product,
+      [],
+      promotions,
+      availability,
+      [],
+    );
+
     await repositories.cartRepository.addItem({
       cartId: cart.id,
       productId: product.id,
       quantity: 1,
       unitId: product.unitId,
       unitPriceSnapshot: viewModel.price.basePrice,
-      effectiveUnitPriceSnapshot: viewModel.price.effectivePrice,
+      effectiveUnitPriceSnapshot:
+        viewModel.price.effectivePrice,
     });
+
     await load();
   }
 
-  return { ...state, addToCart, reload: load, toggleFavorite };
+  return {
+    ...state,
+    products: filteredProducts,
+    addToCart,
+    reload: load,
+    toggleFavorite,
+  };
 }
