@@ -74,8 +74,19 @@ export class ApiAuthRepository implements AuthRepository {
       const result = await this.restoreFromBackend();
       return result.session;
     } catch (error) {
-      if (error instanceof ApiError && error.status === 401) {
+      if (
+        error instanceof ApiError &&
+        (error.status === 401 || error.status === 403)
+      ) {
         await this.clearLocalSession();
+        return null;
+      }
+
+      if (
+        error instanceof ApiError &&
+        (error.code === "NETWORK_ERROR" ||
+          error.code === "REQUEST_TIMEOUT")
+      ) {
         return null;
       }
 

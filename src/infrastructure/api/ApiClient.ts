@@ -125,7 +125,7 @@ export class ApiClient {
       const payload = this.parseResponseBody(text);
 
       if (!response.ok) {
-        if (response.status === 401 && this.onUnauthorized) {
+        if (response.status === 401 && token && this.onUnauthorized) {
           await this.onUnauthorized();
         }
 
