@@ -41,3 +41,13 @@ example
 # generated native folders
 /ios
 /android
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Local audit/reference files
+/auditoria/
+/omniretail-backend/
+/PLAN_INTEGRACION_BACKEND.md
