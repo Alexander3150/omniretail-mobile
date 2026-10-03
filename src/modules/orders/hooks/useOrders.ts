@@ -2,10 +2,15 @@ import { useCallback, useEffect, useState } from "react";
 
 import type { Branch, Order, OrderItem, Payment } from "@/core";
 import { useRepositories } from "@/infrastructure";
+import { apiConfig } from "@/infrastructure/api";
 import {
   ApiCheckoutStorage,
   type ApiCheckoutReceipt,
 } from "@/infrastructure/api/checkout";
+import {
+  ApiOrderTrackingService,
+  type ApiOrderTrackingStatus,
+} from "@/infrastructure/api/tracking";
 import { useSession } from "@/modules/auth";
 
 import { advanceOrderStatusForDemo } from "../application/OrderTrackingSimulationService";
@@ -15,11 +20,19 @@ export type OrderListItem = Order & {
   itemCount: number;
 };
 
+export type ApiOrderListStatus =
+  | "pending"
+  | "confirmed"
+  | "preparing"
+  | "shipped"
+  | "delivered"
+  | "cancelled";
+
 export type ApiOrderListItem = {
   id: string;
   number: string;
   createdAt: string;
-  status: Order["status"];
+  status: ApiOrderListStatus;
   total: number;
   itemCount: number;
   apiReceipt: ApiCheckoutReceipt;
@@ -31,21 +44,41 @@ function isApiMode(): boolean {
   return process.env.EXPO_PUBLIC_API_MODE === "api";
 }
 
+function normalizeApiOrderStatus(status: string): ApiOrderListStatus {
+  switch (status) {
+    case "pending":
+      return "pending";
+    case "preparing":
+      return "preparing";
+    case "sent":
+    case "shipped":
+      return "shipped";
+    case "delivered":
+      return "delivered";
+    case "cancelled":
+      return "cancelled";
+    default:
+      return "confirmed";
+  }
+}
+
+function mapTrackingStatusToListStatus(
+  status: ApiOrderTrackingStatus,
+): ApiOrderListStatus {
+  return status === "sent" ? "shipped" : status;
+}
+
 function mapApiReceiptToListItem(
   receipt: ApiCheckoutReceipt,
+  trackingStatus?: ApiOrderTrackingStatus,
 ): ApiOrderListItem {
-  const normalizedStatus =
-    receipt.orderStatus === "shipped"
-      ? "shipped"
-      : receipt.orderStatus === "preparing"
-        ? "preparing"
-        : "confirmed";
-
   return {
     id: `api:${receipt.orderNumber}`,
     number: receipt.orderNumber,
     createdAt: receipt.savedAt,
-    status: normalizedStatus as Order["status"],
+    status: trackingStatus
+      ? mapTrackingStatusToListStatus(trackingStatus)
+      : normalizeApiOrderStatus(receipt.orderStatus),
     total: receipt.total,
     itemCount: receipt.items.reduce(
       (total, item) => total + item.quantity,
@@ -72,14 +105,32 @@ export function useOrders() {
 
     if (isApiMode()) {
       const receipts = await new ApiCheckoutStorage().getReceipts();
+      const trackingService = new ApiOrderTrackingService();
+
+      const apiOrders = await Promise.all(
+        receipts.map(async (receipt) => {
+          if (!receipt.trackingToken) {
+            return mapApiReceiptToListItem(receipt);
+          }
+
+          try {
+            const tracking = await trackingService.track(
+              apiConfig.tenantSlug,
+              receipt.trackingToken,
+            );
+
+            return mapApiReceiptToListItem(receipt, tracking.status);
+          } catch {
+            return mapApiReceiptToListItem(receipt);
+          }
+        }),
+      );
 
       setCurrency(business.currency);
       setOrders(
-        receipts
-          .map(mapApiReceiptToListItem)
-          .sort((left, right) =>
-            right.createdAt.localeCompare(left.createdAt),
-          ),
+        apiOrders.sort((left, right) =>
+          right.createdAt.localeCompare(left.createdAt),
+        ),
       );
       setIsLoading(false);
       return;
