@@ -30,7 +30,11 @@ const palette = {
 };
 
 export function HomeScreen() {
-  const { customer } = useSession();
+  const { customer, isAuthenticated } = useSession();
+
+  const categoriesPath = isAuthenticated
+    ? "/(protected)/(tabs)/categories"
+    : "/(shop)/categories";
   const [query, setQuery] = useState("");
   const [activeBanner, setActiveBanner] = useState(0);
   const bannerListRef = useRef<FlatList<(typeof homeBanners)[number]>>(null);
@@ -249,7 +253,21 @@ export function HomeScreen() {
                             {item.description}
                           </Text>
 
-                          <Link asChild href={item.href}>
+                          <Link
+                            asChild
+                            href={
+                              item.id === "orders"
+                                ? isAuthenticated
+                                  ? "/(protected)/(tabs)/orders"
+                                  : "/(auth)/login"
+                                : item.id === "tools"
+                                  ? {
+                                      pathname: categoriesPath,
+                                      params: { categoryId: "category-tools" },
+                                    }
+                                  : categoriesPath
+                            }
+                          >
                             <Pressable
                               style={({ pressed }) => [
                                 styles.promoButton,
@@ -318,7 +336,7 @@ export function HomeScreen() {
                     <Text style={styles.sectionTitle}>Categorías</Text>
                   </View>
 
-                  <Link asChild href="/(shop)/categories">
+                  <Link asChild href={categoriesPath}>
                     <Pressable style={styles.seeAllButton}>
                       <Text style={styles.seeAll}>Ver todas</Text>
                       <Ionicons
@@ -343,7 +361,7 @@ export function HomeScreen() {
                     <Link
                       asChild
                       href={{
-                        pathname: "/(shop)/categories",
+                        pathname: categoriesPath,
                         params: { categoryId: item.id },
                       }}
                     >
@@ -451,20 +469,13 @@ type HomeSmallIconName =
   "sparkles-outline" | "construct-outline" | "bag-check-outline";
 
 const homeBanners: {
-  id: string;
+  id: "catalog" | "tools" | "orders";
   label: string;
   title: string;
   description: string;
   buttonLabel: string;
   icon: HomeIconName;
   smallIcon: HomeSmallIconName;
-  href:
-    | "/(shop)/categories"
-    | "/(protected)/(tabs)/orders"
-    | {
-        pathname: "/(shop)/categories";
-        params: { categoryId: string };
-      };
 }[] = [
   {
     id: "catalog",
@@ -475,7 +486,6 @@ const homeBanners: {
     buttonLabel: "Ver categorías",
     icon: "storefront-outline",
     smallIcon: "sparkles-outline",
-    href: "/(shop)/categories",
   },
   {
     id: "tools",
@@ -486,10 +496,6 @@ const homeBanners: {
     buttonLabel: "Explorar",
     icon: "hammer-outline",
     smallIcon: "construct-outline",
-    href: {
-      pathname: "/(shop)/categories",
-      params: { categoryId: "category-tools" },
-    },
   },
   {
     id: "orders",
@@ -499,7 +505,6 @@ const homeBanners: {
     buttonLabel: "Ver pedidos",
     icon: "receipt-outline",
     smallIcon: "bag-check-outline",
-    href: "/(protected)/(tabs)/orders",
   },
 ];
 

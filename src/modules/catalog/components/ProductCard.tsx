@@ -10,6 +10,7 @@ import {
   type GestureResponderEvent,
 } from "react-native";
 
+import { useSession } from "@/modules/auth";
 import { formatCurrency } from "@/shared";
 
 import type { ProductCardViewModel } from "../application/productViewModels";
@@ -35,6 +36,7 @@ type ProductCardProps = {
 };
 
 export function ProductCard({ currency, item, onAddToCart }: ProductCardProps) {
+  const { isAuthenticated } = useSession();
   const canAdd = item.available && item.availableQuantity > 0;
   const [imageFailed, setImageFailed] = useState(false);
 
@@ -47,7 +49,9 @@ export function ProductCard({ currency, item, onAddToCart }: ProductCardProps) {
     <Pressable
       onPress={() =>
         router.push({
-          pathname: "/(shop)/products/[id]",
+          pathname: isAuthenticated
+            ? "/(protected)/products/[id]"
+            : "/(shop)/products/[id]",
           params: { id: item.product.id },
         })
       }

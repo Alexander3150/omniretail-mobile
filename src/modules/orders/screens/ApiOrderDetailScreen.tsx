@@ -1,0 +1,646 @@
+import { Ionicons } from "@expo/vector-icons";
+import { router, useLocalSearchParams } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+
+import {
+  ApiCheckoutStorage,
+  type ApiCheckoutReceipt,
+} from "@/infrastructure/api/checkout";
+import { formatCurrency, formatDateTime } from "@/shared";
+
+const palette = {
+  deepBlue: "#3E668F",
+  dreamyBlue: "#81A9EE",
+  butterHoney: "#FFDB83",
+  vanillaMilk: "#FFF2D0",
+  white: "#FFFFFF",
+  text: "#172033",
+  muted: "#687286",
+  border: "#DDE3EE",
+};
+
+export function ApiOrderDetailScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const [receipt, setReceipt] = useState<ApiCheckoutReceipt | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function load() {
+      const orderNumber = id?.startsWith("api:")
+        ? id.slice(4)
+        : id;
+
+      if (!orderNumber) {
+        if (mounted) {
+          setIsLoading(false);
+        }
+        return;
+      }
+
+      const result = await new ApiCheckoutStorage().getReceipt(orderNumber);
+
+      if (mounted) {
+        setReceipt(result);
+        setIsLoading(false);
+      }
+    }
+
+    void load();
+
+    return () => {
+      mounted = false;
+    };
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator color={palette.deepBlue} size="large" />
+        <Text style={styles.loadingText}>Cargando pedido...</Text>
+      </View>
+    );
+  }
+
+  if (!receipt) {
+    return (
+      <View style={styles.center}>
+        <View style={styles.notFoundIcon}>
+          <Ionicons
+            color={palette.deepBlue}
+            name="receipt-outline"
+            size={34}
+          />
+        </View>
+
+        <Text style={styles.notFoundTitle}>Pedido no encontrado</Text>
+
+        <Text style={styles.notFoundText}>
+          No pudimos encontrar el recibo de este pedido.
+        </Text>
+
+        <Pressable onPress={() => router.back()} style={styles.primaryButton}>
+          <Text style={styles.primaryButtonText}>Regresar</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  const itemCount = receipt.items.reduce(
+    (total, item) => total + item.quantity,
+    0,
+  );
+
+  return (
+    <ScrollView contentContainerStyle={styles.content}>
+      <View style={styles.hero}>
+        <View style={styles.decorationOne} />
+        <View style={styles.decorationTwo} />
+
+        <View style={styles.heroTop}>
+          <View style={styles.heroTitleArea}>
+            <Pressable
+              onPress={() => router.back()}
+              style={({ pressed }) => [
+                styles.backButton,
+                pressed ? styles.pressed : null,
+              ]}
+            >
+              <Ionicons
+                color={palette.white}
+                name="arrow-back"
+                size={19}
+              />
+            </Pressable>
+
+            <View style={styles.flex}>
+              <Text style={styles.brand}>FERREPHARMA</Text>
+              <Text style={styles.heroTitle}>Detalle del pedido</Text>
+            </View>
+          </View>
+
+          <View style={styles.heroIcon}>
+            <Ionicons
+              color={palette.deepBlue}
+              name="bag-check-outline"
+              size={24}
+            />
+          </View>
+        </View>
+
+        <Text style={styles.heroDescription}>
+          Consulta la información confirmada de tu compra.
+        </Text>
+
+        <View style={styles.orderNumberBadge}>
+          <Ionicons
+            color={palette.deepBlue}
+            name="receipt-outline"
+            size={14}
+          />
+          <Text style={styles.orderNumberBadgeText}>
+            {receipt.orderNumber}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.card}>
+        <View style={styles.sectionHeading}>
+          <View>
+            <Text style={styles.eyebrow}>RESUMEN</Text>
+            <Text style={styles.sectionTitle}>Tu pedido</Text>
+          </View>
+
+          <View style={styles.statusBadge}>
+            <Ionicons
+              color="#247A52"
+              name="checkmark-circle-outline"
+              size={14}
+            />
+            <Text style={styles.statusText}>{receipt.orderStatus}</Text>
+          </View>
+        </View>
+
+        <View style={styles.divider} />
+
+        <InfoRow
+          icon="calendar-outline"
+          label="REGISTRADO EN LA APP"
+          value={formatDateTime(receipt.savedAt)}
+        />
+
+        <View style={styles.divider} />
+
+        <InfoRow
+          icon="card-outline"
+          label="ESTADO DEL PAGO"
+          value={receipt.paymentStatus}
+        />
+
+        <View style={styles.divider} />
+
+        <View style={styles.totalRow}>
+          <View>
+            <Text style={styles.label}>TOTAL DEL PEDIDO</Text>
+            <Text style={styles.hint}>
+              {itemCount} {itemCount === 1 ? "artículo" : "artículos"}
+            </Text>
+          </View>
+
+          <Text style={styles.total}>
+            {formatCurrency(receipt.total, "GTQ")}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.sectionHeader}>
+        <View>
+          <Text style={styles.eyebrow}>PRODUCTOS</Text>
+          <Text style={styles.sectionTitle}>Artículos comprados</Text>
+        </View>
+
+        <View style={styles.sectionIcon}>
+          <Ionicons
+            color={palette.deepBlue}
+            name="cube-outline"
+            size={20}
+          />
+        </View>
+      </View>
+
+      <View style={styles.card}>
+        {receipt.items.map((item, index) => (
+          <View key={`${item.sku}-${index}`}>
+            <View style={styles.productRow}>
+              <View style={styles.productIcon}>
+                <Ionicons
+                  color={palette.deepBlue}
+                  name="cube-outline"
+                  size={20}
+                />
+              </View>
+
+              <View style={styles.flex}>
+                <Text style={styles.productName}>{item.name}</Text>
+                <Text style={styles.productSku}>{item.sku}</Text>
+                <Text style={styles.productQuantity}>
+                  Cantidad: {item.quantity}
+                </Text>
+                <Text style={styles.unitPrice}>
+                  Unitario: {formatCurrency(item.unitPrice, "GTQ")}
+                </Text>
+              </View>
+
+              <Text style={styles.productTotal}>
+                {formatCurrency(item.subtotal, "GTQ")}
+              </Text>
+            </View>
+
+            {index < receipt.items.length - 1 ? (
+              <View style={styles.divider} />
+            ) : null}
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.sectionHeader}>
+        <View>
+          <Text style={styles.eyebrow}>ENTREGA</Text>
+          <Text style={styles.sectionTitle}>Información del pedido</Text>
+        </View>
+
+        <View style={styles.sectionIcon}>
+          <Ionicons
+            color={palette.deepBlue}
+            name="home-outline"
+            size={20}
+          />
+        </View>
+      </View>
+
+      <View style={styles.card}>
+        <InfoRow
+          icon="home-outline"
+          label="MÉTODO"
+          value="Envío a domicilio"
+        />
+
+        <View style={styles.divider} />
+
+        <InfoRow
+          icon="shield-checkmark-outline"
+          label="RESERVA DE INVENTARIO"
+          value={
+            receipt.hasInventoryReservations
+              ? "Confirmada"
+              : "No indicada"
+          }
+        />
+
+        <View style={styles.divider} />
+
+        <InfoRow
+          icon="mail-outline"
+          label="CONFIRMACIÓN"
+          value={
+            receipt.confirmationEmailSent
+              ? "Correo enviado"
+              : "Pedido registrado"
+          }
+        />
+      </View>
+
+      {receipt.trackingToken ? (
+        <View style={styles.notice}>
+          <Ionicons
+            color={palette.deepBlue}
+            name="navigate-outline"
+            size={21}
+          />
+
+          <View style={styles.flex}>
+            <Text style={styles.noticeTitle}>Seguimiento disponible</Text>
+            <Text style={styles.noticeText}>
+              El seguimiento detallado del pedido se habilitará en la
+              siguiente fase de integración.
+            </Text>
+          </View>
+        </View>
+      ) : null}
+    </ScrollView>
+  );
+}
+
+type InfoRowProps = {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  value: string;
+};
+
+function InfoRow({ icon, label, value }: InfoRowProps) {
+  return (
+    <View style={styles.infoRow}>
+      <View style={styles.infoIcon}>
+        <Ionicons color={palette.deepBlue} name={icon} size={19} />
+      </View>
+
+      <View style={styles.flex}>
+        <Text style={styles.label}>{label}</Text>
+        <Text style={styles.value}>{value}</Text>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  content: {
+    backgroundColor: palette.vanillaMilk,
+    flexGrow: 1,
+    paddingBottom: 34,
+  },
+  center: {
+    alignItems: "center",
+    backgroundColor: palette.vanillaMilk,
+    flex: 1,
+    justifyContent: "center",
+    padding: 24,
+  },
+  loadingText: {
+    color: palette.muted,
+    marginTop: 12,
+  },
+  hero: {
+    backgroundColor: palette.deepBlue,
+    overflow: "hidden",
+    paddingBottom: 26,
+    paddingHorizontal: 20,
+    paddingTop: 52,
+  },
+  decorationOne: {
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderRadius: 90,
+    height: 150,
+    position: "absolute",
+    right: -55,
+    top: -50,
+    width: 150,
+  },
+  decorationTwo: {
+    backgroundColor: "rgba(255,219,131,0.12)",
+    borderRadius: 70,
+    bottom: -55,
+    height: 130,
+    left: -45,
+    position: "absolute",
+    width: 130,
+  },
+  heroTop: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  heroTitleArea: {
+    alignItems: "center",
+    flexDirection: "row",
+    flex: 1,
+  },
+  backButton: {
+    alignItems: "center",
+    borderColor: "rgba(255,255,255,0.35)",
+    borderRadius: 18,
+    borderWidth: 1,
+    height: 36,
+    justifyContent: "center",
+    marginRight: 12,
+    width: 36,
+  },
+  brand: {
+    color: palette.butterHoney,
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 1.2,
+  },
+  heroTitle: {
+    color: palette.white,
+    fontSize: 24,
+    fontWeight: "800",
+    marginTop: 2,
+  },
+  heroIcon: {
+    alignItems: "center",
+    backgroundColor: palette.white,
+    borderRadius: 25,
+    height: 50,
+    justifyContent: "center",
+    marginLeft: 12,
+    width: 50,
+  },
+  heroDescription: {
+    color: "#EEF4FB",
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 18,
+  },
+  orderNumberBadge: {
+    alignItems: "center",
+    alignSelf: "flex-start",
+    backgroundColor: palette.butterHoney,
+    borderRadius: 20,
+    flexDirection: "row",
+    gap: 7,
+    marginTop: 15,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  orderNumberBadgeText: {
+    color: palette.deepBlue,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  card: {
+    backgroundColor: palette.white,
+    borderColor: palette.border,
+    borderRadius: 22,
+    borderWidth: 1,
+    marginHorizontal: 16,
+    marginTop: 16,
+    padding: 18,
+  },
+  sectionHeading: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  eyebrow: {
+    color: palette.deepBlue,
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 1,
+  },
+  sectionTitle: {
+    color: palette.text,
+    fontSize: 19,
+    fontWeight: "800",
+    marginTop: 3,
+  },
+  statusBadge: {
+    alignItems: "center",
+    backgroundColor: "#E9F7EF",
+    borderRadius: 18,
+    flexDirection: "row",
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+  },
+  statusText: {
+    color: "#247A52",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  divider: {
+    backgroundColor: palette.border,
+    height: 1,
+    marginVertical: 15,
+  },
+  infoRow: {
+    alignItems: "center",
+    flexDirection: "row",
+  },
+  infoIcon: {
+    alignItems: "center",
+    backgroundColor: "#EEF4FB",
+    borderRadius: 18,
+    height: 38,
+    justifyContent: "center",
+    marginRight: 12,
+    width: 38,
+  },
+  label: {
+    color: palette.muted,
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.8,
+  },
+  value: {
+    color: palette.text,
+    fontSize: 15,
+    fontWeight: "700",
+    marginTop: 3,
+  },
+  totalRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  hint: {
+    color: palette.muted,
+    fontSize: 12,
+    marginTop: 4,
+  },
+  total: {
+    color: palette.deepBlue,
+    fontSize: 23,
+    fontWeight: "900",
+  },
+  sectionHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginHorizontal: 18,
+    marginTop: 24,
+  },
+  sectionIcon: {
+    alignItems: "center",
+    backgroundColor: palette.white,
+    borderRadius: 20,
+    height: 40,
+    justifyContent: "center",
+    width: 40,
+  },
+  productRow: {
+    alignItems: "center",
+    flexDirection: "row",
+  },
+  productIcon: {
+    alignItems: "center",
+    backgroundColor: "#EEF4FB",
+    borderRadius: 20,
+    height: 42,
+    justifyContent: "center",
+    marginRight: 12,
+    width: 42,
+  },
+  productName: {
+    color: palette.text,
+    fontSize: 15,
+    fontWeight: "800",
+  },
+  productSku: {
+    color: palette.muted,
+    fontSize: 11,
+    marginTop: 2,
+  },
+  productQuantity: {
+    color: palette.text,
+    fontSize: 12,
+    marginTop: 5,
+  },
+  unitPrice: {
+    color: palette.muted,
+    fontSize: 11,
+    marginTop: 2,
+  },
+  productTotal: {
+    color: palette.deepBlue,
+    fontSize: 15,
+    fontWeight: "900",
+    marginLeft: 8,
+  },
+  notice: {
+    backgroundColor: "#EEF4FB",
+    borderColor: palette.dreamyBlue,
+    borderRadius: 18,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 12,
+    marginHorizontal: 16,
+    marginTop: 18,
+    padding: 16,
+  },
+  noticeTitle: {
+    color: palette.deepBlue,
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  noticeText: {
+    color: palette.muted,
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 3,
+  },
+  notFoundIcon: {
+    alignItems: "center",
+    backgroundColor: "#EEF4FB",
+    borderRadius: 30,
+    height: 60,
+    justifyContent: "center",
+    width: 60,
+  },
+  notFoundTitle: {
+    color: palette.text,
+    fontSize: 20,
+    fontWeight: "800",
+    marginTop: 16,
+  },
+  notFoundText: {
+    color: palette.muted,
+    marginTop: 7,
+    textAlign: "center",
+  },
+  primaryButton: {
+    backgroundColor: palette.deepBlue,
+    borderRadius: 14,
+    marginTop: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+  },
+  primaryButtonText: {
+    color: palette.white,
+    fontWeight: "800",
+  },
+  flex: {
+    flex: 1,
+  },
+  pressed: {
+    opacity: 0.75,
+  },
+});

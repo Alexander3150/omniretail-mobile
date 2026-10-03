@@ -2,6 +2,10 @@ import { useCallback, useEffect, useState } from "react";
 
 import type { Branch, Order, OrderItem, Payment } from "@/core";
 import { useRepositories } from "@/infrastructure";
+import {
+  ApiCheckoutStorage,
+  type ApiCheckoutReceipt,
+} from "@/infrastructure/api/checkout";
 import { useSession } from "@/modules/auth";
 
 import { advanceOrderStatusForDemo } from "../application/OrderTrackingSimulationService";
@@ -11,10 +15,50 @@ export type OrderListItem = Order & {
   itemCount: number;
 };
 
+export type ApiOrderListItem = {
+  id: string;
+  number: string;
+  createdAt: string;
+  status: Order["status"];
+  total: number;
+  itemCount: number;
+  apiReceipt: ApiCheckoutReceipt;
+};
+
+export type CommerceOrderListItem = OrderListItem | ApiOrderListItem;
+
+function isApiMode(): boolean {
+  return process.env.EXPO_PUBLIC_API_MODE === "api";
+}
+
+function mapApiReceiptToListItem(
+  receipt: ApiCheckoutReceipt,
+): ApiOrderListItem {
+  const normalizedStatus =
+    receipt.orderStatus === "shipped"
+      ? "shipped"
+      : receipt.orderStatus === "preparing"
+        ? "preparing"
+        : "confirmed";
+
+  return {
+    id: `api:${receipt.orderNumber}`,
+    number: receipt.orderNumber,
+    createdAt: receipt.savedAt,
+    status: normalizedStatus as Order["status"],
+    total: receipt.total,
+    itemCount: receipt.items.reduce(
+      (total, item) => total + item.quantity,
+      0,
+    ),
+    apiReceipt: receipt,
+  };
+}
+
 export function useOrders() {
   const { businessConfigRepository, orderRepository } = useRepositories();
   const { session } = useSession();
-  const [orders, setOrders] = useState<OrderListItem[]>([]);
+  const [orders, setOrders] = useState<CommerceOrderListItem[]>([]);
   const [currency, setCurrency] = useState("GTQ");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -25,15 +69,42 @@ export function useOrders() {
       return;
     }
     const business = await businessConfigRepository.getCurrent();
-    const customerOrders = await orderRepository.getByCustomer(session.tenantId, session.customerId);
+
+    if (isApiMode()) {
+      const receipts = await new ApiCheckoutStorage().getReceipts();
+
+      setCurrency(business.currency);
+      setOrders(
+        receipts
+          .map(mapApiReceiptToListItem)
+          .sort((left, right) =>
+            right.createdAt.localeCompare(left.createdAt),
+          ),
+      );
+      setIsLoading(false);
+      return;
+    }
+
+    const customerOrders = await orderRepository.getByCustomer(
+      session.tenantId,
+      session.customerId,
+    );
     const ordersWithCounts = await Promise.all(
       customerOrders
-        .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+        .sort((left, right) =>
+          right.createdAt.localeCompare(left.createdAt),
+        )
         .map(async (order) => ({
           ...order,
-          itemCount: (await orderRepository.getItems(order.id)).reduce((total, item) => total + item.quantity, 0),
+          itemCount: (
+            await orderRepository.getItems(order.id)
+          ).reduce(
+            (total, item) => total + item.quantity,
+            0,
+          ),
         })),
     );
+
     setCurrency(business.currency);
     setOrders(ordersWithCounts);
     setIsLoading(false);
