@@ -46,14 +46,6 @@ export function useCommerceCatalog(
   const load = useCallback(async () => {
     const apiMode = isApiMode();
 
-    if (!apiMode && !session) {
-      setState((current) => ({
-        ...current,
-        isLoading: false,
-      }));
-      return;
-    }
-
     setState((current) => ({
       ...current,
       isLoading: true,
@@ -62,7 +54,8 @@ export function useCommerceCatalog(
 
     try {
       const tenantId =
-        session?.tenantId ?? apiConfig.tenantSlug;
+        session?.tenantId ??
+        (apiMode ? apiConfig.tenantSlug : "tenant-omniretail-demo");
 
       const businessName = apiMode
         ? "FERREPHARMA"

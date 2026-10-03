@@ -1,3 +1,4 @@
+export * from "./application/PlaceApiOrderService";
 export * from "./application/checkoutPricing";
 export * from "./application/PlaceOrderService";
 export * from "./context/CheckoutProvider";

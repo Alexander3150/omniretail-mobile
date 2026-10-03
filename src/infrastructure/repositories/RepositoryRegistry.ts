@@ -20,6 +20,7 @@ import type {
 import {
   ApiAuthRepository,
   ApiCategoryRepository,
+  ApiCheckoutService,
   ApiCustomerRepository,
   ApiProductAvailabilityRepository,
   ApiProductRepository,
@@ -67,6 +68,7 @@ export type RepositoryRegistry = {
   notificationRepository: NotificationRepository;
   branchRepository: BranchRepository;
   businessConfigRepository: BusinessConfigRepository;
+  apiCheckoutService: ApiCheckoutService;
   databaseStore: MockDatabaseStore;
   resetToDemoData(): Promise<void>;
 };
@@ -124,6 +126,11 @@ export function createRepositoryRegistry(): RepositoryRegistry {
     apiProductAvailabilityRepository,
   );
 
+  const apiCheckoutService = new ApiCheckoutService(
+    apiClient,
+    apiConfig.tenantSlug,
+  );
+
   return {
     authRepository: isApiMode()
       ? apiAuthRepository
@@ -151,6 +158,7 @@ export function createRepositoryRegistry(): RepositoryRegistry {
     notificationRepository: new MockNotificationRepository(databaseStore),
     branchRepository: new MockBranchRepository(databaseStore),
     businessConfigRepository: new MockBusinessConfigRepository(databaseStore),
+    apiCheckoutService,
     databaseStore,
     async resetToDemoData() {
       await databaseStore.resetToDemoData();
