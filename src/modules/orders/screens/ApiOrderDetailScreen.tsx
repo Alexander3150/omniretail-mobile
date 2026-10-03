@@ -14,6 +14,7 @@ import {
   ApiCheckoutStorage,
   type ApiCheckoutReceipt,
 } from "@/infrastructure/api/checkout";
+import { useApiOrderTracking } from "@/modules/orders/hooks/useApiOrderTracking";
 import { formatCurrency, formatDateTime } from "@/shared";
 
 const palette = {
@@ -31,6 +32,14 @@ export function ApiOrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [receipt, setReceipt] = useState<ApiCheckoutReceipt | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const {
+    errorCode: trackingErrorCode,
+    isLoading: isTrackingLoading,
+    presentationStatus,
+    reload: reloadTracking,
+    tracking,
+  } = useApiOrderTracking(receipt?.trackingToken);
 
   useEffect(() => {
     let mounted = true;
@@ -100,6 +109,11 @@ export function ApiOrderDetailScreen() {
     0,
   );
 
+  const currentStatus =
+    presentationStatus ?? normalizeReceiptStatus(receipt.orderStatus);
+
+  const statusPresentation = getTrackingStatusPresentation(currentStatus);
+
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <View style={styles.hero}>
@@ -160,13 +174,25 @@ export function ApiOrderDetailScreen() {
             <Text style={styles.sectionTitle}>Tu pedido</Text>
           </View>
 
-          <View style={styles.statusBadge}>
+          <View
+            style={[
+              styles.statusBadge,
+              { backgroundColor: statusPresentation.background },
+            ]}
+          >
             <Ionicons
-              color="#247A52"
-              name="checkmark-circle-outline"
+              color={statusPresentation.color}
+              name={statusPresentation.icon}
               size={14}
             />
-            <Text style={styles.statusText}>{receipt.orderStatus}</Text>
+            <Text
+              style={[
+                styles.statusText,
+                { color: statusPresentation.color },
+              ]}
+            >
+              {statusPresentation.label}
+            </Text>
           </View>
         </View>
 
@@ -300,24 +326,230 @@ export function ApiOrderDetailScreen() {
       </View>
 
       {receipt.trackingToken ? (
-        <View style={styles.notice}>
-          <Ionicons
-            color={palette.deepBlue}
-            name="navigate-outline"
-            size={21}
-          />
+        <View style={styles.trackingCard}>
+          <View style={styles.trackingHeader}>
+            <View style={styles.trackingHeaderLeft}>
+              <View style={styles.trackingIcon}>
+                <Ionicons
+                  color={palette.deepBlue}
+                  name="navigate-outline"
+                  size={21}
+                />
+              </View>
 
-          <View style={styles.flex}>
-            <Text style={styles.noticeTitle}>Seguimiento disponible</Text>
-            <Text style={styles.noticeText}>
-              El seguimiento detallado del pedido se habilitará en la
-              siguiente fase de integración.
-            </Text>
+              <View style={styles.flex}>
+                <Text style={styles.eyebrow}>SEGUIMIENTO</Text>
+                <Text style={styles.sectionTitle}>Estado de tu pedido</Text>
+              </View>
+            </View>
+
+            <Pressable
+              disabled={isTrackingLoading}
+              onPress={() => void reloadTracking()}
+              style={({ pressed }) => [
+                styles.refreshButton,
+                pressed ? styles.pressed : null,
+                isTrackingLoading ? styles.refreshButtonDisabled : null,
+              ]}
+            >
+              {isTrackingLoading ? (
+                <ActivityIndicator color={palette.deepBlue} size="small" />
+              ) : (
+                <Ionicons
+                  color={palette.deepBlue}
+                  name="refresh-outline"
+                  size={19}
+                />
+              )}
+            </Pressable>
           </View>
+
+          {tracking ? (
+            <>
+              <View style={styles.trackingCurrent}>
+                <View
+                  style={[
+                    styles.trackingStatusIcon,
+                    { backgroundColor: statusPresentation.background },
+                  ]}
+                >
+                  <Ionicons
+                    color={statusPresentation.color}
+                    name={statusPresentation.icon}
+                    size={24}
+                  />
+                </View>
+
+                <View style={styles.flex}>
+                  <Text style={styles.trackingCurrentLabel}>
+                    ESTADO ACTUAL
+                  </Text>
+                  <Text style={styles.trackingCurrentTitle}>
+                    {statusPresentation.label}
+                  </Text>
+                  <Text style={styles.trackingCurrentText}>
+                    {statusPresentation.description}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.trackingDivider} />
+
+              <View style={styles.trackingServerRow}>
+                <Ionicons
+                  color={palette.deepBlue}
+                  name="cloud-done-outline"
+                  size={17}
+                />
+                <Text style={styles.trackingServerText}>
+                  Estado actualizado desde FERREPHARMA
+                </Text>
+              </View>
+
+              <View style={styles.trackingServerRow}>
+                <Ionicons
+                  color={palette.deepBlue}
+                  name="receipt-outline"
+                  size={17}
+                />
+                <Text style={styles.trackingServerText}>
+                  Pedido {tracking.orderNumber}
+                </Text>
+              </View>
+            </>
+          ) : isTrackingLoading ? (
+            <View style={styles.trackingLoading}>
+              <ActivityIndicator color={palette.deepBlue} size="small" />
+              <Text style={styles.trackingLoadingText}>
+                Consultando el estado actual...
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.trackingFallback}>
+              <Ionicons
+                color={palette.deepBlue}
+                name={
+                  trackingErrorCode === "ORDER_TRACKING_NOT_FOUND"
+                    ? "search-outline"
+                    : "cloud-offline-outline"
+                }
+                size={22}
+              />
+
+              <View style={styles.flex}>
+                <Text style={styles.noticeTitle}>
+                  {trackingErrorCode === "ORDER_TRACKING_NOT_FOUND"
+                    ? "Seguimiento no disponible"
+                    : "No pudimos actualizar el seguimiento"}
+                </Text>
+
+                <Text style={styles.noticeText}>
+                  {trackingErrorCode === "ORDER_TRACKING_NOT_FOUND"
+                    ? "No encontramos información pública de seguimiento para este pedido."
+                    : "Conservamos la información guardada de tu pedido. Puedes intentar actualizar nuevamente."}
+                </Text>
+              </View>
+            </View>
+          )}
         </View>
       ) : null}
     </ScrollView>
   );
+}
+
+type TrackingPresentationStatus =
+  | "pending"
+  | "confirmed"
+  | "preparing"
+  | "shipped"
+  | "delivered"
+  | "cancelled";
+
+type TrackingStatusPresentation = {
+  label: string;
+  description: string;
+  color: string;
+  background: string;
+  icon: keyof typeof Ionicons.glyphMap;
+};
+
+function normalizeReceiptStatus(status: string): TrackingPresentationStatus {
+  switch (status) {
+    case "pending":
+      return "pending";
+    case "preparing":
+      return "preparing";
+    case "sent":
+    case "shipped":
+      return "shipped";
+    case "delivered":
+      return "delivered";
+    case "cancelled":
+      return "cancelled";
+    default:
+      return "confirmed";
+  }
+}
+
+function getTrackingStatusPresentation(
+  status: TrackingPresentationStatus,
+): TrackingStatusPresentation {
+  switch (status) {
+    case "pending":
+      return {
+        label: "Pendiente",
+        description: "Tu pedido fue recibido y está pendiente de confirmación.",
+        color: "#8A641A",
+        background: "#FFF4D6",
+        icon: "time-outline",
+      };
+
+    case "preparing":
+      return {
+        label: "Preparando",
+        description: "FERREPHARMA está preparando tu pedido.",
+        color: "#35669A",
+        background: "#EAF3FC",
+        icon: "cube-outline",
+      };
+
+    case "shipped":
+      return {
+        label: "Enviado",
+        description: "Tu pedido ya fue despachado.",
+        color: "#5A55A5",
+        background: "#EFEEFF",
+        icon: "navigate-outline",
+      };
+
+    case "delivered":
+      return {
+        label: "Entregado",
+        description: "El pedido aparece como entregado.",
+        color: "#247A52",
+        background: "#E9F7EF",
+        icon: "checkmark-circle-outline",
+      };
+
+    case "cancelled":
+      return {
+        label: "Cancelado",
+        description: "El pedido aparece como cancelado.",
+        color: "#A33E3E",
+        background: "#FDECEC",
+        icon: "close-circle-outline",
+      };
+
+    case "confirmed":
+    default:
+      return {
+        label: "Confirmado",
+        description: "Tu pedido fue confirmado correctamente.",
+        color: "#247A52",
+        background: "#E9F7EF",
+        icon: "checkmark-circle-outline",
+      };
+  }
 }
 
 type InfoRowProps = {
@@ -584,6 +816,113 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "900",
     marginLeft: 8,
+  },
+  trackingCard: {
+    backgroundColor: palette.white,
+    borderColor: palette.border,
+    borderRadius: 22,
+    borderWidth: 1,
+    marginHorizontal: 16,
+    marginTop: 18,
+    padding: 18,
+  },
+  trackingHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  trackingHeaderLeft: {
+    alignItems: "center",
+    flexDirection: "row",
+    flex: 1,
+  },
+  trackingIcon: {
+    alignItems: "center",
+    backgroundColor: "#EEF4FB",
+    borderRadius: 20,
+    height: 42,
+    justifyContent: "center",
+    marginRight: 12,
+    width: 42,
+  },
+  refreshButton: {
+    alignItems: "center",
+    backgroundColor: "#EEF4FB",
+    borderRadius: 18,
+    height: 38,
+    justifyContent: "center",
+    marginLeft: 10,
+    width: 38,
+  },
+  refreshButtonDisabled: {
+    opacity: 0.65,
+  },
+  trackingCurrent: {
+    alignItems: "center",
+    flexDirection: "row",
+    marginTop: 20,
+  },
+  trackingStatusIcon: {
+    alignItems: "center",
+    borderRadius: 25,
+    height: 50,
+    justifyContent: "center",
+    marginRight: 14,
+    width: 50,
+  },
+  trackingCurrentLabel: {
+    color: palette.muted,
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.8,
+  },
+  trackingCurrentTitle: {
+    color: palette.text,
+    fontSize: 19,
+    fontWeight: "900",
+    marginTop: 2,
+  },
+  trackingCurrentText: {
+    color: palette.muted,
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 4,
+  },
+  trackingDivider: {
+    backgroundColor: palette.border,
+    height: 1,
+    marginVertical: 16,
+  },
+  trackingServerRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 7,
+  },
+  trackingServerText: {
+    color: palette.muted,
+    flex: 1,
+    fontSize: 12,
+  },
+  trackingLoading: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 20,
+    paddingVertical: 12,
+  },
+  trackingLoadingText: {
+    color: palette.muted,
+    fontSize: 12,
+  },
+  trackingFallback: {
+    alignItems: "flex-start",
+    backgroundColor: "#EEF4FB",
+    borderRadius: 16,
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 18,
+    padding: 14,
   },
   notice: {
     backgroundColor: "#EEF4FB",

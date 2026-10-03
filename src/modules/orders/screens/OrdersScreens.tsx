@@ -16,7 +16,12 @@ import { DeliveryMethod, OrderStatus } from "@/core";
 import { useInvoiceDownload } from "@/modules/invoice";
 import { formatCurrency, formatDateTime } from "@/shared";
 
-import { useOrder, useOrders, useOrderTracking } from "../hooks/useOrders";
+import {
+  type ApiOrderListStatus,
+  useOrder,
+  useOrders,
+  useOrderTracking,
+} from "../hooks/useOrders";
 
 export function OrdersScreen() {
   const { currency, isLoading, orders, reload } = useOrders();
@@ -273,13 +278,23 @@ type OrderStatusPresentation = {
     | "checkmark-circle-outline"
     | "construct-outline"
     | "car-outline"
-    | "time-outline";
+    | "time-outline"
+    | "close-circle-outline";
   label: string;
 };
 
 function getOrderStatusPresentation(
-  status: OrderStatus,
+  status: OrderStatus | ApiOrderListStatus,
 ): OrderStatusPresentation {
+  if (status === "delivered") {
+    return {
+      background: "#E9F7EF",
+      color: "#247A52",
+      icon: "checkmark-circle-outline",
+      label: "Entregado",
+    };
+  }
+
   if (status === OrderStatus.Shipped) {
     return {
       background: "#EAF2FF",
@@ -304,6 +319,24 @@ function getOrderStatusPresentation(
       color: "#247A52",
       icon: "checkmark-circle-outline",
       label: "Confirmado",
+    };
+  }
+
+  if (status === "pending") {
+    return {
+      background: "#FFF4D8",
+      color: "#8A6815",
+      icon: "time-outline",
+      label: "Pendiente",
+    };
+  }
+
+  if (status === OrderStatus.Cancelled) {
+    return {
+      background: "#FDECEC",
+      color: "#A33E3E",
+      icon: "close-circle-outline",
+      label: "Cancelado",
     };
   }
 
