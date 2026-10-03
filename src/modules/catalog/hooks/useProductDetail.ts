@@ -36,15 +36,6 @@ export function useProductDetail(productId?: string) {
 
     const apiMode = isApiMode();
 
-    if (!apiMode && !session) {
-      setState({
-        product: null,
-        isLoading: false,
-        error: "Producto no encontrado.",
-      });
-      return;
-    }
-
     setState((current) => ({
       ...current,
       isLoading: true,
@@ -53,7 +44,8 @@ export function useProductDetail(productId?: string) {
 
     try {
       const tenantId =
-        session?.tenantId ?? apiConfig.tenantSlug;
+        session?.tenantId ??
+        (apiMode ? apiConfig.tenantSlug : "tenant-omniretail-demo");
 
       const product =
         await repositories.productRepository.getById(productId);
