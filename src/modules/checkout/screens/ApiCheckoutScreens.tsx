@@ -21,6 +21,16 @@ import {
   getApiCheckoutReceipt,
   placeApiOrder,
 } from "../application/PlaceApiOrderService";
+import {
+  detectStorefrontCardBrand,
+  formatCardExpiration,
+  formatCardNumber,
+  getCardNumberFieldError,
+  getSecurityCodeLength,
+  validateCardExpiration,
+  validateCardholderName,
+  validateCardNumber,
+} from "../application/cardPaymentValidation";
 import { useCheckout } from "../context/CheckoutProvider";
 
 type CheckoutHeroProps = {
@@ -274,55 +284,56 @@ export function ApiCheckoutDeliveryScreen() {
 
 export function ApiCheckoutPaymentScreen() {
   const checkout = useCheckout();
-  const { session } = useSession();
-  const { customerPaymentMethodRepository } = useRepositories();
   const [error, setError] = useState<string | null>(null);
-  const hasPrefilledCard = useRef(false);
-
-  // Precarga titular y últimos 4 dígitos de la tarjeta predeterminada de /me/payment-methods.
-  useEffect(() => {
-    if (
-      !session ||
-      hasPrefilledCard.current ||
-      checkout.cardLastFour.trim()
-    ) {
-      return;
-    }
-
-    hasPrefilledCard.current = true;
-
-    customerPaymentMethodRepository
-      .getByCustomer(session.tenantId, session.customerId)
-      .then((methods) => {
-        const method = methods.find((item) => item.isDefault) ?? methods[0];
-
-        if (!method?.last4) {
-          return;
-        }
-
-        checkout.setCardLastFour(method.last4);
-        if (method.cardholderName && !checkout.cardholderName.trim()) {
-          checkout.setCardholderName(method.cardholderName);
-        }
-      })
-      .catch((loadError) => {
-        console.warn("No se pudo precargar la tarjeta guardada:", loadError);
-      });
-  }, [checkout, customerPaymentMethodRepository, session]);
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardExpiration, setCardExpiration] = useState("");
+  const [securityCode, setSecurityCode] = useState("");
+  const cardDigits = cardNumber.replace(/\D/g, "");
+  const cardBrand = detectStorefrontCardBrand(cardDigits);
+  const securityCodeLength = getSecurityCodeLength(cardBrand);
+  const cardNumberFieldError = getCardNumberFieldError(cardDigits);
+  const cardholderFieldError = checkout.cardholderName.trim()
+    ? validateCardholderName(checkout.cardholderName)
+    : null;
+  const expirationFieldError = cardExpiration.length === 5
+    ? validateCardExpiration(cardExpiration)
+    : null;
+  const cardBrandLabel = cardBrand === "American Express"
+    ? "AmEx"
+    : cardBrand;
 
   function continueToReview() {
     setError(null);
 
-    if (!checkout.cardholderName.trim()) {
-      setError("Ingresa el nombre del titular.");
+    const cardNumberError = validateCardNumber(cardDigits);
+    if (cardNumberError) {
+      setError(cardNumberError);
       return;
     }
 
-    if (!/^[0-9]{4}$/.test(checkout.cardLastFour.trim())) {
-      setError("Ingresa únicamente los últimos 4 dígitos.");
+    const cardholderError = validateCardholderName(checkout.cardholderName);
+    if (cardholderError) {
+      setError(cardholderError);
       return;
     }
 
+    const expirationError = validateCardExpiration(cardExpiration);
+    if (expirationError) {
+      setError(expirationError);
+      return;
+    }
+
+    if (securityCode.length !== securityCodeLength) {
+      setError(`Ingresa un código de seguridad de ${securityCodeLength} dígitos.`);
+      return;
+    }
+
+    // Los datos sensibles solo existen en el estado de esta pantalla. El backend
+    // recibe únicamente el titular y los últimos cuatro dígitos.
+    checkout.setCardLastFour(cardDigits.slice(-4));
+    setCardNumber("");
+    setCardExpiration("");
+    setSecurityCode("");
     router.push("/(protected)/checkout/review");
   }
 
@@ -330,7 +341,7 @@ export function ApiCheckoutPaymentScreen() {
     <ScrollView contentContainerStyle={styles.content}>
       <CheckoutHero
         badge="2 de 3 · Pago"
-        description="Completa los datos permitidos para simular el pago."
+        description="Completa los datos para simular el pago."
         icon="card-outline"
         title="Pago"
       />
@@ -344,7 +355,13 @@ export function ApiCheckoutPaymentScreen() {
           <View style={styles.optionContent}>
             <Text style={styles.sectionTitle}>Tarjeta</Text>
             <Text style={styles.muted}>
-              Pago simulado. MARJYM solo solicita los últimos 4 dígitos.
+              Visa, Mastercard o American Express.
+            </Text>
+          </View>
+
+          <View style={styles.paymentBrandBadge}>
+            <Text style={styles.paymentBrandText}>
+              {cardBrandLabel ? `Marca: ${cardBrandLabel}` : "Visa / MC / AmEx"}
             </Text>
           </View>
 
@@ -356,40 +373,73 @@ export function ApiCheckoutPaymentScreen() {
 
       <View style={styles.checkoutSection}>
         <Text style={styles.sectionTitle}>Datos de la tarjeta</Text>
-        <Text style={styles.sectionDescription}>
-          No solicitamos número completo ni código de seguridad.
-        </Text>
 
         <View style={styles.group}>
-        <Field
-          label="Nombre del titular"
-          onChangeText={checkout.setCardholderName}
-          value={checkout.cardholderName}
-        />
+          <Field
+            autoComplete="cc-number"
+            error={cardNumberFieldError}
+            keyboardType="number-pad"
+            label="Número de tarjeta"
+            maxLength={23}
+            onChangeText={(value) => {
+              const nextCardNumber = formatCardNumber(value);
+              const nextBrand = detectStorefrontCardBrand(nextCardNumber.replace(/\D/g, ""));
+              setCardNumber(nextCardNumber);
+              if (getSecurityCodeLength(nextBrand) === 3) {
+                setSecurityCode((current) => current.slice(0, 3));
+              }
+              setError(null);
+            }}
+            placeholder="4242 4242 4242 4242"
+            value={cardNumber}
+          />
 
-        <Field
-          keyboardType="number-pad"
-          label="Últimos 4 dígitos"
-          maxLength={4}
-          onChangeText={(value) =>
-            checkout.setCardLastFour(value.replace(/\D/g, "").slice(0, 4))
-          }
-          value={checkout.cardLastFour}
-        />
-        </View>
-      </View>
+          <Field
+            autoCapitalize="words"
+            autoComplete="cc-name"
+            error={cardholderFieldError}
+            label="Nombre del titular"
+            maxLength={60}
+            onChangeText={(value) => {
+              checkout.setCardholderName(value);
+              setError(null);
+            }}
+            value={checkout.cardholderName}
+          />
 
-      <View style={styles.securityBox}>
-        <Ionicons
-          color="#3E668F"
-          name="shield-checkmark-outline"
-          size={21}
-        />
-        <View style={styles.securityContent}>
-          <Text style={styles.securityTitle}>Pago de demostración</Text>
-          <Text style={styles.muted}>
-            MARJYM no almacena el número completo de tu tarjeta ni CVV.
-          </Text>
+          <View style={styles.paymentFieldRow}>
+            <View style={styles.paymentFieldColumn}>
+              <Field
+                autoComplete="cc-exp"
+                error={expirationFieldError}
+                keyboardType="number-pad"
+                label="Fecha de vencimiento"
+                maxLength={5}
+                onChangeText={(value) => {
+                  setCardExpiration(formatCardExpiration(value));
+                  setError(null);
+                }}
+                placeholder="MM/AA"
+                value={cardExpiration}
+              />
+            </View>
+
+            <View style={styles.paymentFieldColumn}>
+              <Field
+                autoComplete="cc-csc"
+                keyboardType="number-pad"
+                label="Código de seguridad (CVV)"
+                maxLength={securityCodeLength}
+                onChangeText={(value) => {
+                  setSecurityCode(value.replace(/\D/g, "").slice(0, 4));
+                  setError(null);
+                }}
+                placeholder={securityCodeLength === 4 ? "••••" : "•••"}
+                secureTextEntry
+                value={securityCode}
+              />
+            </View>
+          </View>
         </View>
       </View>
 
@@ -675,13 +725,19 @@ function formatApiCheckoutError(error: ApiError): string {
 
 function Field({
   autoCapitalize,
+  autoComplete,
+  error,
   keyboardType = "default",
   label,
   maxLength,
   onChangeText,
+  placeholder,
+  secureTextEntry,
   value,
 }: {
   autoCapitalize?: "none" | "sentences" | "words" | "characters";
+  autoComplete?: "cc-csc" | "cc-exp" | "cc-name" | "cc-number";
+  error?: string | null;
   keyboardType?:
     | "default"
     | "email-address"
@@ -690,6 +746,8 @@ function Field({
   label: string;
   maxLength?: number;
   onChangeText(value: string): void;
+  placeholder?: string;
+  secureTextEntry?: boolean;
   value: string;
 }) {
   return (
@@ -697,14 +755,17 @@ function Field({
       <Text style={styles.label}>{label}</Text>
       <TextInput
         autoCapitalize={autoCapitalize}
+        autoComplete={autoComplete}
         keyboardType={keyboardType}
         maxLength={maxLength}
         onChangeText={onChangeText}
-        placeholder={label}
+        placeholder={placeholder ?? label}
         placeholderTextColor={colors.textMuted}
-        style={styles.input}
+        secureTextEntry={secureTextEntry}
+        style={[styles.input, error ? styles.inputError : null]}
         value={value}
       />
+      {error ? <Text style={styles.fieldError}>{error}</Text> : null}
     </View>
   );
 }
@@ -890,6 +951,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
 
+  inputError: {
+    borderColor: colors.danger,
+  },
+
   label: {
     color: "#3E668F",
     fontSize: typography.caption,
@@ -923,6 +988,36 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     gap: 12,
+  },
+
+  paymentFieldColumn: {
+    flex: 1,
+  },
+
+  paymentBrandBadge: {
+    backgroundColor: "#FAFBFD",
+    borderColor: "#DDE3EE",
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+
+  paymentBrandText: {
+    color: "#687286",
+    fontSize: 10,
+    fontWeight: "700",
+  },
+
+  paymentFieldRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+
+  fieldError: {
+    color: colors.danger,
+    fontSize: 11,
+    lineHeight: 16,
   },
 
   pressed: {
