@@ -10,12 +10,16 @@ import {
   View,
 } from "react-native";
 
+import { useRepositories } from "@/infrastructure";
 import {
   ApiCheckoutStorage,
   type ApiCheckoutReceipt,
 } from "@/infrastructure/api/checkout";
 import { useApiOrderTracking } from "@/modules/orders/hooks/useApiOrderTracking";
 import { formatCurrency, formatDateTime } from "@/shared";
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const palette = {
   deepBlue: "#3E668F",
@@ -30,6 +34,7 @@ const palette = {
 
 export function ApiOrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { apiCustomerOrderService } = useRepositories();
   const [receipt, setReceipt] = useState<ApiCheckoutReceipt | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -45,18 +50,29 @@ export function ApiOrderDetailScreen() {
     let mounted = true;
 
     async function load() {
-      const orderNumber = id?.startsWith("api:")
+      const key = id?.startsWith("api:")
         ? id.slice(4)
         : id;
 
-      if (!orderNumber) {
+      if (!key) {
         if (mounted) {
           setIsLoading(false);
         }
         return;
       }
 
-      const result = await new ApiCheckoutStorage().getReceipt(orderNumber);
+      // El historial usa el id del backend; los recibos guardados al confirmar usan el número de pedido.
+      let result: ApiCheckoutReceipt | null = null;
+
+      if (UUID_PATTERN.test(key)) {
+        try {
+          result = await apiCustomerOrderService.getReceipt(key);
+        } catch (error) {
+          console.warn("No se pudo cargar el pedido:", error);
+        }
+      } else {
+        result = await new ApiCheckoutStorage().getReceipt(key);
+      }
 
       if (mounted) {
         setReceipt(result);
@@ -69,7 +85,7 @@ export function ApiOrderDetailScreen() {
     return () => {
       mounted = false;
     };
-  }, [id]);
+  }, [apiCustomerOrderService, id]);
 
   if (isLoading) {
     return (
@@ -200,7 +216,7 @@ export function ApiOrderDetailScreen() {
 
         <InfoRow
           icon="calendar-outline"
-          label="REGISTRADO EN LA APP"
+          label="FECHA DEL PEDIDO"
           value={formatDateTime(receipt.savedAt)}
         />
 

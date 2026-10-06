@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -11,7 +11,7 @@ import {
   View,
 } from "react-native";
 
-import { ApiError, useRepositories } from "@/infrastructure";
+import { ApiError, getErrorMessage, useRepositories } from "@/infrastructure";
 import { useSession } from "@/modules/auth";
 import { useCart } from "@/modules/cart";
 import { formatCurrency } from "@/shared";
@@ -86,7 +86,7 @@ function CheckoutHero({
 }
 
 export function ApiCheckoutDeliveryScreen() {
-  const { customer } = useSession();
+  const { customer, session } = useSession();
   const checkout = useCheckout();
   const [error, setError] = useState<string | null>(null);
 
@@ -103,6 +103,39 @@ export function ApiCheckoutDeliveryScreen() {
       checkout.setContactPhone(customer.phone);
     }
   }, [checkout, customer]);
+
+  // Precarga la dirección predeterminada de /me/addresses si el formulario está vacío.
+  const { addressRepository } = useRepositories();
+  const hasPrefilledAddress = useRef(false);
+
+  useEffect(() => {
+    if (!session || hasPrefilledAddress.current || checkout.addressLine1.trim()) {
+      return;
+    }
+
+    hasPrefilledAddress.current = true;
+
+    addressRepository
+      .getByCustomer(session.tenantId, session.customerId)
+      .then((addresses) => {
+        const address =
+          addresses.find((item) => item.isDefault) ?? addresses[0];
+
+        // Los setters usan actualizaciones funcionales: es seguro aunque `checkout` cambie.
+        if (!address) {
+          return;
+        }
+
+        checkout.setAddressLine1(address.addressLine);
+        checkout.setAddressLine2(address.addressLine2 ?? "");
+        checkout.setCity(address.municipality ?? "");
+        checkout.setDepartment(address.department ?? "");
+        checkout.setReferences(address.references ?? "");
+      })
+      .catch((loadError) => {
+        console.warn("No se pudo precargar la dirección guardada:", loadError);
+      });
+  }, [addressRepository, checkout, session]);
 
   function continueToPayment() {
     setError(null);
@@ -241,7 +274,41 @@ export function ApiCheckoutDeliveryScreen() {
 
 export function ApiCheckoutPaymentScreen() {
   const checkout = useCheckout();
+  const { session } = useSession();
+  const { customerPaymentMethodRepository } = useRepositories();
   const [error, setError] = useState<string | null>(null);
+  const hasPrefilledCard = useRef(false);
+
+  // Precarga titular y últimos 4 dígitos de la tarjeta predeterminada de /me/payment-methods.
+  useEffect(() => {
+    if (
+      !session ||
+      hasPrefilledCard.current ||
+      checkout.cardLastFour.trim()
+    ) {
+      return;
+    }
+
+    hasPrefilledCard.current = true;
+
+    customerPaymentMethodRepository
+      .getByCustomer(session.tenantId, session.customerId)
+      .then((methods) => {
+        const method = methods.find((item) => item.isDefault) ?? methods[0];
+
+        if (!method?.last4) {
+          return;
+        }
+
+        checkout.setCardLastFour(method.last4);
+        if (method.cardholderName && !checkout.cardholderName.trim()) {
+          checkout.setCardholderName(method.cardholderName);
+        }
+      })
+      .catch((loadError) => {
+        console.warn("No se pudo precargar la tarjeta guardada:", loadError);
+      });
+  }, [checkout, customerPaymentMethodRepository, session]);
 
   function continueToReview() {
     setError(null);
@@ -600,15 +667,10 @@ export function ApiCheckoutSuccessScreen() {
 }
 
 function formatApiCheckoutError(error: ApiError): string {
-  if (error.code) {
-    return error.code;
-  }
-
-  if (error.status) {
-    return `HTTP ${error.status}`;
-  }
-
-  return "No se pudo confirmar el pedido. Intenta nuevamente.";
+  return getErrorMessage(
+    error,
+    "No se pudo confirmar el pedido. Intenta nuevamente.",
+  );
 }
 
 function Field({
