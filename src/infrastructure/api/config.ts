@@ -59,6 +59,22 @@ export const apiConfig = {
   timeoutMs: 10_000,
 } as const;
 
+/** Convierte las rutas de medios del backend (por ejemplo, /media/...) en URLs utilizables por React Native. */
+export function resolveApiAssetUrl(value: string | null | undefined): string | undefined {
+  const path = value?.trim();
+
+  if (!path) {
+    return undefined;
+  }
+
+  if (/^https?:\/\//i.test(path)) {
+    return path;
+  }
+
+  const origin = apiConfig.baseUrl.match(/^(https?:\/\/[^/]+)/i)?.[1];
+  return origin ? `${origin}${path.startsWith("/") ? path : `/${path}`}` : path;
+}
+
 export function isApiMode(): boolean {
   return apiConfig.mode === "api";
 }

@@ -82,17 +82,15 @@ export function useCommerceCatalog(
           )
         : [];
 
-      const media = apiMode
-        ? []
-        : (
-            await Promise.all(
-              allProducts.map((product) =>
-                repositories.productMediaRepository.getByProduct(
-                  product.id,
-                ),
-              ),
-            )
-          ).flat();
+      const media = (
+        await Promise.all(
+          allProducts.map((product) =>
+            repositories.productMediaRepository.getByProduct(
+              product.id,
+            ),
+          ),
+        )
+      ).flat();
 
       const availability = (
         await Promise.all(

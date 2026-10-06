@@ -28,6 +28,7 @@ import {
   ApiCustomerPaymentMethodRepository,
   ApiCustomerRepository,
   ApiProductAvailabilityRepository,
+  ApiProductMediaRepository,
   ApiProductRepository,
   ApiStorefrontConfigService,
   ApiTokenStorage,
@@ -133,12 +134,14 @@ export function createRepositoryRegistry(): RepositoryRegistry {
   const apiCategoryRepository = new ApiCategoryRepository();
   const apiProductAvailabilityRepository =
     new ApiProductAvailabilityRepository();
+  const apiProductMediaRepository = new ApiProductMediaRepository();
 
   const apiProductRepository = new ApiProductRepository(
     apiClient,
     apiConfig.tenantSlug,
     apiCategoryRepository,
     apiProductAvailabilityRepository,
+    apiProductMediaRepository,
   );
 
   const apiCheckoutService = new ApiCheckoutService(
@@ -162,7 +165,9 @@ export function createRepositoryRegistry(): RepositoryRegistry {
     productRepository: isApiMode()
       ? apiProductRepository
       : new MockProductRepository(databaseStore),
-    productMediaRepository: new MockProductMediaRepository(databaseStore),
+    productMediaRepository: isApiMode()
+      ? apiProductMediaRepository
+      : new MockProductMediaRepository(databaseStore),
     categoryRepository: isApiMode()
       ? apiCategoryRepository
       : new MockCategoryRepository(databaseStore),
