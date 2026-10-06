@@ -7,6 +7,9 @@ import {
   type RepositoryRegistry,
 } from "@/infrastructure";
 
+import { NotificationType } from "@/core";
+import { showSystemNotification } from "@/modules/notifications/services/systemNotifications";
+
 import type { CheckoutSelection } from "../context/CheckoutProvider";
 
 export type ApiPlaceOrderResult = {
@@ -65,6 +68,22 @@ export async function placeApiOrder(
     );
 
     const receipt = await checkoutStorage.saveReceipt(response);
+
+    const notificationTitle = "Pedido confirmado";
+    const notificationMessage = `Tu pedido ${receipt.orderNumber} fue confirmado.`;
+
+    await repositories.notificationRepository.create({
+      tenantId: session.tenantId,
+      customerId: session.customerId,
+      type: NotificationType.OrderConfirmed,
+      title: notificationTitle,
+      message: notificationMessage,
+    });
+
+    await showSystemNotification({
+      title: notificationTitle,
+      body: notificationMessage,
+    });
 
     await repositories.cartRepository.clear(cart.id);
     await checkoutStorage.clearPending();
