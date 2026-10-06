@@ -3,16 +3,22 @@ import { Platform } from "react-native";
 
 export const MARJYM_NOTIFICATION_CHANNEL = "marjym-general";
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+if (Platform.OS !== "web") {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+}
 
 export async function configureSystemNotifications() {
+  if (Platform.OS === "web") {
+    return false;
+  }
+
   if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync(
       MARJYM_NOTIFICATION_CHANNEL,
