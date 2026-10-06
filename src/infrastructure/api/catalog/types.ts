@@ -11,6 +11,8 @@ export type ApiStorefrontProduct = {
   promotionId?: string | null;
   categoryId: string;
   categoryName?: string | null;
+  primaryImageUrl?: string | null;
+  primaryImageAlt?: string | null;
   saleUnitId: string;
   saleUnitName?: string | null;
   inStock: boolean;

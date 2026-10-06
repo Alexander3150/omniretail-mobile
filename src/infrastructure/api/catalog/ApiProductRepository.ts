@@ -12,6 +12,7 @@ import {
 import type { ApiClient } from "../ApiClient";
 import { ApiCategoryRepository } from "./ApiCategoryRepository";
 import { ApiProductAvailabilityRepository } from "./ApiProductAvailabilityRepository";
+import { ApiProductMediaRepository } from "./ApiProductMediaRepository";
 import type { ApiStorefrontProduct } from "./types";
 
 export class ApiProductRepository implements ProductRepository {
@@ -22,6 +23,7 @@ export class ApiProductRepository implements ProductRepository {
     private readonly tenantSlug: string,
     private readonly categoryRepository?: ApiCategoryRepository,
     private readonly availabilityRepository?: ApiProductAvailabilityRepository,
+    private readonly mediaRepository?: ApiProductMediaRepository,
   ) {}
 
   async getAll(tenantId: TenantId): Promise<Product[]> {
@@ -36,6 +38,7 @@ export class ApiProductRepository implements ProductRepository {
     this.cache(products);
     this.categoryRepository?.syncFromProducts(response, tenantId);
     this.availabilityRepository?.syncFromProducts(response, tenantId);
+    this.mediaRepository?.syncFromProducts(response, tenantId);
     return products;
   }
 
@@ -52,6 +55,7 @@ export class ApiProductRepository implements ProductRepository {
       this.products.set(product.id, product);
       // El detalle puede abrirse sin haber cargado el catálogo (deep link, recarga en web).
       this.availabilityRepository?.syncFromProducts([response], tenantId);
+      this.mediaRepository?.syncFromProducts([response], tenantId);
       return product;
     } catch (error) {
       if (
