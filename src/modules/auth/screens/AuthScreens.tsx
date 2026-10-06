@@ -11,7 +11,13 @@ import {
   View,
 } from "react-native";
 
-import { ApiError, DEMO_RESET_CODE, isApiMode, useRepositories } from "@/infrastructure";
+import {
+  ApiError,
+  DEMO_RESET_CODE,
+  getErrorMessage,
+  isApiMode,
+  useRepositories,
+} from "@/infrastructure";
 import { radius, spacing, typography } from "@/theme";
 
 import { useSession } from "../hooks/useSession";
@@ -47,20 +53,10 @@ export function LoginScreen() {
       await login({ email: email.trim(), password });
       router.replace("/(protected)/(tabs)");
     } catch (error) {
-      if (error instanceof ApiError) {
-        if (error.code === "NETWORK_ERROR") {
-          setError("No se pudo conectar con el servidor.");
-        } else if (error.code === "REQUEST_TIMEOUT") {
-          setError("El servidor tardó demasiado en responder.");
-        } else if (error.status === 401) {
-          setError("Correo o contraseña incorrectos.");
-        } else if (error.status === 400) {
-          setError(error.message || "Revisa los datos ingresados.");
-        } else {
-          setError(error.message || "No se pudo iniciar sesión.");
-        }
+      if (error instanceof ApiError && error.status === 401) {
+        setError("Correo o contraseña incorrectos.");
       } else {
-        setError("No se pudo iniciar sesión.");
+        setError(getErrorMessage(error, "No se pudo iniciar sesión."));
       }
     } finally {
       setIsSubmitting(false);
@@ -92,14 +88,13 @@ export function LoginScreen() {
         loading={isSubmitting}
         onPress={handleSubmit}
       />
-      {!isApiMode() ? (
-        <>
-          <InlineLink href="/(auth)/register" label="Crear cuenta" />
-          <InlineLink
-            href="/(auth)/forgot-password"
-            label="Recuperar contrasena"
-          />
-        </>
+      <InlineLink href="/(auth)/register" label="Crear cuenta" />
+      <InlineLink
+        href="/(auth)/forgot-password"
+        label="Recuperar contrasena"
+      />
+      {isApiMode() ? (
+        <InlineLink href="/(auth)/verify-email" label="Verificar mi correo" />
       ) : null}
     </AuthForm>
   );
@@ -109,15 +104,18 @@ export function RegisterScreen() {
   const { register } = useSession();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit() {
     const validationError =
       (!name.trim() ? "El nombre es requerido." : null) ??
       validateEmail(email) ??
+      (phone && !/^\d{8}$/.test(phone) ? "El teléfono debe tener 8 dígitos." : null) ??
       validateRequiredPassword(password) ??
       validatePasswordConfirmation(password, confirmPassword);
 
@@ -127,16 +125,27 @@ export function RegisterScreen() {
     }
 
     setError(null);
+    setMessage(null);
     setIsSubmitting(true);
     try {
-      await register({
+      const result = await register({
         name: name.trim(),
         email: email.trim(),
+        phone: phone || undefined,
         password,
       });
-      router.replace("/(protected)/(tabs)");
-    } catch {
-      setError("El correo ya esta registrado.");
+
+      if (result.kind === "authenticated") {
+        router.replace("/(protected)/(tabs)");
+        return;
+      }
+
+      setMessage(
+        `Cuenta creada. Enviamos un enlace de verificación a ${result.email}. ` +
+          "Ábrelo o pégalo en \"Verificar mi correo\" para poder iniciar sesión.",
+      );
+    } catch (error) {
+      setError(getErrorMessage(error, "No se pudo crear la cuenta."));
     } finally {
       setIsSubmitting(false);
     }
@@ -147,6 +156,7 @@ export function RegisterScreen() {
       title="Registro"
       subtitle="Crea tu cuenta para comenzar a comprar."
       error={error}
+      message={message}
     >
       <AuthTextInput label="Nombre" onChangeText={setName} value={name} />
       <AuthTextInput
@@ -155,6 +165,12 @@ export function RegisterScreen() {
         label="Correo"
         onChangeText={setEmail}
         value={email}
+      />
+      <AuthTextInput
+        keyboardType="phone-pad"
+        label="Telefono (opcional, 8 digitos)"
+        onChangeText={(value) => setPhone(value.replace(/\D/g, "").slice(0, 8))}
+        value={phone}
       />
       <AuthTextInput
         label="Contrasena"
@@ -174,14 +190,76 @@ export function RegisterScreen() {
         loading={isSubmitting}
         onPress={handleSubmit}
       />
+      {message ? (
+        <InlineLink
+          href={{ pathname: "/(auth)/verify-email", params: { email } }}
+          label="Verificar mi correo"
+        />
+      ) : null}
       <InlineLink href="/(auth)/login" label="Ya tengo cuenta" />
+    </AuthForm>
+  );
+}
+
+export function VerifyEmailScreen() {
+  const { authRepository } = useRepositories();
+  const params = useLocalSearchParams<{ token?: string }>();
+  const [token, setToken] = useState(params.token ?? "");
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function handleSubmit() {
+    if (!token.trim()) {
+      setError("Pega el enlace o el token que recibiste por correo.");
+      return;
+    }
+
+    if (!authRepository.verifyEmail) {
+      setError("La verificación de correo no aplica en modo demo.");
+      return;
+    }
+
+    setError(null);
+    setMessage(null);
+    setIsSubmitting(true);
+    try {
+      await authRepository.verifyEmail(token);
+      setMessage("Correo verificado. Ya puedes iniciar sesión.");
+    } catch (error) {
+      setError(getErrorMessage(error, "No se pudo verificar el correo."));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <AuthForm
+      title="Verificar correo"
+      subtitle="Pega el enlace completo del correo de verificación (o solo el token)."
+      error={error}
+      message={message}
+    >
+      <AuthTextInput
+        autoCapitalize="none"
+        label="Enlace o token"
+        onChangeText={setToken}
+        value={token}
+      />
+      <PrimaryButton
+        disabled={isSubmitting}
+        label="Verificar"
+        loading={isSubmitting}
+        onPress={handleSubmit}
+      />
+      <InlineLink href="/(auth)/login" label="Ir a iniciar sesion" />
     </AuthForm>
   );
 }
 
 export function ForgotPasswordScreen() {
   const { authRepository } = useRepositories();
-  const [email, setEmail] = useState("cliente@demo.com");
+  const [email, setEmail] = useState(isApiMode() ? "" : "cliente@demo.com");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -199,8 +277,12 @@ export function ForgotPasswordScreen() {
     try {
       await authRepository.requestPasswordReset({ email: email.trim() });
       setMessage(
-        `Recuperacion simulada solicitada. Codigo de demostracion: ${DEMO_RESET_CODE}`,
+        isApiMode()
+          ? "Si existe una cuenta con ese correo, recibirás un enlace para restablecer tu contraseña."
+          : `Recuperacion simulada solicitada. Codigo de demostracion: ${DEMO_RESET_CODE}`,
       );
+    } catch (error) {
+      setError(getErrorMessage(error, "No se pudo solicitar la recuperación."));
     } finally {
       setIsSubmitting(false);
     }
@@ -222,7 +304,7 @@ export function ForgotPasswordScreen() {
       />
       <PrimaryButton
         disabled={isSubmitting}
-        label="Solicitar codigo"
+        label={isApiMode() ? "Enviar enlace" : "Solicitar codigo"}
         loading={isSubmitting}
         onPress={handleSubmit}
       />
@@ -236,9 +318,12 @@ export function ForgotPasswordScreen() {
 
 export function ResetPasswordScreen() {
   const { authRepository } = useRepositories();
-  const params = useLocalSearchParams<{ email?: string }>();
-  const [email, setEmail] = useState(params.email ?? "cliente@demo.com");
-  const [code, setCode] = useState(DEMO_RESET_CODE);
+  const apiMode = isApiMode();
+  const params = useLocalSearchParams<{ email?: string; token?: string }>();
+  const [email, setEmail] = useState(
+    params.email ?? (apiMode ? "" : "cliente@demo.com"),
+  );
+  const [code, setCode] = useState(params.token ?? (apiMode ? "" : DEMO_RESET_CODE));
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState<string | null>(null);
@@ -247,8 +332,12 @@ export function ResetPasswordScreen() {
 
   async function handleSubmit() {
     const validationError =
-      validateEmail(email) ??
-      (!code.trim() ? "El codigo es requerido." : null) ??
+      (apiMode ? null : validateEmail(email)) ??
+      (!code.trim()
+        ? apiMode
+          ? "Pega el enlace o el token del correo."
+          : "El codigo es requerido."
+        : null) ??
       validateRequiredPassword(password) ??
       validatePasswordConfirmation(password, confirmPassword);
 
@@ -268,8 +357,12 @@ export function ResetPasswordScreen() {
       });
       setMessage("Contrasena actualizada. Ya puedes iniciar sesion.");
       router.replace("/(auth)/login");
-    } catch {
-      setError("El codigo no es valido.");
+    } catch (error) {
+      setError(
+        apiMode
+          ? getErrorMessage(error, "No se pudo restablecer la contraseña.")
+          : "El codigo no es valido.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -282,22 +375,33 @@ export function ResetPasswordScreen() {
       error={error}
       message={message}
     >
-      <Text style={styles.helpText}>
-        Codigo de demostracion: {DEMO_RESET_CODE}
-      </Text>
-      <AuthTextInput
-        autoCapitalize="none"
-        keyboardType="email-address"
-        label="Correo"
-        onChangeText={setEmail}
-        value={email}
-      />
-      <AuthTextInput
-        keyboardType="number-pad"
-        label="Codigo"
-        onChangeText={setCode}
-        value={code}
-      />
+      {apiMode ? (
+        <AuthTextInput
+          autoCapitalize="none"
+          label="Enlace o token del correo"
+          onChangeText={setCode}
+          value={code}
+        />
+      ) : (
+        <>
+          <Text style={styles.helpText}>
+            Codigo de demostracion: {DEMO_RESET_CODE}
+          </Text>
+          <AuthTextInput
+            autoCapitalize="none"
+            keyboardType="email-address"
+            label="Correo"
+            onChangeText={setEmail}
+            value={email}
+          />
+          <AuthTextInput
+            keyboardType="number-pad"
+            label="Codigo"
+            onChangeText={setCode}
+            value={code}
+          />
+        </>
+      )}
       <AuthTextInput
         label="Nueva contrasena"
         onChangeText={setPassword}
@@ -359,8 +463,12 @@ export function ChangePasswordScreen() {
       setNewPassword("");
       setConfirmPassword("");
       setMessage("Contrasena actualizada.");
-    } catch {
-      setError("La contrasena actual es incorrecta.");
+    } catch (error) {
+      setError(
+        isApiMode()
+          ? getErrorMessage(error, "No se pudo cambiar la contraseña.")
+          : "La contrasena actual es incorrecta.",
+      );
     } finally {
       setIsSubmitting(false);
     }

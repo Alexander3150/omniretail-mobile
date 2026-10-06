@@ -4,6 +4,7 @@ import {
   UserStatus,
   type AuthRepository,
   type AuthResult,
+  type RegistrationResult,
   type ChangePasswordInput,
   type Customer,
   type LoginInput,
@@ -48,7 +49,7 @@ export class MockAuthRepository implements AuthRepository {
     return { user, customer, session };
   }
 
-  async registerCustomer(input: RegisterCustomerInput): Promise<AuthResult> {
+  async registerCustomer(input: RegisterCustomerInput): Promise<RegistrationResult> {
     const normalizedEmail = input.email.toLowerCase();
     const now = new Date().toISOString();
     let user: User;
@@ -93,7 +94,7 @@ export class MockAuthRepository implements AuthRepository {
     await this.credentialStore.upsertCredential(user!.id, normalizedEmail, input.password);
     const session = createSession(user!, customer!);
     await this.sessionStorage.saveSession(session);
-    return { user: user!, customer: customer!, session };
+    return { kind: "authenticated", auth: { user: user!, customer: customer!, session } };
   }
 
   async logout(): Promise<void> {

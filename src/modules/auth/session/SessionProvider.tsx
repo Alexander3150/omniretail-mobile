@@ -1,6 +1,6 @@
 import { createContext, type PropsWithChildren, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
-import type { Customer, LoginInput, RegisterCustomerInput, Session } from "@/core";
+import type { Customer, LoginInput, RegisterCustomerInput, RegistrationResult, Session } from "@/core";
 import { useRepositories } from "@/infrastructure";
 
 type SessionContextValue = {
@@ -9,7 +9,7 @@ type SessionContextValue = {
   isAuthenticated: boolean;
   isLoading: boolean;
   login(input: LoginInput): Promise<void>;
-  register(input: Omit<RegisterCustomerInput, "tenantId">): Promise<void>;
+  register(input: Omit<RegisterCustomerInput, "tenantId">): Promise<RegistrationResult>;
   logout(): Promise<void>;
   refreshSession(): Promise<void>;
 };
@@ -99,8 +99,13 @@ export function SessionProvider({ children }: PropsWithChildren) {
     async (input: Omit<RegisterCustomerInput, "tenantId">) => {
       const businessConfig = await businessConfigRepository.getCurrent();
       const result = await authRepository.registerCustomer({ ...input, tenantId: businessConfig.tenantId });
-      setSession(result.session);
-      setCustomer(result.customer);
+
+      if (result.kind === "authenticated") {
+        setSession(result.auth.session);
+        setCustomer(result.auth.customer);
+      }
+
+      return result;
     },
     [authRepository, businessConfigRepository],
   );
