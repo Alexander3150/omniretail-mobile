@@ -35,7 +35,7 @@ En modo `api`, si falta la URL o el tenant la app falla al arrancar (`assertApiC
 
 El backend debe permitir el origen de Expo web en CORS: `app.cors.allowed-origins` incluye `http://localhost:8081` por defecto (o `CORS_ALLOWED_ORIGINS`).
 
-Cliente demo (seed `999-09-seed-mobile-customer` del backend, contexto `dev`): `ana@example.com` / `Cliente123!`.
+Cliente demo (seeds del backend, contexto `dev`): `ana@example.com` / `ClienteDemo1`. Es la misma contraseña que usa el modo mock del frontend web para esa cuenta.
 
 ## Qué es remoto y qué es local en modo `api`
 
