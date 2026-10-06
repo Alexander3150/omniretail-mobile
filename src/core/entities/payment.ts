@@ -7,6 +7,7 @@ export type CustomerPaymentMethod = {
   customerId: EntityId;
   providerTokenId?: string;
   brand?: string;
+  issuingBank?: string;
   last4?: string;
   expirationMonth?: number;
   expirationYear?: number;

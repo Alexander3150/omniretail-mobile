@@ -6,10 +6,13 @@ export type Address = {
   tenantId: TenantId;
   customerId: EntityId;
   label: string;
+  recipientName?: string;
   addressLine: string;
+  addressLine2?: string;
   municipality?: string;
   department?: string;
   phone?: string;
+  references?: string;
   latitude?: number;
   longitude?: number;
   isDefault: boolean;
