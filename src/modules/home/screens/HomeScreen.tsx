@@ -14,6 +14,7 @@ import {
 
 import { useSession } from "@/modules/auth";
 import { ProductCard, useCommerceCatalog } from "@/modules/catalog";
+import { CartToast, useCartToast } from "@/shared";
 
 const palette = {
   deepBlue: "#3E668F",
@@ -37,6 +38,7 @@ export function HomeScreen() {
     : "/(shop)/categories";
   const [query, setQuery] = useState("");
   const [activeBanner, setActiveBanner] = useState(0);
+  const { cartToastMessage, showCartToast } = useCartToast();
   const bannerListRef = useRef<FlatList<(typeof homeBanners)[number]>>(null);
 
   useEffect(() => {
@@ -76,7 +78,8 @@ export function HomeScreen() {
   }
 
   return (
-    <FlatList
+    <View style={styles.screen}>
+      <FlatList
       contentContainerStyle={styles.content}
       data={products}
       keyExtractor={(item) => item.product.id}
@@ -454,9 +457,11 @@ export function HomeScreen() {
         </View>
       }
       renderItem={({ item }) => (
-        <ProductCard currency={currency} item={item} onAddToCart={addToCart} />
+        <ProductCard currency={currency} item={item} onAddToCart={addToCart} onCartNotice={showCartToast} />
       )}
-    />
+      />
+      <CartToast message={cartToastMessage} />
+    </View>
   );
 }
 
@@ -548,6 +553,7 @@ function getCategoryIcon(
 }
 
 const styles = StyleSheet.create({
+  screen: { backgroundColor: palette.vanillaMilk, flex: 1 },
   loadingContainer: {
     alignItems: "center",
     backgroundColor: palette.vanillaMilk,
