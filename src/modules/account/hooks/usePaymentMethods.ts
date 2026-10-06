@@ -17,8 +17,14 @@ export function usePaymentMethods() {
       return;
     }
 
-    setMethods(await customerPaymentMethodRepository.getByCustomer(session.tenantId, session.customerId));
-    setIsLoading(false);
+    try {
+      setMethods(await customerPaymentMethodRepository.getByCustomer(session.tenantId, session.customerId));
+    } catch (error) {
+      console.warn("No se pudieron cargar los métodos de pago:", error);
+      setMethods([]);
+    } finally {
+      setIsLoading(false);
+    }
   }, [customerPaymentMethodRepository, session]);
 
   const create = useCallback(
