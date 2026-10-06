@@ -1,10 +1,11 @@
 let idCounter = 0;
 
 export function createId(prefix: string): string {
-  const randomUUID = globalThis.crypto?.randomUUID;
+  const crypto = globalThis.crypto;
 
-  if (randomUUID) {
-    return `${prefix}-${randomUUID()}`;
+  // Se invoca como método: desacoplado de `crypto`, el navegador lanza "Illegal invocation".
+  if (typeof crypto?.randomUUID === "function") {
+    return `${prefix}-${crypto.randomUUID()}`;
   }
 
   idCounter += 1;

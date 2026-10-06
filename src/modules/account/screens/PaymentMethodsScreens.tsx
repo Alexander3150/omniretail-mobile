@@ -2,7 +2,10 @@ import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
+import { GUATEMALA_BANKS } from "@/config";
+import { getErrorMessage } from "@/infrastructure";
 import { useSession } from "@/modules/auth";
+import { OptionPicker } from "@/shared";
 import { colors, radius, spacing, typography } from "@/theme";
 
 import { buildSafePaymentMethodInput, type CardFormState, validateCardForm } from "../application/cardValidation";
@@ -10,6 +13,7 @@ import { usePaymentMethods } from "../hooks/usePaymentMethods";
 
 const initialCardForm: CardFormState = {
   cardNumber: "",
+  issuingBank: "",
   cardholderName: "",
   expirationMonth: "",
   expirationYear: "",
@@ -18,6 +22,7 @@ const initialCardForm: CardFormState = {
 
 const demoCardForm: CardFormState = {
   cardNumber: "4111 1111 1111 1111",
+  issuingBank: "Banco Industrial",
   cardholderName: "Cliente Demo",
   expirationMonth: "12",
   expirationYear: "30",
@@ -26,6 +31,16 @@ const demoCardForm: CardFormState = {
 
 export function PaymentMethodsScreen() {
   const { archive, isLoading, methods, reload, setDefault } = usePaymentMethods();
+  const [error, setError] = useState<string | null>(null);
+
+  async function runAction(action: () => Promise<unknown>) {
+    setError(null);
+    try {
+      await action();
+    } catch (actionError) {
+      setError(getErrorMessage(actionError));
+    }
+  }
 
   useFocusEffect(
     useCallback(() => {
@@ -48,22 +63,24 @@ export function PaymentMethodsScreen() {
           <Pressable onPress={() => router.push("/(protected)/account/new-payment-method")} style={styles.primaryButton}>
             <Text style={styles.primaryText}>Agregar tarjeta</Text>
           </Pressable>
+          {error ? <Text style={styles.remove}>{error}</Text> : null}
         </View>
       )}
       ListEmptyComponent={<Text style={styles.muted}>No hay tarjetas guardadas.</Text>}
       renderItem={({ item }) => (
         <View style={styles.panel}>
           <Text style={styles.name}>{item.brand ?? "Tarjeta"} terminada en {item.last4 ?? "demo"}</Text>
+          {item.issuingBank ? <Text style={styles.muted}>{item.issuingBank}</Text> : null}
           <Text style={styles.muted}>Expira {formatExpiration(item.expirationMonth, item.expirationYear)}</Text>
           <Text>{item.cardholderName ?? "Titular demo"}</Text>
           <Text style={styles.muted}>{item.isDefault ? "Predeterminada" : "Disponible"}</Text>
           <View style={styles.row}>
             {!item.isDefault ? (
-              <Pressable onPress={() => void setDefault(item.id)} style={styles.secondaryButton}>
+              <Pressable onPress={() => void runAction(() => setDefault(item.id))} style={styles.secondaryButton}>
                 <Text style={styles.linkText}>Predeterminada</Text>
               </Pressable>
             ) : null}
-            <Pressable onPress={() => void archive(item.id)} style={styles.secondaryButton}>
+            <Pressable onPress={() => void runAction(() => archive(item.id))} style={styles.secondaryButton}>
               <Text style={styles.remove}>Eliminar</Text>
             </Pressable>
           </View>
@@ -97,6 +114,8 @@ export function NewPaymentMethodScreen() {
     try {
       await create(buildSafePaymentMethodInput(form, session, methods.length === 0));
       router.replace(returnTo === "checkout" ? "/(protected)/checkout/payment" : "/(protected)/account/payment-methods");
+    } catch (saveError) {
+      setError(getErrorMessage(saveError, "No se pudo guardar la tarjeta."));
     } finally {
       setIsSubmitting(false);
     }
@@ -111,6 +130,7 @@ export function NewPaymentMethodScreen() {
       </Pressable>
       {error ? <Text style={styles.remove}>{error}</Text> : null}
       <Field keyboardType="number-pad" label="Numero de tarjeta" onChangeText={(cardNumber) => setForm((current) => ({ ...current, cardNumber }))} value={form.cardNumber} />
+      <OptionPicker label="Banco emisor" onChange={(issuingBank) => setForm((current) => ({ ...current, issuingBank }))} options={GUATEMALA_BANKS} value={form.issuingBank} />
       <Field label="Titular" onChangeText={(cardholderName) => setForm((current) => ({ ...current, cardholderName }))} value={form.cardholderName} />
       <View style={styles.row}>
         <Field keyboardType="number-pad" label="Mes" onChangeText={(expirationMonth) => setForm((current) => ({ ...current, expirationMonth }))} value={form.expirationMonth} />

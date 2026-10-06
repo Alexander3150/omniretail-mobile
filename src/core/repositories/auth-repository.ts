@@ -14,9 +14,19 @@ export type AuthResult = {
   session: Session;
 };
 
+/**
+ * El registro puede iniciar sesión de inmediato (mock) o dejar la cuenta pendiente
+ * de verificar el correo (backend real).
+ */
+export type RegistrationResult =
+  | { kind: "authenticated"; auth: AuthResult }
+  | { kind: "verificationRequired"; email: string };
+
 export interface AuthRepository {
   login(input: LoginInput): Promise<AuthResult>;
-  registerCustomer(input: RegisterCustomerInput): Promise<AuthResult>;
+  registerCustomer(input: RegisterCustomerInput): Promise<RegistrationResult>;
+  /** Confirma el correo con el token del enlace enviado al registrarse. */
+  verifyEmail?(token: string): Promise<void>;
   logout(): Promise<void>;
   getCurrentSession(): Promise<Session | null>;
   changePassword(input: ChangePasswordInput): Promise<void>;

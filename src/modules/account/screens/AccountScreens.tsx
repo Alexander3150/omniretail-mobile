@@ -13,7 +13,13 @@ import {
 } from "react-native";
 
 import { useSession } from "@/modules/auth";
-import { isApiMode, useRepositories } from "@/infrastructure";
+import {
+  GUATEMALA_DEPARTMENTS,
+  getGuatemalaMunicipalities,
+  matchLocationName,
+} from "@/config";
+import { getErrorMessage, isApiMode, useRepositories } from "@/infrastructure";
+import { OptionPicker } from "@/shared";
 import { colors, radius, spacing, typography } from "@/theme";
 
 export function AccountScreen() {
@@ -101,8 +107,7 @@ export function AccountScreen() {
         />
       </AccountSection>
 
-      {!isApiMode() ? (
-        <AccountSection title="Cuenta y seguridad">
+      <AccountSection title="Cuenta y seguridad">
           <AccountMenuItem
             icon="shield-checkmark-outline"
             iconBackground="#EEF1FF"
@@ -128,7 +133,6 @@ export function AccountScreen() {
             isLast
           />
         </AccountSection>
-      ) : null}
 
       <AccountSection title="Preferencias y ayuda">
         <AccountMenuItem
@@ -139,15 +143,13 @@ export function AccountScreen() {
           route="/(protected)/notifications"
         />
 
-        {!isApiMode() ? (
-          <AccountMenuItem
-            icon="storefront-outline"
-            iconBackground="#EAF1FF"
-            label="Sucursales"
-            description="Encuentra una tienda cercana"
-            route="/(protected)/branches"
-          />
-        ) : null}
+        <AccountMenuItem
+          icon="storefront-outline"
+          iconBackground="#EAF1FF"
+          label="Sucursales"
+          description="Encuentra una tienda cercana"
+          route="/(protected)/branches"
+        />
 
         <AccountMenuItem
           icon="help-circle-outline"
@@ -252,17 +254,34 @@ export function AddressesScreen() {
   const [addresses, setAddresses] = useState<
     Awaited<ReturnType<typeof addressRepository.getByCustomer>>
   >([]);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (session) {
+    if (!session) {
+      return;
+    }
+
+    try {
       setAddresses(
         await addressRepository.getByCustomer(
           session.tenantId,
           session.customerId,
         ),
       );
+      setError(null);
+    } catch (loadError) {
+      setError(getErrorMessage(loadError, "No se pudieron cargar las direcciones."));
     }
   }, [addressRepository, session]);
+
+  async function runAction(action: () => Promise<unknown>) {
+    try {
+      await action();
+      await load();
+    } catch (actionError) {
+      setError(getErrorMessage(actionError));
+    }
+  }
 
   useEffect(() => {
     const timeout = setTimeout(() => void load(), 0);
@@ -280,6 +299,7 @@ export function AddressesScreen() {
           <Link href="/(protected)/addresses/new" style={styles.link}>
             Nueva direccion
           </Link>
+          {error ? <Text style={styles.remove}>{error}</Text> : null}
         </>
       }
       ListEmptyComponent={<Text style={styles.value}>No hay direcciones.</Text>}
@@ -288,7 +308,9 @@ export function AddressesScreen() {
           <Text style={styles.value}>
             {item.label} {item.isDefault ? "(default)" : ""}
           </Text>
-          <Text style={styles.label}>{item.addressLine}</Text>
+          <Text style={styles.label}>
+            {[item.addressLine, item.addressLine2].filter(Boolean).join(", ")}
+          </Text>
           <Text style={styles.label}>
             {item.municipality} {item.department}
           </Text>
@@ -304,18 +326,18 @@ export function AddressesScreen() {
               <Text style={styles.linkText}>Editar</Text>
             </Pressable>
             <Pressable
-              onPress={async () => {
-                await addressRepository.setDefault(item.customerId, item.id);
-                await load();
-              }}
+              onPress={() =>
+                void runAction(() =>
+                  addressRepository.setDefault(item.customerId, item.id),
+                )
+              }
             >
               <Text style={styles.linkText}>Default</Text>
             </Pressable>
             <Pressable
-              onPress={async () => {
-                await addressRepository.archive(item.id);
-                await load();
-              }}
+              onPress={() =>
+                void runAction(() => addressRepository.archive(item.id))
+              }
             >
               <Text style={styles.remove}>Eliminar</Text>
             </Pressable>
@@ -342,19 +364,35 @@ function ProfileEditor() {
   const [name, setName] = useState(customer?.name ?? "");
   const [phone, setPhone] = useState(customer?.phone ?? "");
   const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   async function save() {
-    if (!customer || !name.trim()) {
+    if (!customer || isSaving) {
       return;
     }
 
-    await customerRepository.updateProfile(customer.id, {
-      name: name.trim(),
-      phone: phone.trim() || undefined,
-    });
+    if (!name.trim()) {
+      setError("El nombre es requerido.");
+      return;
+    }
 
-    await refreshSession();
-    setMessage("Perfil actualizado correctamente.");
+    setError(null);
+    setMessage(null);
+    setIsSaving(true);
+    try {
+      await customerRepository.updateProfile(customer.id, {
+        name: name.trim(),
+        phone: phone.trim(),
+      });
+
+      await refreshSession();
+      setMessage("Perfil actualizado correctamente.");
+    } catch (saveError) {
+      setError(getErrorMessage(saveError, "No se pudo actualizar el perfil."));
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   return (
@@ -386,8 +424,9 @@ function ProfileEditor() {
 
         <TextInput
           keyboardType="phone-pad"
-          onChangeText={setPhone}
-          placeholder="Agregar teléfono"
+          maxLength={8}
+          onChangeText={(value) => setPhone(value.replace(/\D/g, ""))}
+          placeholder="Agregar teléfono (8 dígitos)"
           placeholderTextColor="#7A8798"
           style={accountStyles.input}
           value={phone}
@@ -395,14 +434,21 @@ function ProfileEditor() {
       </View>
 
       <Pressable
+        disabled={isSaving}
         onPress={save}
         style={({ pressed }) => [
           accountStyles.saveButton,
-          pressed ? accountStyles.pressed : null,
+          pressed || isSaving ? accountStyles.pressed : null,
         ]}
       >
-        <Text style={accountStyles.saveButtonText}>Guardar cambios</Text>
+        <Text style={accountStyles.saveButtonText}>
+          {isSaving ? "Guardando..." : "Guardar cambios"}
+        </Text>
       </Pressable>
+
+      {error ? (
+        <Text style={accountStyles.errorText}>{error}</Text>
+      ) : null}
 
       {message ? (
         <View style={accountStyles.successBox}>
@@ -421,64 +467,110 @@ function AddressForm({
   mode: "create" | "edit";
 }) {
   const { addressRepository } = useRepositories();
-  const { session } = useSession();
+  const { customer, session } = useSession();
   const [label, setLabel] = useState("");
+  const [recipientName, setRecipientName] = useState(customer?.name ?? "");
   const [addressLine, setAddressLine] = useState("");
+  const [addressLine2, setAddressLine2] = useState("");
   const [municipality, setMunicipality] = useState("");
   const [department, setDepartment] = useState("");
+  const [references, setReferences] = useState("");
   const [phone, setPhone] = useState("");
   const [isDefault, setIsDefault] = useState(false);
   const [isLoading, setIsLoading] = useState(mode === "edit");
+  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const apiMode = isApiMode();
 
   useEffect(() => {
     async function load() {
-      if (mode === "edit" && addressId) {
-        const address = await addressRepository.getById(addressId);
-        if (address) {
-          setLabel(address.label);
-          setAddressLine(address.addressLine);
-          setMunicipality(address.municipality ?? "");
-          setDepartment(address.department ?? "");
-          setPhone(address.phone ?? "");
-          setIsDefault(address.isDefault);
+      try {
+        if (mode === "edit" && addressId) {
+          const address = await addressRepository.getById(addressId);
+          if (address) {
+            const nextDepartment = matchLocationName(
+              address.department,
+              GUATEMALA_DEPARTMENTS,
+            );
+
+            setLabel(address.label);
+            setRecipientName(address.recipientName ?? customer?.name ?? "");
+            setAddressLine(address.addressLine);
+            setAddressLine2(address.addressLine2 ?? "");
+            setDepartment(nextDepartment || (address.department ?? ""));
+            setMunicipality(
+              matchLocationName(
+                address.municipality,
+                getGuatemalaMunicipalities(nextDepartment),
+              ) || (address.municipality ?? ""),
+            );
+            setReferences(address.references ?? "");
+            setPhone(address.phone ?? "");
+            setIsDefault(address.isDefault);
+          }
         }
+      } catch (loadError) {
+        setError(getErrorMessage(loadError, "No se pudo cargar la dirección."));
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     }
     void load();
-  }, [addressId, addressRepository, mode]);
+  }, [addressId, addressRepository, customer?.name, mode]);
+
+  function selectDepartment(value: string) {
+    setDepartment(value);
+    if (!getGuatemalaMunicipalities(value).includes(municipality)) {
+      setMunicipality("");
+    }
+  }
 
   async function save() {
-    if (!session) {
+    if (!session || isSaving) {
       return;
     }
     if (!label.trim() || !addressLine.trim()) {
-      setError("Label y direccion son requeridos.");
+      setError("El nombre y la dirección son requeridos.");
+      return;
+    }
+    if (apiMode && (!department || !municipality)) {
+      setError("Selecciona el departamento y el municipio.");
       return;
     }
 
     const input = {
       label: label.trim(),
+      recipientName: recipientName.trim() || undefined,
       addressLine: addressLine.trim(),
+      addressLine2: addressLine2.trim() || undefined,
       municipality: municipality.trim() || undefined,
       department: department.trim() || undefined,
+      references: references.trim() || undefined,
       phone: phone.trim() || undefined,
       isDefault,
     };
-    if (mode === "create") {
-      await addressRepository.create({
-        ...input,
-        tenantId: session.tenantId,
-        customerId: session.customerId,
-      });
-    } else if (addressId) {
-      await addressRepository.update(addressId, input);
-      if (isDefault) {
-        await addressRepository.setDefault(session.customerId, addressId);
+
+    setError(null);
+    setIsSaving(true);
+    try {
+      if (mode === "create") {
+        await addressRepository.create({
+          ...input,
+          tenantId: session.tenantId,
+          customerId: session.customerId,
+        });
+      } else if (addressId) {
+        await addressRepository.update(addressId, input);
+        if (isDefault) {
+          await addressRepository.setDefault(session.customerId, addressId);
+        }
       }
+      router.replace("/(protected)/addresses");
+    } catch (saveError) {
+      setError(getErrorMessage(saveError, "No se pudo guardar la dirección."));
+    } finally {
+      setIsSaving(false);
     }
-    router.replace("/(protected)/addresses");
   }
 
   if (isLoading) {
@@ -486,7 +578,10 @@ function AddressForm({
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+    >
       <Text style={styles.title}>
         {mode === "create" ? "Nueva direccion" : "Editar direccion"}
       </Text>
@@ -495,7 +590,15 @@ function AddressForm({
         style={styles.input}
         value={label}
         onChangeText={setLabel}
-        placeholder="Casa, Trabajo..."
+        maxLength={35}
+        placeholder="Nombre: Casa, Trabajo..."
+      />
+      <TextInput
+        style={styles.input}
+        value={recipientName}
+        onChangeText={setRecipientName}
+        maxLength={60}
+        placeholder="Destinatario"
       />
       <TextInput
         style={styles.input}
@@ -505,21 +608,53 @@ function AddressForm({
       />
       <TextInput
         style={styles.input}
-        value={municipality}
-        onChangeText={setMunicipality}
-        placeholder="Municipio"
+        value={addressLine2}
+        onChangeText={setAddressLine2}
+        placeholder="Complemento (opcional)"
       />
+      {apiMode ? (
+        <>
+          <OptionPicker
+            label="Departamento"
+            onChange={selectDepartment}
+            options={GUATEMALA_DEPARTMENTS}
+            value={department}
+          />
+          <OptionPicker
+            emptyText="Selecciona primero un departamento."
+            label="Municipio"
+            onChange={setMunicipality}
+            options={getGuatemalaMunicipalities(department)}
+            value={municipality}
+          />
+        </>
+      ) : (
+        <>
+          <TextInput
+            style={styles.input}
+            value={municipality}
+            onChangeText={setMunicipality}
+            placeholder="Municipio"
+          />
+          <TextInput
+            style={styles.input}
+            value={department}
+            onChangeText={setDepartment}
+            placeholder="Departamento"
+          />
+          <TextInput
+            style={styles.input}
+            value={phone}
+            onChangeText={setPhone}
+            placeholder="Telefono"
+          />
+        </>
+      )}
       <TextInput
         style={styles.input}
-        value={department}
-        onChangeText={setDepartment}
-        placeholder="Departamento"
-      />
-      <TextInput
-        style={styles.input}
-        value={phone}
-        onChangeText={setPhone}
-        placeholder="Telefono"
+        value={references}
+        onChangeText={setReferences}
+        placeholder="Referencias (opcional)"
       />
       <Pressable
         onPress={() => setIsDefault((value) => !value)}
@@ -527,8 +662,8 @@ function AddressForm({
       >
         <Text>{isDefault ? "Default: si" : "Marcar default"}</Text>
       </Pressable>
-      <Pressable onPress={save} style={styles.button}>
-        <Text style={styles.buttonText}>Guardar</Text>
+      <Pressable disabled={isSaving} onPress={save} style={styles.button}>
+        <Text style={styles.buttonText}>{isSaving ? "Guardando..." : "Guardar"}</Text>
       </Pressable>
     </ScrollView>
   );
@@ -797,6 +932,13 @@ const accountStyles = StyleSheet.create({
     color: accountPalette.success,
     fontSize: 12,
     fontWeight: "800",
+    textAlign: "center",
+  },
+
+  errorText: {
+    color: accountPalette.danger,
+    fontSize: 12,
+    fontWeight: "700",
     textAlign: "center",
   },
 

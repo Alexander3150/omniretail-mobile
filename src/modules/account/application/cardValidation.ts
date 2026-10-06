@@ -2,6 +2,7 @@ import type { CreateCustomerPaymentMethodInput } from "@/core";
 
 export type CardFormState = {
   cardNumber: string;
+  issuingBank: string;
   cardholderName: string;
   expirationMonth: string;
   expirationYear: string;
@@ -18,6 +19,12 @@ export function validateCardForm(input: CardFormState): string | null {
   }
   if (!passesLuhn(digits)) {
     return "El numero de tarjeta no es valido.";
+  }
+  if (detectCardBrand(digits) === "Unknown") {
+    return "Solo se aceptan tarjetas Visa, Mastercard, American Express o Discover.";
+  }
+  if (!input.issuingBank.trim()) {
+    return "Selecciona el banco emisor.";
   }
   if (!input.cardholderName.trim()) {
     return "El titular es requerido.";
@@ -50,6 +57,7 @@ export function buildSafePaymentMethodInput(
     customerId: owner.customerId,
     providerTokenId: createDemoToken(digits),
     brand: detectCardBrand(digits),
+    issuingBank: input.issuingBank.trim(),
     last4: digits.slice(-4),
     expirationMonth: Number(input.expirationMonth),
     expirationYear: normalizeExpirationYear(input.expirationYear),
@@ -66,6 +74,12 @@ export function detectCardBrand(cardNumber: string): string {
   }
   if (/^5[1-5]/.test(digits) || /^2(2[2-9]|[3-6]\d|7[01]|720)/.test(digits)) {
     return "Mastercard";
+  }
+  if (/^3[47]/.test(digits)) {
+    return "American Express";
+  }
+  if (/^(6011|65|64[4-9])/.test(digits)) {
+    return "Discover";
   }
 
   return "Unknown";

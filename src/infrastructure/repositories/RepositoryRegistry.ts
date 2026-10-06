@@ -18,14 +18,21 @@ import type {
 } from "@/core";
 
 import {
+  ApiAddressRepository,
   ApiAuthRepository,
+  ApiBranchRepository,
+  ApiBusinessConfigRepository,
   ApiCategoryRepository,
   ApiCheckoutService,
+  ApiCustomerOrderService,
+  ApiCustomerPaymentMethodRepository,
   ApiCustomerRepository,
   ApiProductAvailabilityRepository,
   ApiProductRepository,
+  ApiStorefrontConfigService,
   ApiTokenStorage,
   apiConfig,
+  assertApiConfig,
   createApiClient,
   isApiMode,
 } from "../api";
@@ -69,6 +76,7 @@ export type RepositoryRegistry = {
   branchRepository: BranchRepository;
   businessConfigRepository: BusinessConfigRepository;
   apiCheckoutService: ApiCheckoutService;
+  apiCustomerOrderService: ApiCustomerOrderService;
   databaseStore: MockDatabaseStore;
   resetToDemoData(): Promise<void>;
 };
@@ -80,7 +88,14 @@ export function getRepositoryRegistry(): RepositoryRegistry {
   return registry;
 }
 
+/**
+ * Modo API: lo que el backend ya expone es remoto. Carrito, favoritos, notificaciones,
+ * promociones, media y pagos por pedido siguen siendo almacenamiento local deliberado
+ * (MockDatabaseStore) porque el backend todavía no ofrece esos endpoints para clientes.
+ */
 export function createRepositoryRegistry(): RepositoryRegistry {
+  assertApiConfig();
+
   const databaseStorage = new AsyncStorageKeyValueStorage();
   const secureStorage = new SecureKeyValueStorage();
   const databaseStore = new MockDatabaseStore(databaseStorage);
@@ -95,7 +110,7 @@ export function createRepositoryRegistry(): RepositoryRegistry {
   const mockCustomerRepository = new MockCustomerRepository(databaseStore);
 
   const apiTokenStorage = new ApiTokenStorage(secureStorage);
-  const apiCustomerRepository = new ApiCustomerRepository();
+  const apiCustomerRepository = new ApiCustomerRepository(() => apiClient);
 
   const clearApiSession = async () => {
     await apiTokenStorage.clearToken();
@@ -131,6 +146,12 @@ export function createRepositoryRegistry(): RepositoryRegistry {
     apiConfig.tenantSlug,
   );
 
+  const apiStorefrontConfigService = new ApiStorefrontConfigService(
+    apiClient,
+    apiConfig.tenantSlug,
+  );
+  const apiCustomerOrderService = new ApiCustomerOrderService(apiClient);
+
   return {
     authRepository: isApiMode()
       ? apiAuthRepository
@@ -149,16 +170,28 @@ export function createRepositoryRegistry(): RepositoryRegistry {
     productAvailabilityRepository: isApiMode()
       ? apiProductAvailabilityRepository
       : new MockProductAvailabilityRepository(databaseStore),
-    addressRepository: new MockAddressRepository(databaseStore),
+    addressRepository: isApiMode()
+      ? new ApiAddressRepository(
+          apiClient,
+          () => apiCustomerRepository.getCurrentCustomer()?.name,
+        )
+      : new MockAddressRepository(databaseStore),
     favoriteRepository: new MockFavoriteRepository(databaseStore),
     cartRepository: new MockCartRepository(databaseStore),
     orderRepository: new MockOrderRepository(databaseStore),
     paymentRepository: new MockPaymentRepository(databaseStore),
-    customerPaymentMethodRepository: new MockCustomerPaymentMethodRepository(databaseStore),
+    customerPaymentMethodRepository: isApiMode()
+      ? new ApiCustomerPaymentMethodRepository(apiClient)
+      : new MockCustomerPaymentMethodRepository(databaseStore),
     notificationRepository: new MockNotificationRepository(databaseStore),
-    branchRepository: new MockBranchRepository(databaseStore),
-    businessConfigRepository: new MockBusinessConfigRepository(databaseStore),
+    branchRepository: isApiMode()
+      ? new ApiBranchRepository(apiStorefrontConfigService)
+      : new MockBranchRepository(databaseStore),
+    businessConfigRepository: isApiMode()
+      ? new ApiBusinessConfigRepository(apiStorefrontConfigService)
+      : new MockBusinessConfigRepository(databaseStore),
     apiCheckoutService,
+    apiCustomerOrderService,
     databaseStore,
     async resetToDemoData() {
       await databaseStore.resetToDemoData();

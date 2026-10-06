@@ -7,6 +7,7 @@ import {
   type PasswordResetRequestInput,
   type PasswordResetVerificationInput,
   type RegisterCustomerInput,
+  type RegistrationResult,
   type ResetPasswordInput,
   type Session,
   type User,
@@ -19,7 +20,8 @@ import { ApiCustomerRepository } from "./ApiCustomerRepository";
 import { ApiTokenStorage } from "./ApiTokenStorage";
 import type {
   ApiCurrentSessionResponse,
-  ApiLoginResponse,
+  ApiLoginOutcome,
+  ApiRegisterCustomerResponse,
 } from "./types";
 
 export class ApiAuthRepository implements AuthRepository {
@@ -34,7 +36,7 @@ export class ApiAuthRepository implements AuthRepository {
   async login(input: LoginInput): Promise<AuthResult> {
     try {
       const response =
-        await this.apiClient.post<ApiLoginResponse>(
+        await this.apiClient.post<ApiLoginOutcome>(
           "/auth/login",
           {
             email: input.email.trim(),
@@ -43,6 +45,17 @@ export class ApiAuthRepository implements AuthRepository {
             expectedUserType: "customer",
           },
         );
+
+      if ("challengeToken" in response) {
+        // La app todavía no implementa el segundo paso (POST /auth/mfa/verify).
+        throw new ApiError(
+          "Tu cuenta tiene verificación en dos pasos. Inicia sesión desde la web mientras la app la habilita.",
+          {
+            status: 0,
+            code: "MFA_REQUIRED",
+          },
+        );
+      }
 
       await this.tokenStorage.saveToken(response.token);
 
@@ -107,43 +120,61 @@ export class ApiAuthRepository implements AuthRepository {
   }
 
   async registerCustomer(
-    _input: RegisterCustomerInput,
-  ): Promise<AuthResult> {
-    throw new Error(
-      "El registro todavía no está disponible.",
-    );
+    input: RegisterCustomerInput,
+  ): Promise<RegistrationResult> {
+    const response =
+      await this.apiClient.post<ApiRegisterCustomerResponse>(
+        `/public/${encodeURIComponent(this.tenantSlug)}/auth/register`,
+        {
+          name: input.name.trim(),
+          email: input.email.trim(),
+          phone: input.phone?.trim() || null,
+          password: input.password,
+        },
+      );
+
+    // La cuenta queda pendiente hasta abrir el enlace de verificación del correo.
+    return {
+      kind: "verificationRequired",
+      email: response.user.email,
+    };
   }
 
-  async changePassword(
-    _input: ChangePasswordInput,
-  ): Promise<void> {
-    throw new Error(
-      "El cambio de contraseña todavía no está disponible.",
-    );
+  async verifyEmail(token: string): Promise<void> {
+    await this.apiClient.post<void>("/auth/email/verify", {
+      token: extractEmailToken(token),
+    });
+  }
+
+  async changePassword(input: ChangePasswordInput): Promise<void> {
+    await this.apiClient.post<void>("/auth/password/change", {
+      currentPassword: input.currentPassword,
+      newPassword: input.newPassword,
+    });
   }
 
   async requestPasswordReset(
-    _input: PasswordResetRequestInput,
+    input: PasswordResetRequestInput,
   ): Promise<void> {
-    throw new Error(
-      "La recuperación de contraseña todavía no está disponible.",
-    );
+    // El backend responde igual exista o no la cuenta (no revela correos registrados).
+    await this.apiClient.post<void>("/auth/password/forgot", {
+      email: input.email.trim(),
+      tenantSlug: this.tenantSlug,
+    });
   }
 
   async verifyPasswordResetCode(
-    _input: PasswordResetVerificationInput,
+    input: PasswordResetVerificationInput,
   ): Promise<boolean> {
-    throw new Error(
-      "La recuperación de contraseña todavía no está disponible.",
-    );
+    // No existe endpoint de pre-validación: el token se valida al restablecer.
+    return extractEmailToken(input.code).length > 0;
   }
 
-  async resetPassword(
-    _input: ResetPasswordInput,
-  ): Promise<void> {
-    throw new Error(
-      "La recuperación de contraseña todavía no está disponible.",
-    );
+  async resetPassword(input: ResetPasswordInput): Promise<void> {
+    await this.apiClient.post<void>("/auth/password/reset", {
+      token: extractEmailToken(input.code),
+      newPassword: input.newPassword,
+    });
   }
 
   private async restoreFromBackend(): Promise<AuthResult> {
@@ -199,4 +230,15 @@ export class ApiAuthRepository implements AuthRepository {
     await this.sessionStorage.clearSession();
     this.customerRepository.clearCurrentCustomer();
   }
+}
+
+/**
+ * Los correos traen enlaces del frontend web (…/verificar-correo/{token},
+ * …/restablecer-contrasena/{token}). Se acepta el enlace completo o solo el token.
+ */
+export function extractEmailToken(value: string): string {
+  const trimmed = value.trim().replace(/[?#].*$/, "").replace(/\/+$/, "");
+  const lastSegment = trimmed.split("/").pop() ?? "";
+
+  return decodeURIComponent(lastSegment);
 }

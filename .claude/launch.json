@@ -1,0 +1,16 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "expo-web-api",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["expo", "start", "--web", "--port", "8081", "--clear"],
+      "port": 8081,
+      "env": {
+        "EXPO_PUBLIC_API_MODE": "api",
+        "EXPO_PUBLIC_API_BASE_URL": "http://localhost:8080/api/v1",
+        "EXPO_PUBLIC_TENANT_SLUG": "ferrepharma-demo"
+      }
+    }
+  ]
+}

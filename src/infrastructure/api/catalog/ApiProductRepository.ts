@@ -46,12 +46,12 @@ export class ApiProductRepository implements ProductRepository {
           `${this.productsPath()}/${id}`,
         );
 
-      const product = this.toProduct(
-        response,
-        this.resolveTenantId(),
-      );
+      const tenantId = this.resolveTenantId();
+      const product = this.toProduct(response, tenantId);
 
       this.products.set(product.id, product);
+      // El detalle puede abrirse sin haber cargado el catálogo (deep link, recarga en web).
+      this.availabilityRepository?.syncFromProducts([response], tenantId);
       return product;
     } catch (error) {
       if (

@@ -12,6 +12,22 @@ export type ApiLoginResponse = {
   };
 };
 
+export type ApiMfaChallengeResponse = {
+  challengeToken: string;
+  [key: string]: unknown;
+};
+
+export type ApiLoginOutcome = ApiLoginResponse | ApiMfaChallengeResponse;
+
+export type ApiRegisterCustomerResponse = {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    type: "customer" | "employee";
+  };
+};
+
 export type ApiCurrentSessionResponse = {
   user: {
     id: string;

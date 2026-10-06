@@ -1,6 +1,7 @@
 import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
 import { useEffect } from "react";
+import { Platform } from "react-native";
 
 function openNotificationOrder(
   response: Notifications.NotificationResponse,
@@ -20,6 +21,10 @@ function openNotificationOrder(
 
 export function NotificationNavigationHandler() {
   useEffect(() => {
+    if (Platform.OS === "web") {
+      return;
+    }
+
     const subscription =
       Notifications.addNotificationResponseReceivedListener(
         openNotificationOrder,

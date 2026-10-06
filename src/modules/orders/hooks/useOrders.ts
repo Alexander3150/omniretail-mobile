@@ -1,16 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 
 import type { Branch, Order, OrderItem, Payment } from "@/core";
-import { useRepositories } from "@/infrastructure";
-import { apiConfig } from "@/infrastructure/api";
-import {
-  ApiCheckoutStorage,
-  type ApiCheckoutReceipt,
-} from "@/infrastructure/api/checkout";
-import {
-  ApiOrderTrackingService,
-  type ApiOrderTrackingStatus,
-} from "@/infrastructure/api/tracking";
+import { isApiMode, useRepositories } from "@/infrastructure";
+import type { ApiCustomerOrderResponse } from "@/infrastructure/api/account";
 import { useSession } from "@/modules/auth";
 
 import { advanceOrderStatusForDemo } from "../application/OrderTrackingSimulationService";
@@ -35,14 +27,9 @@ export type ApiOrderListItem = {
   status: ApiOrderListStatus;
   total: number;
   itemCount: number;
-  apiReceipt: ApiCheckoutReceipt;
 };
 
 export type CommerceOrderListItem = OrderListItem | ApiOrderListItem;
-
-function isApiMode(): boolean {
-  return process.env.EXPO_PUBLIC_API_MODE === "api";
-}
 
 function normalizeApiOrderStatus(status: string): ApiOrderListStatus {
   switch (status) {
@@ -62,34 +49,22 @@ function normalizeApiOrderStatus(status: string): ApiOrderListStatus {
   }
 }
 
-function mapTrackingStatusToListStatus(
-  status: ApiOrderTrackingStatus,
-): ApiOrderListStatus {
-  return status === "sent" ? "shipped" : status;
-}
-
-function mapApiReceiptToListItem(
-  receipt: ApiCheckoutReceipt,
-  trackingStatus?: ApiOrderTrackingStatus,
+// El prefijo "api:" enruta al detalle remoto (ver app/(protected)/orders/[id].tsx).
+function mapApiOrderToListItem(
+  order: ApiCustomerOrderResponse,
 ): ApiOrderListItem {
   return {
-    id: `api:${receipt.orderNumber}`,
-    number: receipt.orderNumber,
-    createdAt: receipt.savedAt,
-    status: trackingStatus
-      ? mapTrackingStatusToListStatus(trackingStatus)
-      : normalizeApiOrderStatus(receipt.orderStatus),
-    total: receipt.total,
-    itemCount: receipt.items.reduce(
-      (total, item) => total + item.quantity,
-      0,
-    ),
-    apiReceipt: receipt,
+    id: `api:${order.id}`,
+    number: order.orderNumber,
+    createdAt: order.createdAt,
+    status: normalizeApiOrderStatus(order.status),
+    total: Number(order.total),
+    itemCount: order.itemCount,
   };
 }
 
 export function useOrders() {
-  const { businessConfigRepository, orderRepository } = useRepositories();
+  const { apiCustomerOrderService, businessConfigRepository, orderRepository } = useRepositories();
   const { session } = useSession();
   const [orders, setOrders] = useState<CommerceOrderListItem[]>([]);
   const [currency, setCurrency] = useState("GTQ");
@@ -104,35 +79,17 @@ export function useOrders() {
     const business = await businessConfigRepository.getCurrent();
 
     if (isApiMode()) {
-      const receipts = await new ApiCheckoutStorage().getReceipts();
-      const trackingService = new ApiOrderTrackingService();
+      try {
+        const apiOrders = await apiCustomerOrderService.list();
 
-      const apiOrders = await Promise.all(
-        receipts.map(async (receipt) => {
-          if (!receipt.trackingToken) {
-            return mapApiReceiptToListItem(receipt);
-          }
-
-          try {
-            const tracking = await trackingService.track(
-              apiConfig.tenantSlug,
-              receipt.trackingToken,
-            );
-
-            return mapApiReceiptToListItem(receipt, tracking.status);
-          } catch {
-            return mapApiReceiptToListItem(receipt);
-          }
-        }),
-      );
-
-      setCurrency(business.currency);
-      setOrders(
-        apiOrders.sort((left, right) =>
-          right.createdAt.localeCompare(left.createdAt),
-        ),
-      );
-      setIsLoading(false);
+        setCurrency(business.currency);
+        setOrders(apiOrders.map(mapApiOrderToListItem));
+      } catch (error) {
+        console.warn("No se pudo cargar el historial de pedidos:", error);
+        setOrders([]);
+      } finally {
+        setIsLoading(false);
+      }
       return;
     }
 
@@ -159,7 +116,7 @@ export function useOrders() {
     setCurrency(business.currency);
     setOrders(ordersWithCounts);
     setIsLoading(false);
-  }, [businessConfigRepository, orderRepository, session]);
+  }, [apiCustomerOrderService, businessConfigRepository, orderRepository, session]);
 
   useEffect(() => {
     const timeout = setTimeout(() => void load(), 0);
