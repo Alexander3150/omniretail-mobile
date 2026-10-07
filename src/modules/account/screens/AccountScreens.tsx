@@ -303,6 +303,9 @@ export function AddressesScreen() {
             <View style={styles.addressHeroCircleSmall} />
 
             <View style={styles.addressHeroTopRow}>
+              <Pressable accessibilityLabel="Regresar" onPress={() => router.back()} style={styles.addressBackButton}>
+                <Ionicons color={accountPalette.deepBlue} name="arrow-back" size={20} />
+              </Pressable>
 <View style={styles.addressHeroText}>
                 <Text style={styles.addressHeroBrand}>FERREPHARMA</Text>
                 <Text style={styles.addressHeroTitle}>Mis direcciones</Text>
@@ -730,6 +733,9 @@ function AddressForm({
         <View style={styles.addressHeroCircleSmall} />
 
         <View style={styles.addressHeroTopRow}>
+          <Pressable accessibilityLabel="Regresar" onPress={() => router.back()} style={styles.addressBackButton}>
+            <Ionicons color={accountPalette.deepBlue} name="arrow-back" size={20} />
+          </Pressable>
 <View style={styles.addressHeroText}>
             <Text style={styles.addressHeroBrand}>FERREPHARMA</Text>
             <Text style={styles.addressHeroTitle}>

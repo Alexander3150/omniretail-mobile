@@ -29,10 +29,12 @@ function Hero({
   title,
   subtitle,
   icon,
+  showBackButton = true,
 }: {
   title: string;
   subtitle: string;
   icon: keyof typeof Ionicons.glyphMap;
+  showBackButton?: boolean;
 }) {
   return (
     <View style={styles.hero}>
@@ -40,6 +42,7 @@ function Hero({
       <View style={styles.heroCircleSmall} />
 
       <View style={styles.heroTop}>
+        {showBackButton ? <Pressable accessibilityLabel="Regresar" onPress={() => router.back()} style={styles.backButton}><Ionicons color={palette.deepBlue} name="arrow-back" size={20} /></Pressable> : null}
         <View style={styles.heroText}>
           <Text style={styles.brand}>FERREPHARMA</Text>
           <Text style={styles.heroTitle}>{title}</Text>

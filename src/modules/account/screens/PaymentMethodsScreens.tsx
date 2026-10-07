@@ -449,6 +449,9 @@ function PaymentHero({
       <View style={styles.heroCircleSmall} />
 
       <View style={styles.heroTopRow}>
+        <Pressable accessibilityLabel="Regresar" onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons color={palette.deepBlue} name="arrow-back" size={20} />
+        </Pressable>
 <View style={styles.heroText}>
           <Text style={styles.heroBrand}>FERREPHARMA</Text>
           <Text style={styles.heroTitle}>{title}</Text>

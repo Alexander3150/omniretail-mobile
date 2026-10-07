@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import {
   ActivityIndicator,
   Pressable,
@@ -243,6 +244,9 @@ function Hero() {
       <View style={styles.heroCircleSmall} />
 
       <View style={styles.heroTop}>
+        <Pressable accessibilityLabel="Regresar" onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons color={palette.deepBlue} name="arrow-back" size={20} />
+        </Pressable>
         <View style={styles.heroText}>
           <Text style={styles.brand}>FERREPHARMA</Text>
           <Text style={styles.heroTitle}>Soporte</Text>

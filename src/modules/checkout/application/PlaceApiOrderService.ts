@@ -72,18 +72,24 @@ export async function placeApiOrder(
     const notificationTitle = "Pedido confirmado";
     const notificationMessage = `Tu pedido ${receipt.orderNumber} fue confirmado.`;
 
-    await repositories.notificationRepository.create({
-      tenantId: session.tenantId,
-      customerId: session.customerId,
-      type: NotificationType.OrderConfirmed,
-      title: notificationTitle,
-      message: notificationMessage,
-    });
+    try {
+      await repositories.notificationRepository.create({
+        tenantId: session.tenantId,
+        customerId: session.customerId,
+        relatedOrderId: `api:${receipt.orderNumber}`,
+        type: NotificationType.OrderConfirmed,
+        title: notificationTitle,
+        message: notificationMessage,
+      });
 
-    await showSystemNotification({
-      title: notificationTitle,
-      body: notificationMessage,
-    });
+      await showSystemNotification({
+        title: notificationTitle,
+        body: notificationMessage,
+        orderId: `api:${receipt.orderNumber}`,
+      });
+    } catch (notificationError) {
+      console.warn("No se pudo emitir la notificación de pedido:", notificationError);
+    }
 
     await repositories.cartRepository.clear(cart.id);
     await checkoutStorage.clearPending();
