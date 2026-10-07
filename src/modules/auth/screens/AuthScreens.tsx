@@ -480,6 +480,7 @@ export function ChangePasswordScreen() {
       subtitle="Actualiza la seguridad de tu cuenta."
       error={error}
       message={message}
+      showBackButton
     >
       <AuthTextInput
         label="Contrasena actual"
@@ -513,6 +514,7 @@ type AuthFormProps = {
   children: ReactNode;
   error?: string | null;
   message?: string | null;
+  showBackButton?: boolean;
   subtitle: string;
   title: string;
 };
@@ -521,6 +523,7 @@ function AuthForm({
   children,
   error,
   message,
+  showBackButton = false,
   subtitle,
   title,
 }: AuthFormProps) {
@@ -535,6 +538,20 @@ function AuthForm({
       <View style={styles.decorativeCircleBottom} />
 
       <View style={styles.authWrapper}>
+        {showBackButton ? (
+          <Pressable
+            accessibilityLabel="Volver"
+            hitSlop={8}
+            onPress={() => router.back()}
+            style={({ pressed }) => [
+              styles.authBackButton,
+              pressed ? styles.authBackButtonPressed : null,
+            ]}
+          >
+            <Text style={styles.authBackButtonText}>←</Text>
+          </Pressable>
+        ) : null}
+
         <View style={styles.brandArea}>
           <View style={styles.logoBox}>
             <Text style={styles.logoIcon}>✦</Text>
@@ -701,6 +718,27 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     maxWidth: 480,
     width: "100%",
+  },
+
+  authBackButton: {
+    alignItems: "center",
+    backgroundColor: palette.white,
+    borderRadius: 22,
+    height: 44,
+    justifyContent: "center",
+    marginBottom: spacing.md,
+    width: 44,
+  },
+
+  authBackButtonPressed: {
+    opacity: 0.72,
+  },
+
+  authBackButtonText: {
+    color: palette.deepBlue,
+    fontSize: 24,
+    fontWeight: "700",
+    lineHeight: 26,
   },
 
   brandArea: {

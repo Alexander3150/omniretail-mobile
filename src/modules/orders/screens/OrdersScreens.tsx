@@ -53,6 +53,24 @@ export function OrdersScreen() {
             <View style={orderStyles.decorationTwo} />
 
             <View style={orderStyles.heroTop}>
+              <Pressable
+                accessibilityLabel="Volver a Mi cuenta"
+                hitSlop={8}
+                onPress={() =>
+                  router.navigate("/(protected)/(tabs)/account")
+                }
+                style={({ pressed }) => [
+                  orderStyles.ordersBackButton,
+                  pressed ? orderStyles.pressed : null,
+                ]}
+              >
+                <Ionicons
+                  color={orderPalette.deepBlue}
+                  name="arrow-back"
+                  size={22}
+                />
+              </Pressable>
+
               <View style={orderStyles.heroText}>
                 <Text style={orderStyles.brand}>FERREPHARMA</Text>
 
@@ -1213,6 +1231,16 @@ const orderStyles = StyleSheet.create({
 
   heroText: {
     flex: 1,
+  },
+
+  ordersBackButton: {
+    alignItems: "center",
+    backgroundColor: orderPalette.white,
+    borderRadius: 22,
+    height: 44,
+    justifyContent: "center",
+    marginRight: 12,
+    width: 44,
   },
 
   brand: {
