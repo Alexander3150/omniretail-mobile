@@ -139,7 +139,9 @@ export function CartScreen() {
                 </View>
 
                 <Text style={styles.shippingPending}>
-                  Se calcula después
+                  {totals.shippingCost === 0
+                    ? "Gratis"
+                    : formatCurrency(totals.shippingCost, currency)}
                 </Text>
               </View>
 
@@ -152,7 +154,9 @@ export function CartScreen() {
                   </Text>
 
                   <Text style={styles.totalHint}>
-                    Antes de costos de entrega
+                    {totals.shippingCost === 0
+                      ? "Envío gratis"
+                      : "Incluye costo de entrega"}
                   </Text>
                 </View>
 

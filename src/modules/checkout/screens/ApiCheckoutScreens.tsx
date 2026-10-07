@@ -547,24 +547,30 @@ export function ApiCheckoutReviewScreen() {
 
       <View style={styles.summaryCard}>
         <View style={styles.summaryRow}>
-          <Text style={styles.totalLabel}>Total estimado</Text>
-          <Text style={styles.total}>
-            {formatCurrency(totals.total, currency)}
+          <Text style={styles.detailLabel}>Subtotal</Text>
+          <Text style={styles.detailValue}>
+            {formatCurrency(totals.subtotal, currency)}
+          </Text>
+        </View>
+
+        <View style={styles.summaryRow}>
+          <Text style={styles.detailLabel}>Envío</Text>
+          <Text style={styles.detailValue}>
+            {totals.shippingCost === 0
+              ? "Gratis"
+              : formatCurrency(totals.shippingCost, currency)}
           </Text>
         </View>
 
         <View style={styles.summaryDivider} />
 
-        <View style={styles.serverNotice}>
-          <Ionicons
-            color="#3E668F"
-            name="information-circle-outline"
-            size={19}
-          />
-          <Text style={styles.serverNoticeText}>
-            El total definitivo será calculado por el servidor al confirmar.
+        <View style={styles.summaryRow}>
+          <Text style={styles.totalLabel}>Total</Text>
+          <Text style={styles.total}>
+            {formatCurrency(totals.total, currency)}
           </Text>
         </View>
+
       </View>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -656,12 +662,12 @@ export function ApiCheckoutSuccessScreen() {
 
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Estado</Text>
-              <Text style={styles.detailValue}>{receipt.orderStatus}</Text>
+              <Text style={styles.detailValue}>{formatOrderStatus(receipt.orderStatus)}</Text>
             </View>
 
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Pago</Text>
-              <Text style={styles.detailValue}>{receipt.paymentStatus}</Text>
+              <Text style={styles.detailValue}>{formatPaymentStatus(receipt.paymentStatus)}</Text>
             </View>
 
             <View style={styles.summaryDivider} />
@@ -718,6 +724,14 @@ export function ApiCheckoutSuccessScreen() {
       </Pressable>
     </ScrollView>
   );
+}
+
+function formatOrderStatus(status: string): string {
+  return status.toLowerCase() === "confirmed" ? "Confirmado" : status;
+}
+
+function formatPaymentStatus(status: string): string {
+  return status.toLowerCase() === "approved" ? "Aprobado" : status;
 }
 
 function formatApiCheckoutError(error: ApiError): string {

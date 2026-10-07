@@ -21,7 +21,14 @@ export type CartTotals = {
   total: number;
 };
 
-export function calculateCartTotals(lines: CartLine[], shippingCost = 0): CartTotals {
+export const FREE_SHIPPING_THRESHOLD = 300;
+export const HOME_DELIVERY_SHIPPING_COST = 25;
+
+export function calculateHomeDeliveryShipping(subtotal: number): number {
+  return subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : HOME_DELIVERY_SHIPPING_COST;
+}
+
+export function calculateCartTotals(lines: CartLine[], shippingCost?: number): CartTotals {
   const subtotalBeforeDiscount = roundMoney(lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0));
   const subtotal = roundMoney(lines.reduce((sum, line) => sum + line.effectiveUnitPrice * line.quantity, 0));
   const discount = roundMoney(subtotalBeforeDiscount - subtotal);
@@ -30,7 +37,7 @@ export function calculateCartTotals(lines: CartLine[], shippingCost = 0): CartTo
     subtotalBeforeDiscount,
     discount,
     subtotal,
-    shippingCost,
-    total: roundMoney(subtotal + shippingCost),
+    shippingCost: shippingCost ?? calculateHomeDeliveryShipping(subtotal),
+    total: roundMoney(subtotal + (shippingCost ?? calculateHomeDeliveryShipping(subtotal))),
   };
 }

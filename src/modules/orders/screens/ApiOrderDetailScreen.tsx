@@ -231,7 +231,7 @@ export function ApiOrderDetailScreen() {
         <InfoRow
           icon="card-outline"
           label="ESTADO DEL PAGO"
-          value={receipt.paymentStatus}
+          value={formatPaymentStatus(receipt.paymentStatus)}
         />
 
         <View style={styles.divider} />
@@ -344,20 +344,6 @@ export function ApiOrderDetailScreen() {
           label="MÉTODO"
           value="Envío a domicilio"
         />
-
-        <View style={styles.divider} />
-
-        <InfoRow
-          icon="shield-checkmark-outline"
-          label="RESERVA DE INVENTARIO"
-          value={
-            receipt.hasInventoryReservations
-              ? "Confirmada"
-              : "No indicada"
-          }
-        />
-
-        <View style={styles.divider} />
 
         <InfoRow
           icon="mail-outline"
@@ -534,6 +520,10 @@ function normalizeReceiptStatus(status: string): TrackingPresentationStatus {
     default:
       return "confirmed";
   }
+}
+
+function formatPaymentStatus(status: string): string {
+  return status.toLowerCase() === "approved" ? "Aprobado" : status;
 }
 
 function getTrackingStatusPresentation(
