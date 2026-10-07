@@ -12,9 +12,10 @@ import {
 } from "react-native";
 
 import { ApiError, getErrorMessage, useRepositories } from "@/infrastructure";
+import { GUATEMALA_DEPARTMENTS, getGuatemalaMunicipalities } from "@/config";
 import { useSession } from "@/modules/auth";
 import { useCart } from "@/modules/cart";
-import { formatCurrency } from "@/shared";
+import { formatCurrency, OptionPicker } from "@/shared";
 import { colors, typography } from "@/theme";
 
 import {
@@ -99,19 +100,14 @@ export function ApiCheckoutDeliveryScreen() {
   const { customer, session } = useSession();
   const checkout = useCheckout();
   const [error, setError] = useState<string | null>(null);
+  const hasPrefilledContact = useRef(false);
 
   useEffect(() => {
-    if (!checkout.fullName.trim() && customer?.name) {
-      checkout.setFullName(customer.name);
-    }
-
-    if (!checkout.email.trim() && customer?.email) {
-      checkout.setEmail(customer.email);
-    }
-
-    if (!checkout.contactPhone.trim() && customer?.phone) {
-      checkout.setContactPhone(customer.phone);
-    }
+    if (hasPrefilledContact.current || !customer) return;
+    hasPrefilledContact.current = true;
+    if (customer?.name) checkout.setFullName(customer.name);
+    if (customer?.email) checkout.setEmail(customer.email);
+    if (customer?.phone) checkout.setContactPhone(customer.phone);
   }, [checkout, customer]);
 
   // Precarga la dirección predeterminada de /me/addresses si el formulario está vacío.
@@ -170,8 +166,8 @@ export function ApiCheckoutDeliveryScreen() {
       return;
     }
 
-    if (!checkout.city.trim()) {
-      setError("Ingresa la ciudad.");
+    if (!checkout.department.trim() || !checkout.city.trim()) {
+      setError("Selecciona el departamento y el municipio.");
       return;
     }
 
@@ -253,16 +249,24 @@ export function ApiCheckoutDeliveryScreen() {
           value={checkout.addressLine2}
         />
 
-        <Field
-          label="Ciudad / municipio"
-          onChangeText={checkout.setCity}
-          value={checkout.city}
+        <OptionPicker
+          label="Departamento"
+          onChange={(department) => {
+            checkout.setDepartment(department);
+            if (!getGuatemalaMunicipalities(department).includes(checkout.city)) {
+              checkout.setCity("");
+            }
+          }}
+          options={GUATEMALA_DEPARTMENTS}
+          value={checkout.department}
         />
 
-        <Field
-          label="Departamento (opcional)"
-          onChangeText={checkout.setDepartment}
-          value={checkout.department}
+        <OptionPicker
+          emptyText="Selecciona primero un departamento."
+          label="Municipio"
+          onChange={checkout.setCity}
+          options={getGuatemalaMunicipalities(checkout.department)}
+          value={checkout.city}
         />
 
         <Field
