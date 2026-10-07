@@ -27,6 +27,7 @@ import {
   ApiCustomerOrderService,
   ApiCustomerPaymentMethodRepository,
   ApiCustomerRepository,
+  notifyApiSessionInvalidated,
   ApiProductAvailabilityRepository,
   ApiProductMediaRepository,
   ApiProductRepository,
@@ -117,6 +118,7 @@ export function createRepositoryRegistry(): RepositoryRegistry {
     await apiTokenStorage.clearToken();
     await sessionStorage.clearSession();
     apiCustomerRepository.clearCurrentCustomer();
+    notifyApiSessionInvalidated();
   };
 
   const apiClient = createApiClient(
