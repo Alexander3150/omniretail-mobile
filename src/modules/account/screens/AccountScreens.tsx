@@ -295,26 +295,21 @@ export function AddressesScreen() {
       keyExtractor={(item) => item.id}
       ListHeaderComponent={
         <>
-          <Text style={styles.title}>Direcciones</Text>
-          <Link href="/(protected)/addresses/new" style={styles.link}>
-            Nueva direccion
-          </Link>
+          <View style={styles.addressHero}><Text style={styles.addressEyebrow}>MI CUENTA</Text><View style={styles.addressTitleRow}><View><Text style={styles.addressTitle}>Mis direcciones</Text><Text style={styles.addressSubtitle}>Guarda lugares para tus próximas entregas.</Text></View><View style={styles.addressHeroIcon}><Ionicons color={accountPalette.deepBlue} name="location-outline" size={24} /></View></View><Link asChild href="/(protected)/addresses/new"><Pressable style={styles.addressAddButton}><Ionicons color={accountPalette.white} name="add" size={18} /><Text style={styles.addressAddText}>Nueva dirección</Text></Pressable></Link></View>
           {error ? <Text style={styles.remove}>{error}</Text> : null}
         </>
       }
-      ListEmptyComponent={<Text style={styles.value}>No hay direcciones.</Text>}
+      ListEmptyComponent={<View style={styles.addressEmpty}><View style={styles.addressEmptyIcon}><Ionicons color={accountPalette.deepBlue} name="location-outline" size={29} /></View><Text style={styles.addressEmptyTitle}>Aún no tienes direcciones guardadas</Text><Text style={styles.addressEmptyText}>Agrega una dirección para reutilizarla en tus próximas compras.</Text><Link asChild href="/(protected)/addresses/new"><Pressable style={styles.addressPrimaryButton}><Text style={styles.addressAddText}>Agregar dirección</Text></Pressable></Link></View>}
       renderItem={({ item }) => (
-        <View style={styles.panel}>
-          <Text style={styles.value}>
-            {item.label} {item.isDefault ? "(default)" : ""}
-          </Text>
+        <View style={styles.addressPanel}>
+          <Text style={styles.value}>{item.label}</Text>
           <Text style={styles.label}>
             {[item.addressLine, item.addressLine2].filter(Boolean).join(", ")}
           </Text>
           <Text style={styles.label}>
             {item.municipality} {item.department}
           </Text>
-          <View style={styles.row}>
+          <View style={styles.addressActions}>
             <Pressable
               onPress={() =>
                 router.push({
@@ -324,15 +319,6 @@ export function AddressesScreen() {
               }
             >
               <Text style={styles.linkText}>Editar</Text>
-            </Pressable>
-            <Pressable
-              onPress={() =>
-                void runAction(() =>
-                  addressRepository.setDefault(item.customerId, item.id),
-                )
-              }
-            >
-              <Text style={styles.linkText}>Default</Text>
             </Pressable>
             <Pressable
               onPress={() =>
@@ -582,9 +568,9 @@ function AddressForm({
       contentContainerStyle={styles.container}
       keyboardShouldPersistTaps="handled"
     >
-      <Text style={styles.title}>
+      <View style={styles.formAddressHero}><Text style={styles.addressEyebrow}>FERREPHARMA</Text><Text style={styles.formAddressTitle}>
         {mode === "create" ? "Nueva direccion" : "Editar direccion"}
-      </Text>
+      </Text><Text style={styles.formAddressSubtitle}>Completa los datos para usar esta dirección en tus pedidos.</Text></View><View style={styles.addressFormCard}>
       {error ? <Text style={styles.remove}>{error}</Text> : null}
       <TextInput
         style={styles.input}
@@ -656,16 +642,10 @@ function AddressForm({
         onChangeText={setReferences}
         placeholder="Referencias (opcional)"
       />
-      <Pressable
-        onPress={() => setIsDefault((value) => !value)}
-        style={styles.secondaryButton}
-      >
-        <Text>{isDefault ? "Default: si" : "Marcar default"}</Text>
-      </Pressable>
-      <Pressable disabled={isSaving} onPress={save} style={styles.button}>
+      <Pressable disabled={isSaving} onPress={save} style={styles.addressSaveButton}>
         <Text style={styles.buttonText}>{isSaving ? "Guardando..." : "Guardar"}</Text>
       </Pressable>
-    </ScrollView>
+      </View></ScrollView>
   );
 }
 
@@ -1059,6 +1039,19 @@ const accountStyles = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
+  addressHero: { backgroundColor: accountPalette.deepBlue, borderBottomLeftRadius: 26, borderBottomRightRadius: 26, marginBottom: 16, padding: 20, paddingTop: 42 },
+  addressEyebrow: { color: accountPalette.butterHoney, fontSize: 10, fontWeight: "900", letterSpacing: 1.5 },
+  addressTitleRow: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginTop: 4 },
+  addressTitle: { color: accountPalette.white, fontSize: 26, fontWeight: "900" },
+  addressSubtitle: { color: "#EAF1F8", fontSize: 12, marginTop: 6, maxWidth: 240 },
+  addressHeroIcon: { alignItems: "center", backgroundColor: accountPalette.white, borderRadius: 22, height: 44, justifyContent: "center", width: 44 },
+  addressAddButton: { alignItems: "center", alignSelf: "flex-start", backgroundColor: accountPalette.butterHoney, borderRadius: 13, flexDirection: "row", gap: 5, marginTop: 16, minHeight: 44, paddingHorizontal: 14 },
+  addressAddText: { color: accountPalette.deepBlue, fontSize: 12, fontWeight: "900" },
+  addressEmpty: { alignItems: "center", backgroundColor: accountPalette.white, borderColor: accountPalette.silkyLilac, borderRadius: 20, borderWidth: 1, margin: 16, padding: 25 },
+  addressEmptyIcon: { alignItems: "center", backgroundColor: "#EEF3FB", borderRadius: 27, height: 54, justifyContent: "center", width: 54 },
+  addressEmptyTitle: { color: accountPalette.text, fontSize: 17, fontWeight: "900", marginTop: 14, textAlign: "center" }, addressEmptyText: { color: accountPalette.muted, fontSize: 12, lineHeight: 18, marginTop: 6, textAlign: "center" }, addressPrimaryButton: { backgroundColor: accountPalette.deepBlue, borderRadius: 13, marginTop: 17, minHeight: 45, justifyContent: "center", paddingHorizontal: 15 },
+  addressPanel: { backgroundColor: accountPalette.white, borderColor: accountPalette.silkyLilac, borderRadius: 18, borderWidth: 1, gap: spacing.sm, marginHorizontal: spacing.md, marginBottom: spacing.sm, padding: spacing.md }, addressActions: { flexDirection: "row", gap: spacing.md },
+  formAddressHero: { backgroundColor: accountPalette.deepBlue, borderBottomLeftRadius: 26, borderBottomRightRadius: 26, marginHorizontal: -spacing.lg, marginTop: -spacing.lg, padding: 20, paddingTop: 42 }, formAddressTitle: { color: accountPalette.white, fontSize: 25, fontWeight: "900", marginTop: 4 }, formAddressSubtitle: { color: "#EAF1F8", fontSize: 12, marginTop: 7 }, addressFormCard: { backgroundColor: accountPalette.white, borderColor: accountPalette.silkyLilac, borderRadius: 20, borderWidth: 1, gap: spacing.sm, marginTop: -12, padding: spacing.md }, addressSaveButton: { alignItems: "center", backgroundColor: accountPalette.deepBlue, borderRadius: 13, justifyContent: "center", minHeight: 48, marginTop: spacing.sm },
   button: {
     alignItems: "center",
     backgroundColor: colors.danger,
@@ -1075,8 +1068,9 @@ const styles = StyleSheet.create({
   },
   container: {
     backgroundColor: colors.background,
-    flex: 1,
+    flexGrow: 1,
     gap: spacing.sm,
+    paddingBottom: 42,
     padding: spacing.lg,
   },
   input: {
