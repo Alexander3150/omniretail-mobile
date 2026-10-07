@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -14,6 +14,7 @@ import {
 } from "react-native";
 
 import { CartToast, formatCurrency, StockLimitModal, useCartToast } from "@/shared";
+import { useSession } from "@/modules/auth";
 
 import { calculatePrice } from "../application/pricing";
 import { ProductCard } from "../components/ProductCard";
@@ -264,6 +265,7 @@ export function CategoriesScreen() {
 
 export function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { isAuthenticated } = useSession();
   const { addToCart, currency } = useCommerceCatalog();
   const {
     error: detailError,
@@ -309,6 +311,14 @@ export function ProductDetailScreen() {
 
   async function handleAdd() {
     if (!productVm) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      router.push({
+        pathname: "/(auth)/login",
+        params: { reason: "cart" },
+      });
       return;
     }
 
