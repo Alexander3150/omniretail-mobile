@@ -16,6 +16,7 @@ import {
   type ApiCheckoutReceipt,
 } from "@/infrastructure/api/checkout";
 import { useApiOrderTracking } from "@/modules/orders/hooks/useApiOrderTracking";
+import { useOrderReceiptDownload } from "@/modules/orders/hooks/useOrderReceiptDownload";
 import { formatCurrency, formatDateTime } from "@/shared";
 
 const UUID_PATTERN =
@@ -37,6 +38,11 @@ export function ApiOrderDetailScreen() {
   const { apiCustomerOrderService } = useRepositories();
   const [receipt, setReceipt] = useState<ApiCheckoutReceipt | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const {
+    downloadReceipt,
+    error: receiptError,
+    isGenerating: isGeneratingReceipt,
+  } = useOrderReceiptDownload();
 
   const {
     errorCode: trackingErrorCode,
@@ -242,6 +248,29 @@ export function ApiOrderDetailScreen() {
             {formatCurrency(receipt.total, "GTQ")}
           </Text>
         </View>
+      </View>
+
+      <View style={styles.receiptSection}>
+        <Pressable
+          disabled={isGeneratingReceipt}
+          onPress={() => void downloadReceipt(receipt)}
+          style={({ pressed }) => [
+            styles.receiptButton,
+            pressed ? styles.pressed : null,
+            isGeneratingReceipt ? styles.receiptButtonDisabled : null,
+          ]}
+        >
+          {isGeneratingReceipt ? (
+            <ActivityIndicator color={palette.white} size="small" />
+          ) : (
+            <Ionicons color={palette.white} name="download-outline" size={19} />
+          )}
+          <Text style={styles.receiptButtonText}>
+            {isGeneratingReceipt ? "Generando comprobante..." : "Descargar comprobante"}
+          </Text>
+        </Pressable>
+
+        {receiptError ? <Text style={styles.receiptError}>{receiptError}</Text> : null}
       </View>
 
       <View style={styles.sectionHeader}>
@@ -702,6 +731,35 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 16,
     padding: 18,
+  },
+  receiptSection: {
+    marginHorizontal: 16,
+    marginTop: 18,
+  },
+  receiptButton: {
+    alignItems: "center",
+    backgroundColor: palette.deepBlue,
+    borderRadius: 14,
+    flexDirection: "row",
+    gap: 9,
+    justifyContent: "center",
+    minHeight: 50,
+    paddingHorizontal: 18,
+    paddingVertical: 13,
+  },
+  receiptButtonDisabled: {
+    opacity: 0.65,
+  },
+  receiptButtonText: {
+    color: palette.white,
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  receiptError: {
+    color: "#A33E3E",
+    fontSize: 12,
+    marginTop: 8,
+    textAlign: "center",
   },
   sectionHeading: {
     alignItems: "center",

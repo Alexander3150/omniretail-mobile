@@ -72,11 +72,9 @@ export function useProductDetail(productId?: string) {
             product.id,
           );
 
-      const media = apiMode
-        ? []
-        : await repositories.productMediaRepository.getByProduct(
-            product.id,
-          );
+      const media = await repositories.productMediaRepository.getByProduct(
+        product.id,
+      );
 
       const favoriteIds = session
         ? (
