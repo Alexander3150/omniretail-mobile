@@ -103,7 +103,7 @@ export function ApiCheckoutDeliveryScreen() {
   const hasPrefilledContact = useRef(false);
 
   useEffect(() => {
-    if (hasPrefilledContact.current) return;
+    if (hasPrefilledContact.current || !customer) return;
     hasPrefilledContact.current = true;
     if (customer?.name) checkout.setFullName(customer.name);
     if (customer?.email) checkout.setEmail(customer.email);

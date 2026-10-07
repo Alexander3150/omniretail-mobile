@@ -25,6 +25,11 @@ export function OptionPicker({
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
 
+  function handleClose() {
+    setQuery("");
+    setIsOpen(false);
+  }
+
   const visibleOptions = useMemo(() => {
     const normalizedQuery = normalize(query);
 
@@ -44,12 +49,13 @@ export function OptionPicker({
       </Pressable>
       {options.length === 0 ? <Text style={styles.empty}>{emptyText}</Text> : null}
 
-      <Modal animationType="slide" onRequestClose={() => setIsOpen(false)} transparent visible={isOpen}>
+      <Modal animationType="slide" onRequestClose={handleClose} transparent visible={isOpen}>
         <View style={styles.backdrop}>
+          <Pressable accessibilityLabel="Cerrar selector" onPress={handleClose} style={StyleSheet.absoluteFill} />
           <View style={styles.sheet}>
-            <View style={styles.sheetHeader}><Text style={styles.sheetTitle}>{label}</Text><Pressable onPress={() => setIsOpen(false)} style={styles.close}><Ionicons color={colors.primary} name="close" size={20} /></Pressable></View>
+            <View style={styles.sheetHeader}><Text style={styles.sheetTitle}>{label}</Text><Pressable onPress={handleClose} style={styles.close}><Ionicons color={colors.primary} name="close" size={20} /></Pressable></View>
             {options.length > SEARCH_THRESHOLD ? <TextInput autoFocus onChangeText={setQuery} placeholder={`Buscar ${label.toLowerCase()}`} placeholderTextColor={colors.textMuted} style={styles.search} value={query} /> : null}
-            <FlatList data={visibleOptions} keyExtractor={(item) => item} ListEmptyComponent={<Text style={styles.empty}>{emptyText}</Text>} renderItem={({ item }) => <Pressable onPress={() => { onChange(item); setQuery(""); setIsOpen(false); }} style={[styles.option, item === value ? styles.optionSelected : null]}><Text style={[styles.optionText, item === value ? styles.optionTextSelected : null]}>{item}</Text>{item === value ? <Ionicons color={colors.surface} name="checkmark" size={18} /> : null}</Pressable>} />
+            <FlatList data={visibleOptions} keyExtractor={(item) => item} ListEmptyComponent={<Text style={styles.empty}>{emptyText}</Text>} renderItem={({ item }) => <Pressable onPress={() => { onChange(item); handleClose(); }} style={[styles.option, item === value ? styles.optionSelected : null]}><Text style={[styles.optionText, item === value ? styles.optionTextSelected : null]}>{item}</Text>{item === value ? <Ionicons color={colors.surface} name="checkmark" size={18} /> : null}</Pressable>} />
           </View>
         </View>
       </Modal>
