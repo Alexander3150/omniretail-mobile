@@ -14,6 +14,7 @@ import { useSession } from "@/modules/auth";
 import { formatCurrency } from "@/shared";
 
 import type { ProductCardViewModel } from "../application/productViewModels";
+import type { AddToCartResult } from "../hooks/useCommerceCatalog";
 
 const palette = {
   deepBlue: "#3E668F",
@@ -32,17 +33,30 @@ const palette = {
 type ProductCardProps = {
   item: ProductCardViewModel;
   currency: string;
-  onAddToCart(productId: string): Promise<void> | void;
+  onAddToCart(productId: string): Promise<AddToCartResult | undefined>;
+  onCartNotice(message: string): void;
 };
 
-export function ProductCard({ currency, item, onAddToCart }: ProductCardProps) {
+export function ProductCard({ currency, item, onAddToCart, onCartNotice }: ProductCardProps) {
   const { isAuthenticated } = useSession();
   const canAdd = item.available && item.availableQuantity > 0;
   const [imageFailed, setImageFailed] = useState(false);
-
-  function handleAddToCart(event: GestureResponderEvent) {
+  async function handleAddToCart(event: GestureResponderEvent) {
     event.stopPropagation();
-    void onAddToCart(item.product.id);
+    const result = await onAddToCart(item.product.id);
+
+    if (result?.status === "added") {
+      onCartNotice("Producto agregado al carrito.");
+      return;
+    }
+
+    if (result?.status === "limit-reached" || result?.status === "unavailable") {
+      onCartNotice(
+        result.availableQuantity > 0
+          ? `Ya alcanzaste el máximo disponible (${result.availableQuantity}).`
+          : "Este producto ya no tiene existencias.",
+      );
+    }
   }
 
   return (
@@ -135,7 +149,7 @@ export function ProductCard({ currency, item, onAddToCart }: ProductCardProps) {
 
         <Pressable
           disabled={!canAdd}
-          onPress={handleAddToCart}
+          onPress={(event) => void handleAddToCart(event)}
           style={({ pressed }) => [
             styles.button,
             !canAdd ? styles.buttonDisabled : null,
@@ -152,6 +166,7 @@ export function ProductCard({ currency, item, onAddToCart }: ProductCardProps) {
             {canAdd ? "Agregar al carrito" : "Sin existencias"}
           </Text>
         </Pressable>
+
       </View>
     </Pressable>
   );
@@ -339,4 +354,5 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.8,
   },
+
 });

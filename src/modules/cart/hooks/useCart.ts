@@ -17,6 +17,11 @@ type CartState = {
 
 const emptyTotals = calculateCartTotals([]);
 
+export type UpdateCartQuantityResult =
+  | { status: "updated"; quantity: number }
+  | { status: "limit-reached"; availableQuantity: number; quantity: number }
+  | { status: "not-found" };
+
 export function useCart() {
   const repositories = useRepositories();
   const { session } = useSession();
@@ -27,7 +32,13 @@ export function useCart() {
       return;
     }
 
-    setState((current) => ({ ...current, isLoading: true, error: null }));
+    setState((current) => ({
+      ...current,
+      // Mantiene visible el carrito mientras se actualiza una cantidad.
+      // La pantalla completa de carga solo se usa en la primera carga.
+      isLoading: current.cartId === null,
+      error: null,
+    }));
     try {
       const business = await repositories.businessConfigRepository.getCurrent();
       const cart = await repositories.cartRepository.getOrCreate(session.tenantId, session.customerId);
@@ -72,19 +83,29 @@ export function useCart() {
     return () => clearTimeout(timeout);
   }, [load]);
 
-  async function updateQuantity(itemId: string, quantity: number) {
+  async function updateQuantity(
+    itemId: string,
+    quantity: number,
+  ): Promise<UpdateCartQuantityResult> {
     if (quantity <= 0) {
       await repositories.cartRepository.removeItem(itemId);
+      await load();
+      return { status: "updated", quantity: 0 };
     } else {
       const line = state.lines.find((item) => item.id === itemId);
       if (!session || !line) {
-        return;
+        return { status: "not-found" };
       }
       const availability = await repositories.productAvailabilityRepository.getByProduct(session.tenantId, line.productId);
       const availableQuantity = availability.reduce((sum, item) => sum + item.availableQuantity, 0);
-      await repositories.cartRepository.updateQuantity(itemId, Math.min(quantity, availableQuantity));
+      const nextQuantity = Math.min(quantity, availableQuantity);
+      await repositories.cartRepository.updateQuantity(itemId, nextQuantity);
+      await load();
+
+      return nextQuantity < quantity
+        ? { status: "limit-reached", availableQuantity, quantity: nextQuantity }
+        : { status: "updated", quantity: nextQuantity };
     }
-    await load();
   }
 
   async function removeItem(itemId: string) {

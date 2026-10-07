@@ -27,6 +27,11 @@ type CatalogState = {
   error: string | null;
 };
 
+export type AddToCartResult =
+  | { status: "added"; availableQuantity: number }
+  | { status: "limit-reached"; availableQuantity: number }
+  | { status: "unavailable"; availableQuantity: number };
+
 export function useCommerceCatalog(
   categoryId?: string,
   query = "",
@@ -195,16 +200,16 @@ export function useCommerceCatalog(
     await load();
   }
 
-  async function addToCart(productId: string) {
+  async function addToCart(productId: string): Promise<AddToCartResult | undefined> {
     if (!session) {
-      return;
+      return undefined;
     }
 
     const product =
       await repositories.productRepository.getById(productId);
 
     if (!product) {
-      return;
+      return undefined;
     }
 
     const availability =
@@ -236,10 +241,13 @@ export function useCommerceCatalog(
       .reduce((sum, item) => sum + item.quantity, 0);
 
     if (
-      availableQuantity <= 0 ||
-      currentQuantity >= availableQuantity
+      availableQuantity <= 0
     ) {
-      return;
+      return { status: "unavailable", availableQuantity };
+    }
+
+    if (currentQuantity >= availableQuantity) {
+      return { status: "limit-reached", availableQuantity };
     }
 
     const promotions = isApiMode()
@@ -267,7 +275,8 @@ export function useCommerceCatalog(
         viewModel.price.effectivePrice,
     });
 
-    await load();
+    // No recargamos el catálogo: así el usuario permanece donde agregó el producto.
+    return { status: "added", availableQuantity };
   }
 
   return {
