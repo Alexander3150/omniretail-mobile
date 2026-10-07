@@ -118,7 +118,7 @@ export function HomeScreen() {
                   <Ionicons
                     color={palette.deepBlue}
                     name="notifications-outline"
-                    size={22}
+                    size={28}
                   />
 
                   <View style={styles.notificationDot} />
@@ -649,23 +649,33 @@ const styles = StyleSheet.create({
   notificationButton: {
     alignItems: "center",
     backgroundColor: palette.white,
-    borderRadius: 23,
-    height: 46,
+    borderColor: "rgba(255,255,255,0.55)",
+    borderRadius: 29,
+    borderWidth: 2,
+    height: 58,
     justifyContent: "center",
     position: "relative",
-    width: 46,
+    shadowColor: "#172033",
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.16,
+    shadowRadius: 6,
+    width: 58,
+    elevation: 4,
   },
 
   notificationDot: {
     backgroundColor: palette.butterHoney,
     borderColor: palette.white,
-    borderRadius: 6,
+    borderRadius: 7,
     borderWidth: 2,
-    height: 11,
+    height: 14,
     position: "absolute",
-    right: 7,
-    top: 6,
-    width: 11,
+    right: 8,
+    top: 7,
+    width: 14,
   },
 
   heroDescription: {

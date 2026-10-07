@@ -1,4 +1,4 @@
-import { Link, router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -270,7 +270,9 @@ export function AddressesScreen() {
       );
       setError(null);
     } catch (loadError) {
-      setError(getErrorMessage(loadError, "No se pudieron cargar las direcciones."));
+      setError(
+        getErrorMessage(loadError, "No se pudieron cargar las direcciones."),
+      );
     }
   }, [addressRepository, session]);
 
@@ -290,31 +292,146 @@ export function AddressesScreen() {
 
   return (
     <FlatList
-      contentContainerStyle={styles.container}
+      contentContainerStyle={styles.addressListContainer}
       data={addresses}
       keyExtractor={(item) => item.id}
+      showsVerticalScrollIndicator={false}
       ListHeaderComponent={
         <>
-          <Text style={styles.title}>Direcciones</Text>
-          <Link href="/(protected)/addresses/new" style={styles.link}>
-            Nueva direccion
-          </Link>
-          {error ? <Text style={styles.remove}>{error}</Text> : null}
+          <View style={styles.addressListHero}>
+            <View style={styles.addressHeroCircleLarge} />
+            <View style={styles.addressHeroCircleSmall} />
+
+            <View style={styles.addressHeroTopRow}>
+              <Pressable accessibilityLabel="Regresar" onPress={() => router.back()} style={styles.addressBackButton}>
+                <Ionicons color={accountPalette.deepBlue} name="arrow-back" size={20} />
+              </Pressable>
+<View style={styles.addressHeroText}>
+                <Text style={styles.addressHeroBrand}>FERREPHARMA</Text>
+                <Text style={styles.addressHeroTitle}>Mis direcciones</Text>
+              </View>
+
+              <View style={styles.addressHeroIcon}>
+                <Ionicons
+                  name="location-outline"
+                  size={23}
+                  color={accountPalette.deepBlue}
+                />
+              </View>
+            </View>
+
+            <Text style={styles.addressHeroDescription}>
+              Administra los lugares donde quieres recibir tus pedidos.
+            </Text>
+          </View>
+
+          <View style={styles.addressListHeading}>
+            <View style={styles.addressListHeadingText}>
+              <Text style={styles.addressListEyebrow}>
+                DIRECCIONES DE ENTREGA
+              </Text>
+              <Text style={styles.addressListTitle}>
+                Tus lugares guardados
+              </Text>
+            </View>
+
+          </View>
+
+          {error ? (
+            <View style={styles.addressErrorBox}>
+              <Text style={styles.addressErrorText}>{error}</Text>
+            </View>
+          ) : null}
         </>
       }
-      ListEmptyComponent={<Text style={styles.value}>No hay direcciones.</Text>}
+      ListEmptyComponent={
+        <View style={styles.addressEmptyCard}>
+          <View style={styles.addressEmptyIcon}>
+            <Ionicons
+              name="location-outline"
+              size={34}
+              color={accountPalette.deepBlue}
+            />
+          </View>
+
+          <Text style={styles.addressEmptyTitle}>
+            Aún no tienes direcciones
+          </Text>
+
+          <Text style={styles.addressEmptyDescription}>
+            Agrega una dirección para facilitar tus próximas compras y entregas.
+          </Text>
+
+          <Pressable
+            onPress={() => router.push("/(protected)/addresses/new")}
+            style={styles.addressEmptyButton}
+          >
+            <Ionicons
+              name="add"
+              size={19}
+              color={accountPalette.white}
+            />
+            <Text style={styles.addressEmptyButtonText}>
+              Agregar nueva dirección
+            </Text>
+          </Pressable>
+        </View>
+      }
       renderItem={({ item }) => (
-        <View style={styles.panel}>
-          <Text style={styles.value}>
-            {item.label} {item.isDefault ? "(default)" : ""}
-          </Text>
-          <Text style={styles.label}>
-            {[item.addressLine, item.addressLine2].filter(Boolean).join(", ")}
-          </Text>
-          <Text style={styles.label}>
-            {item.municipality} {item.department}
-          </Text>
-          <View style={styles.row}>
+        <View style={styles.addressSavedCard}>
+          <View style={styles.addressSavedHeader}>
+            <View style={styles.addressSavedIcon}>
+              <Ionicons
+                name="location"
+                size={21}
+                color={accountPalette.deepBlue}
+              />
+            </View>
+
+            <View style={styles.addressSavedHeaderText}>
+              <View style={styles.addressSavedTitleRow}>
+                <Text style={styles.addressSavedTitle}>
+                  {item.label}
+                </Text>
+
+                {item.isDefault ? (
+                  <View style={styles.addressDefaultBadge}>
+                    <Text style={styles.addressDefaultBadgeText}>
+                      Predeterminada
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+
+              {item.recipientName ? (
+                <Text style={styles.addressSavedRecipient}>
+                  {item.recipientName}
+                </Text>
+              ) : null}
+            </View>
+          </View>
+
+          <View style={styles.addressSavedBody}>
+            <Text style={styles.addressSavedLine}>
+              {[item.addressLine, item.addressLine2]
+                .filter(Boolean)
+                .join(", ")}
+            </Text>
+
+            <Text style={styles.addressSavedLocation}>
+              {[item.municipality, item.department]
+                .filter(Boolean)
+                .join(", ")}
+            </Text>
+
+            {item.references ? (
+              <Text style={styles.addressSavedReference}>
+                Ref: {item.references}
+              </Text>
+            ) : null}
+          </View>
+
+          <View style={styles.addressActions}>
             <Pressable
               onPress={() =>
                 router.push({
@@ -322,24 +439,53 @@ export function AddressesScreen() {
                   params: { id: item.id },
                 })
               }
+              style={styles.addressActionButton}
             >
-              <Text style={styles.linkText}>Editar</Text>
+              <Ionicons
+                name="create-outline"
+                size={17}
+                color={accountPalette.deepBlue}
+              />
+              <Text style={styles.addressActionText}>Editar</Text>
             </Pressable>
-            <Pressable
-              onPress={() =>
-                void runAction(() =>
-                  addressRepository.setDefault(item.customerId, item.id),
-                )
-              }
-            >
-              <Text style={styles.linkText}>Default</Text>
-            </Pressable>
+
+            {!item.isDefault ? (
+              <Pressable
+                onPress={() =>
+                  void runAction(() =>
+                    addressRepository.setDefault(item.customerId, item.id),
+                  )
+                }
+                style={styles.addressActionButton}
+              >
+                <Ionicons
+                  name="checkmark-circle-outline"
+                  size={17}
+                  color={accountPalette.deepBlue}
+                />
+                <Text style={styles.addressActionText}>
+                  Predeterminada
+                </Text>
+              </Pressable>
+            ) : null}
+
             <Pressable
               onPress={() =>
                 void runAction(() => addressRepository.archive(item.id))
               }
+              style={[
+                styles.addressActionButton,
+                styles.addressDeleteButton,
+              ]}
             >
-              <Text style={styles.remove}>Eliminar</Text>
+              <Ionicons
+                name="trash-outline"
+                size={17}
+                color={accountPalette.danger}
+              />
+              <Text style={styles.addressDeleteText}>
+                Eliminar
+              </Text>
             </Pressable>
           </View>
         </View>
@@ -579,91 +725,210 @@ function AddressForm({
 
   return (
     <ScrollView
-      contentContainerStyle={styles.container}
+      contentContainerStyle={styles.addressFormContainer}
       keyboardShouldPersistTaps="handled"
     >
-      <Text style={styles.title}>
-        {mode === "create" ? "Nueva direccion" : "Editar direccion"}
-      </Text>
-      {error ? <Text style={styles.remove}>{error}</Text> : null}
-      <TextInput
-        style={styles.input}
-        value={label}
-        onChangeText={setLabel}
-        maxLength={35}
-        placeholder="Nombre: Casa, Trabajo..."
-      />
-      <TextInput
-        style={styles.input}
-        value={recipientName}
-        onChangeText={setRecipientName}
-        maxLength={60}
-        placeholder="Destinatario"
-      />
-      <TextInput
-        style={styles.input}
-        value={addressLine}
-        onChangeText={setAddressLine}
-        placeholder="Direccion"
-      />
-      <TextInput
-        style={styles.input}
-        value={addressLine2}
-        onChangeText={setAddressLine2}
-        placeholder="Complemento (opcional)"
-      />
-      {apiMode ? (
-        <>
-          <OptionPicker
-            label="Departamento"
-            onChange={selectDepartment}
-            options={GUATEMALA_DEPARTMENTS}
-            value={department}
-          />
-          <OptionPicker
-            emptyText="Selecciona primero un departamento."
-            label="Municipio"
-            onChange={setMunicipality}
-            options={getGuatemalaMunicipalities(department)}
-            value={municipality}
-          />
-        </>
-      ) : (
-        <>
+      <View style={styles.addressHero}>
+        <View style={styles.addressHeroCircleLarge} />
+        <View style={styles.addressHeroCircleSmall} />
+
+        <View style={styles.addressHeroTopRow}>
+          <Pressable accessibilityLabel="Regresar" onPress={() => router.back()} style={styles.addressBackButton}>
+            <Ionicons color={accountPalette.deepBlue} name="arrow-back" size={20} />
+          </Pressable>
+<View style={styles.addressHeroText}>
+            <Text style={styles.addressHeroBrand}>FERREPHARMA</Text>
+            <Text style={styles.addressHeroTitle}>
+              {mode === "create" ? "Nueva dirección" : "Editar dirección"}
+            </Text>
+          </View>
+
+          <View style={styles.addressHeroIcon}>
+            <Ionicons
+              name="location-outline"
+              size={23}
+              color={accountPalette.deepBlue}
+            />
+          </View>
+        </View>
+
+        <Text style={styles.addressHeroDescription}>
+          Completa los datos del lugar donde quieres recibir tus pedidos.
+        </Text>
+      </View>
+
+      {error ? (
+        <View style={styles.addressErrorBox}>
+          <Text style={styles.addressErrorText}>{error}</Text>
+        </View>
+      ) : null}
+
+      <View style={styles.addressFormCard}>
+        <View style={styles.addressField}>
+          <Text style={styles.addressFieldLabel}>
+            Nombre de la dirección <Text style={styles.requiredMark}>*</Text>
+          </Text>
+          <Text style={styles.addressFieldHint}>
+            Por ejemplo: Casa, Trabajo o Casa de mamá.
+          </Text>
           <TextInput
-            style={styles.input}
-            value={municipality}
-            onChangeText={setMunicipality}
-            placeholder="Municipio"
+            style={styles.addressInput}
+            value={label}
+            onChangeText={setLabel}
+            maxLength={35}
+            placeholder="Casa"
+            placeholderTextColor={accountPalette.muted}
           />
+        </View>
+
+        <View style={styles.addressField}>
+          <Text style={styles.addressFieldLabel}>
+            Destinatario <Text style={styles.requiredMark}>*</Text>
+          </Text>
           <TextInput
-            style={styles.input}
-            value={department}
-            onChangeText={setDepartment}
-            placeholder="Departamento"
+            style={styles.addressInput}
+            value={recipientName}
+            onChangeText={setRecipientName}
+            maxLength={60}
+            placeholder="Nombre de quien recibirá el pedido"
+            placeholderTextColor={accountPalette.muted}
           />
+        </View>
+
+        <View style={styles.addressField}>
+          <Text style={styles.addressFieldLabel}>
+            Dirección <Text style={styles.requiredMark}>*</Text>
+          </Text>
           <TextInput
-            style={styles.input}
-            value={phone}
-            onChangeText={setPhone}
-            placeholder="Telefono"
+            style={styles.addressInput}
+            value={addressLine}
+            onChangeText={setAddressLine}
+            placeholder="Calle, avenida, zona y número de casa"
+            placeholderTextColor={accountPalette.muted}
           />
-        </>
-      )}
-      <TextInput
-        style={styles.input}
-        value={references}
-        onChangeText={setReferences}
-        placeholder="Referencias (opcional)"
-      />
+        </View>
+
+      </View>
+
+      <View style={styles.addressFormCard}>
+        <Text style={styles.addressSectionTitle}>Ubicación</Text>
+        <Text style={styles.addressSectionDescription}>
+          Selecciona el departamento y después el municipio.
+        </Text>
+
+        {apiMode ? (
+          <>
+            <OptionPicker
+              label="Departamento *"
+              onChange={selectDepartment}
+              options={GUATEMALA_DEPARTMENTS}
+              value={department}
+            />
+            <OptionPicker
+              emptyText="Selecciona primero un departamento."
+              label="Municipio *"
+              onChange={setMunicipality}
+              options={getGuatemalaMunicipalities(department)}
+              value={municipality}
+            />
+          </>
+        ) : (
+          <>
+            <View style={styles.addressField}>
+              <Text style={styles.addressFieldLabel}>Municipio</Text>
+              <TextInput
+                style={styles.addressInput}
+                value={municipality}
+                onChangeText={setMunicipality}
+                placeholder="Municipio"
+                placeholderTextColor={accountPalette.muted}
+              />
+            </View>
+
+            <View style={styles.addressField}>
+              <Text style={styles.addressFieldLabel}>Departamento</Text>
+              <TextInput
+                style={styles.addressInput}
+                value={department}
+                onChangeText={setDepartment}
+                placeholder="Departamento"
+                placeholderTextColor={accountPalette.muted}
+              />
+            </View>
+
+            <View style={styles.addressField}>
+              <Text style={styles.addressFieldLabel}>Teléfono</Text>
+              <TextInput
+                style={styles.addressInput}
+                value={phone}
+                onChangeText={setPhone}
+                placeholder="Teléfono"
+                placeholderTextColor={accountPalette.muted}
+              />
+            </View>
+          </>
+        )}
+      </View>
+
+      <View style={styles.addressFormCard}>
+        <View style={styles.addressField}>
+          <Text style={styles.addressFieldLabel}>Referencias</Text>
+          <Text style={styles.addressFieldHint}>
+            Opcional. Agrega información que facilite encontrar el lugar.
+          </Text>
+          <TextInput
+            style={[styles.addressInput, styles.addressReferencesInput]}
+            value={references}
+            onChangeText={setReferences}
+            placeholder="Ejemplo: portón negro, frente al parque..."
+            placeholderTextColor={accountPalette.muted}
+            multiline
+            textAlignVertical="top"
+          />
+        </View>
+
+        <Pressable
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: isDefault }}
+          onPress={() => setIsDefault((value) => !value)}
+          style={[
+            styles.addressDefaultOption,
+            isDefault ? styles.addressDefaultOptionSelected : null,
+          ]}
+        >
+          <View
+            style={[
+              styles.addressCheckbox,
+              isDefault ? styles.addressCheckboxSelected : null,
+            ]}
+          >
+            {isDefault ? <Text style={styles.addressCheckmark}>✓</Text> : null}
+          </View>
+
+          <View style={styles.addressDefaultTextContainer}>
+            <Text style={styles.addressDefaultTitle}>
+              Usar como dirección predeterminada
+            </Text>
+            <Text style={styles.addressDefaultDescription}>
+              La seleccionaremos automáticamente en futuras compras.
+            </Text>
+          </View>
+        </Pressable>
+      </View>
+
+      <Text style={styles.addressRequiredNote}>* Campos obligatorios</Text>
+
       <Pressable
-        onPress={() => setIsDefault((value) => !value)}
-        style={styles.secondaryButton}
+        disabled={isSaving}
+        onPress={save}
+        style={[
+          styles.addressSaveButton,
+          isSaving ? styles.addressSaveButtonDisabled : null,
+        ]}
       >
-        <Text>{isDefault ? "Default: si" : "Marcar default"}</Text>
-      </Pressable>
-      <Pressable disabled={isSaving} onPress={save} style={styles.button}>
-        <Text style={styles.buttonText}>{isSaving ? "Guardando..." : "Guardar"}</Text>
+        <Text style={styles.addressSaveButtonText}>
+          {isSaving ? "Guardando..." : "Guardar dirección"}
+        </Text>
       </Pressable>
     </ScrollView>
   );
@@ -1059,6 +1324,507 @@ const accountStyles = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
+  addressListContainer: {
+    backgroundColor: accountPalette.vanillaMilk,
+    flexGrow: 1,
+    gap: 14,
+    paddingBottom: 48,
+    paddingHorizontal: 18,
+  },
+
+  addressListHero: {
+    backgroundColor: accountPalette.deepBlue,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    marginHorizontal: -18,
+    minHeight: 190,
+    overflow: "hidden",
+    paddingBottom: 27,
+    paddingHorizontal: 20,
+    paddingTop: 48,
+  },
+
+  addressListHeading: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 12,
+    justifyContent: "space-between",
+    marginTop: 5,
+    paddingHorizontal: 2,
+  },
+
+  addressListHeadingText: {
+    flex: 1,
+  },
+
+  addressListEyebrow: {
+    color: accountPalette.deepBlue,
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 1.2,
+  },
+
+  addressListTitle: {
+    color: accountPalette.text,
+    fontSize: 20,
+    fontWeight: "900",
+    marginTop: 2,
+  },
+
+  addressAddButton: {
+    backgroundColor: accountPalette.deepBlue,
+    borderRadius: 12,
+    color: accountPalette.white,
+    fontSize: 12,
+    fontWeight: "900",
+    overflow: "hidden",
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+  },
+
+  addressEmptyCard: {
+    alignItems: "center",
+    backgroundColor: accountPalette.white,
+    borderColor: accountPalette.silkyLilac,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginTop: 2,
+    paddingHorizontal: 24,
+    paddingVertical: 32,
+  },
+
+  addressEmptyIcon: {
+    alignItems: "center",
+    backgroundColor: "#FFF5DA",
+    borderRadius: 32,
+    height: 64,
+    justifyContent: "center",
+    marginBottom: 15,
+    width: 64,
+  },
+
+  addressEmptyTitle: {
+    color: accountPalette.text,
+    fontSize: 18,
+    fontWeight: "900",
+    textAlign: "center",
+  },
+
+  addressEmptyDescription: {
+    color: accountPalette.muted,
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 7,
+    maxWidth: 280,
+    textAlign: "center",
+  },
+
+  addressEmptyButton: {
+    alignItems: "center",
+    backgroundColor: accountPalette.deepBlue,
+    borderRadius: 13,
+    flexDirection: "row",
+    gap: 7,
+    justifyContent: "center",
+    marginTop: 20,
+    minHeight: 48,
+    paddingHorizontal: 18,
+  },
+
+  addressEmptyButtonText: {
+    color: accountPalette.white,
+    fontSize: 13,
+    fontWeight: "900",
+  },
+
+  addressSavedCard: {
+    backgroundColor: accountPalette.white,
+    borderColor: accountPalette.silkyLilac,
+    borderRadius: 18,
+    borderWidth: 1,
+    overflow: "hidden",
+    padding: 16,
+  },
+
+  addressSavedHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 11,
+  },
+
+  addressSavedIcon: {
+    alignItems: "center",
+    backgroundColor: "#FFF5DA",
+    borderRadius: 13,
+    height: 44,
+    justifyContent: "center",
+    width: 44,
+  },
+
+  addressSavedHeaderText: {
+    flex: 1,
+  },
+
+  addressSavedTitleRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 7,
+  },
+
+  addressSavedTitle: {
+    color: accountPalette.text,
+    fontSize: 16,
+    fontWeight: "900",
+  },
+
+  addressSavedRecipient: {
+    color: accountPalette.muted,
+    fontSize: 12,
+    marginTop: 2,
+  },
+
+  addressDefaultBadge: {
+    backgroundColor: "#EAF7F0",
+    borderRadius: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+
+  addressDefaultBadgeText: {
+    color: accountPalette.success,
+    fontSize: 9,
+    fontWeight: "900",
+  },
+
+  addressSavedBody: {
+    borderBottomColor: accountPalette.border,
+    borderBottomWidth: 1,
+    gap: 4,
+    marginTop: 14,
+    paddingBottom: 14,
+  },
+
+  addressSavedLine: {
+    color: accountPalette.text,
+    fontSize: 13,
+    fontWeight: "700",
+    lineHeight: 18,
+  },
+
+  addressSavedLocation: {
+    color: accountPalette.muted,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+
+  addressSavedReference: {
+    color: accountPalette.muted,
+    fontSize: 11,
+    fontStyle: "italic",
+    lineHeight: 16,
+    marginTop: 3,
+  },
+
+  addressActions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 13,
+  },
+
+  addressActionButton: {
+    alignItems: "center",
+    backgroundColor: "#EEF3FB",
+    borderRadius: 10,
+    flexDirection: "row",
+    gap: 5,
+    paddingHorizontal: 11,
+    paddingVertical: 9,
+  },
+
+  addressActionText: {
+    color: accountPalette.deepBlue,
+    fontSize: 11,
+    fontWeight: "800",
+  },
+
+  addressDeleteButton: {
+    backgroundColor: "#FFF0F0",
+  },
+
+  addressDeleteText: {
+    color: accountPalette.danger,
+    fontSize: 11,
+    fontWeight: "800",
+  },
+
+  addressFormContainer: {
+    backgroundColor: accountPalette.vanillaMilk,
+    flexGrow: 1,
+    gap: 16,
+    paddingBottom: 48,
+    paddingHorizontal: 18,
+    paddingTop: 22,
+  },
+
+  addressHero: {
+    backgroundColor: accountPalette.deepBlue,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    marginBottom: 4,
+    marginHorizontal: -18,
+    marginTop: -22,
+    minHeight: 190,
+    overflow: "hidden",
+    paddingBottom: 27,
+    paddingHorizontal: 20,
+    paddingTop: 48,
+  },
+
+  addressHeroCircleLarge: {
+    backgroundColor: accountPalette.dreamyBlue,
+    borderRadius: 100,
+    height: 180,
+    opacity: 0.18,
+    position: "absolute",
+    right: -55,
+    top: -65,
+    width: 180,
+  },
+
+  addressHeroCircleSmall: {
+    backgroundColor: accountPalette.butterHoney,
+    borderRadius: 55,
+    bottom: -50,
+    height: 110,
+    opacity: 0.2,
+    position: "absolute",
+    right: 45,
+    width: 110,
+  },
+
+  addressHeroTopRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+
+  addressHeroText: {
+    flex: 1,
+},
+
+  addressHeroBrand: {
+    color: accountPalette.butterHoney,
+    fontSize: 11,
+    fontWeight: "900",
+    letterSpacing: 1.7,
+  },
+
+  addressHeroTitle: {
+    color: accountPalette.white,
+    fontSize: 27,
+    fontWeight: "900",
+    marginTop: 2,
+  },
+
+  addressHeroDescription: {
+    color: "#EDF4FC",
+    fontSize: 13,
+    lineHeight: 19,
+    marginRight: 12,
+    marginTop: 15,
+  },
+
+  addressBackButton: {
+    alignItems: "center",
+    backgroundColor: accountPalette.white,
+    borderRadius: 22,
+    height: 44,
+    justifyContent: "center",
+    width: 44,
+  },
+
+  addressHeroIcon: {
+    alignItems: "center",
+    backgroundColor: accountPalette.butterHoney,
+    borderRadius: 22,
+    height: 44,
+    justifyContent: "center",
+    width: 44,
+  },
+
+  addressFormEyebrow: {
+    color: accountPalette.deepBlue,
+    fontSize: 11,
+    fontWeight: "900",
+    letterSpacing: 1.4,
+  },
+
+  addressFormTitle: {
+    color: accountPalette.text,
+    fontSize: 28,
+    fontWeight: "900",
+  },
+
+  addressFormDescription: {
+    color: accountPalette.muted,
+    fontSize: 13,
+    lineHeight: 19,
+    marginTop: 2,
+  },
+
+  addressFormCard: {
+    backgroundColor: accountPalette.white,
+    borderColor: accountPalette.border,
+    borderRadius: 18,
+    borderWidth: 1,
+    gap: 17,
+    padding: 16,
+  },
+
+  addressField: {
+    gap: 6,
+  },
+
+  addressFieldLabel: {
+    color: accountPalette.text,
+    fontSize: 14,
+    fontWeight: "800",
+  },
+
+  addressFieldHint: {
+    color: accountPalette.muted,
+    fontSize: 11,
+    lineHeight: 16,
+  },
+
+  requiredMark: {
+    color: accountPalette.danger,
+  },
+
+  addressInput: {
+    backgroundColor: "#FAFBFD",
+    borderColor: accountPalette.border,
+    borderRadius: 12,
+    borderWidth: 1,
+    color: accountPalette.text,
+    fontSize: 14,
+    minHeight: 50,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+  },
+
+  addressReferencesInput: {
+    minHeight: 88,
+  },
+
+  addressSectionTitle: {
+    color: accountPalette.deepBlue,
+    fontSize: 17,
+    fontWeight: "900",
+  },
+
+  addressSectionDescription: {
+    color: accountPalette.muted,
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: -10,
+  },
+
+  addressDefaultOption: {
+    alignItems: "center",
+    backgroundColor: "#FAFBFD",
+    borderColor: accountPalette.border,
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 12,
+    padding: 14,
+  },
+
+  addressDefaultOptionSelected: {
+    backgroundColor: "#EEF4FC",
+    borderColor: accountPalette.deepBlue,
+  },
+
+  addressCheckbox: {
+    alignItems: "center",
+    borderColor: accountPalette.muted,
+    borderRadius: 6,
+    borderWidth: 2,
+    height: 24,
+    justifyContent: "center",
+    width: 24,
+  },
+
+  addressCheckboxSelected: {
+    backgroundColor: accountPalette.deepBlue,
+    borderColor: accountPalette.deepBlue,
+  },
+
+  addressCheckmark: {
+    color: accountPalette.white,
+    fontSize: 15,
+    fontWeight: "900",
+  },
+
+  addressDefaultTextContainer: {
+    flex: 1,
+  },
+
+  addressDefaultTitle: {
+    color: accountPalette.text,
+    fontSize: 13,
+    fontWeight: "800",
+  },
+
+  addressDefaultDescription: {
+    color: accountPalette.muted,
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 2,
+  },
+
+  addressRequiredNote: {
+    color: accountPalette.muted,
+    fontSize: 11,
+    marginHorizontal: 3,
+  },
+
+  addressSaveButton: {
+    alignItems: "center",
+    backgroundColor: accountPalette.deepBlue,
+    borderRadius: 14,
+    justifyContent: "center",
+    minHeight: 54,
+  },
+
+  addressSaveButtonDisabled: {
+    opacity: 0.6,
+  },
+
+  addressSaveButtonText: {
+    color: accountPalette.white,
+    fontSize: 15,
+    fontWeight: "900",
+  },
+
+  addressErrorBox: {
+    backgroundColor: "#FFF0F0",
+    borderColor: "#F0C4C4",
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+  },
+
+  addressErrorText: {
+    color: accountPalette.danger,
+    fontSize: 12,
+    fontWeight: "700",
+    lineHeight: 17,
+  },
+
   button: {
     alignItems: "center",
     backgroundColor: colors.danger,
