@@ -13,8 +13,10 @@ export type ApiLoginResponse = {
 };
 
 export type ApiMfaChallengeResponse = {
+  mfaRequired: true;
   challengeToken: string;
-  [key: string]: unknown;
+  method: "email" | "totp";
+  expiresAt: string;
 };
 
 export type ApiLoginOutcome = ApiLoginResponse | ApiMfaChallengeResponse;

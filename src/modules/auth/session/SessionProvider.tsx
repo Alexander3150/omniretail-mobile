@@ -1,6 +1,6 @@
 import { createContext, type PropsWithChildren, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
-import type { Customer, LoginInput, RegisterCustomerInput, RegistrationResult, Session } from "@/core";
+import type { AuthResult, Customer, LoginInput, LoginResult, RegisterCustomerInput, RegistrationResult, Session } from "@/core";
 import { useRepositories } from "@/infrastructure";
 
 type SessionContextValue = {
@@ -8,7 +8,8 @@ type SessionContextValue = {
   customer: Customer | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login(input: LoginInput): Promise<void>;
+  login(input: LoginInput): Promise<LoginResult>;
+  completeMfaLogin(challengeToken: string, code: string): Promise<void>;
   register(input: Omit<RegisterCustomerInput, "tenantId">): Promise<RegistrationResult>;
   logout(): Promise<void>;
   refreshSession(): Promise<void>;
@@ -89,6 +90,29 @@ export function SessionProvider({ children }: PropsWithChildren) {
   const login = useCallback(
     async (input: LoginInput) => {
       const result = await authRepository.login(input);
+
+      if ("challengeToken" in result) {
+        return result;
+      }
+
+      setSession(result.session);
+      setCustomer(result.customer);
+
+      return result;
+    },
+    [authRepository],
+  );
+
+  const completeMfaLogin = useCallback(
+    async (challengeToken: string, code: string) => {
+      if (!authRepository.verifyMfaChallenge) {
+        throw new Error("La verificación en dos pasos no está disponible.");
+      }
+
+      const result: AuthResult = await authRepository.verifyMfaChallenge(
+        challengeToken,
+        code,
+      );
       setSession(result.session);
       setCustomer(result.customer);
     },
@@ -123,11 +147,12 @@ export function SessionProvider({ children }: PropsWithChildren) {
       isAuthenticated: !!session,
       isLoading,
       login,
+      completeMfaLogin,
       register,
       logout,
       refreshSession,
     }),
-    [customer, isLoading, login, logout, refreshSession, register, session],
+    [completeMfaLogin, customer, isLoading, login, logout, refreshSession, register, session],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

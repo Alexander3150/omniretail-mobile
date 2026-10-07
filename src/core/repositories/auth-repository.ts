@@ -14,6 +14,14 @@ export type AuthResult = {
   session: Session;
 };
 
+export type MfaChallengeResult = {
+  kind: "mfaRequired";
+  challengeToken: string;
+  method: "email" | "totp";
+};
+
+export type LoginResult = AuthResult | MfaChallengeResult;
+
 /**
  * El registro puede iniciar sesión de inmediato (mock) o dejar la cuenta pendiente
  * de verificar el correo (backend real).
@@ -23,7 +31,8 @@ export type RegistrationResult =
   | { kind: "verificationRequired"; email: string };
 
 export interface AuthRepository {
-  login(input: LoginInput): Promise<AuthResult>;
+  login(input: LoginInput): Promise<LoginResult>;
+  verifyMfaChallenge?(challengeToken: string, code: string): Promise<AuthResult>;
   registerCustomer(input: RegisterCustomerInput): Promise<RegistrationResult>;
   /** Confirma el correo con el token del enlace enviado al registrarse. */
   verifyEmail?(token: string): Promise<void>;

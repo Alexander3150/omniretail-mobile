@@ -1,5 +1,6 @@
 import { Link, router, useLocalSearchParams } from "expo-router";
 import { useState, type ReactNode } from "react";
+import { Ionicons } from "@expo/vector-icons";
 import {
   ActivityIndicator,
   Platform,
@@ -29,7 +30,7 @@ import {
 } from "../validation";
 
 export function LoginScreen() {
-  const { login } = useSession();
+  const { completeMfaLogin, login } = useSession();
   const [email, setEmail] = useState(
     isApiMode() ? "" : "cliente@demo.com",
   );
@@ -37,6 +38,13 @@ export function LoginScreen() {
     isApiMode() ? "" : "Demo1234",
   );
   const [error, setError] = useState<string | null>(null);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
+  const [rememberMe, setRememberMe] = useState(true);
+  const [mfaChallenge, setMfaChallenge] = useState<{
+    challengeToken: string;
+    method: "email" | "totp";
+  } | null>(null);
+  const [mfaCode, setMfaCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit() {
@@ -50,7 +58,17 @@ export function LoginScreen() {
     setError(null);
     setIsSubmitting(true);
     try {
-      await login({ email: email.trim(), password });
+      const result = await login({
+        email: email.trim(),
+        password,
+        rememberMe,
+      });
+
+      if ("kind" in result && result.kind === "mfaRequired") {
+        setMfaChallenge(result);
+        return;
+      }
+
       router.replace("/(protected)/(tabs)");
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
@@ -63,39 +81,142 @@ export function LoginScreen() {
     }
   }
 
+  async function handleMfaSubmit() {
+    if (!mfaChallenge || !mfaCode.trim()) {
+      setError("Ingresa el código de verificación.");
+      return;
+    }
+
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      await completeMfaLogin(mfaChallenge.challengeToken, mfaCode.trim());
+      router.replace("/(protected)/(tabs)");
+    } catch (error) {
+      setError(getErrorMessage(error, "No se pudo verificar el código."));
+      setMfaCode("");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  if (mfaChallenge) {
+    return (
+      <AuthForm
+        title="Verificación en dos pasos"
+        subtitle={
+          mfaChallenge.method === "email"
+            ? "Te enviamos un código de verificación a tu correo."
+            : "Ingresa el código de tu aplicación autenticadora."
+        }
+        error={error}
+      >
+        <AuthTextInput
+          keyboardType="number-pad"
+          label="Código de verificación"
+          onChangeText={(value) => setMfaCode(value.replace(/\D/g, "").slice(0, 6))}
+          placeholder="123456"
+          value={mfaCode}
+        />
+        <PrimaryButton
+          disabled={isSubmitting || mfaCode.length < 6}
+          label="Verificar"
+          loading={isSubmitting}
+          onPress={handleMfaSubmit}
+        />
+        <Pressable
+          disabled={isSubmitting}
+          onPress={() => {
+            setError(null);
+            setMfaCode("");
+            setMfaChallenge(null);
+          }}
+          style={styles.backHomeButton}
+        >
+          <Text style={styles.backHomeText}>Volver al inicio de sesión</Text>
+        </Pressable>
+      </AuthForm>
+    );
+  }
+
   return (
     <AuthForm
-      title="Login"
-      subtitle="Accede a tu cuenta y continúa con tus compras."
+      title="Bienvenido de nuevo"
+      subtitle="Ingresa tus datos para continuar."
       error={error}
+      message={infoMessage}
     >
       <AuthTextInput
         autoCapitalize="none"
         keyboardType="email-address"
-        label="Correo"
+        label="Correo electrónico"
         onChangeText={setEmail}
+        placeholder="tu@correo.com"
         value={email}
       />
       <AuthTextInput
-        label="Contrasena"
+        label="Contraseña"
         onChangeText={setPassword}
+        placeholder="Ingresa tu contraseña"
         secureTextEntry
         value={password}
       />
+
+      <View style={styles.loginActions}>
+        <Pressable
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: rememberMe }}
+          onPress={() => setRememberMe((current) => !current)}
+          style={styles.rememberMe}
+        >
+          <View style={[styles.checkbox, rememberMe ? styles.checkboxChecked : null]}>
+            {rememberMe ? <Ionicons color={palette.white} name="checkmark" size={14} /> : null}
+          </View>
+          <Text style={styles.rememberMeText}>Recordarme</Text>
+        </Pressable>
+
+        <Link href="/(auth)/forgot-password" asChild>
+          <Pressable style={styles.forgotPasswordButton}>
+            <Text style={styles.forgotPasswordText}>¿Olvidaste tu contraseña?</Text>
+          </Pressable>
+        </Link>
+      </View>
+
       <PrimaryButton
         disabled={isSubmitting}
-        label="Iniciar sesion"
+        label="Iniciar sesión"
         loading={isSubmitting}
         onPress={handleSubmit}
       />
-      <InlineLink href="/(auth)/register" label="Crear cuenta" />
-      <InlineLink
-        href="/(auth)/forgot-password"
-        label="Recuperar contrasena"
-      />
+
+      <View style={styles.separator}>
+        <View style={styles.separatorLine} />
+        <Text style={styles.separatorText}>O CONTINÚA CON</Text>
+        <View style={styles.separatorLine} />
+      </View>
+
+      <Pressable
+        onPress={() => setInfoMessage("El inicio de sesión con Google no está disponible actualmente.")}
+        style={({ pressed }) => [styles.googleButton, pressed ? styles.buttonPressed : null]}
+      >
+        <Text style={styles.googleIcon}>G</Text>
+        <Text style={styles.googleButtonText}>Google</Text>
+      </Pressable>
+
+      <View style={styles.registrationRow}>
+        <Text style={styles.registrationText}>¿No tienes cuenta? </Text>
+        <Link href="/(auth)/register" style={styles.registrationLink}>Regístrate</Link>
+      </View>
+
       {isApiMode() ? (
         <InlineLink href="/(auth)/verify-email" label="Verificar mi correo" />
       ) : null}
+
+      <Link href="/" asChild>
+        <Pressable style={styles.backHomeButton}>
+          <Text style={styles.backHomeText}>Volver al inicio</Text>
+        </Pressable>
+      </Link>
     </AuthForm>
   );
 }
@@ -594,22 +715,41 @@ type AuthTextInputProps = {
   keyboardType?: "default" | "email-address" | "number-pad" | "phone-pad";
   label: string;
   onChangeText(value: string): void;
+  placeholder?: string;
   secureTextEntry?: boolean;
   value: string;
 };
 
-function AuthTextInput({ label, ...inputProps }: AuthTextInputProps) {
+function AuthTextInput({ label, placeholder, secureTextEntry, ...inputProps }: AuthTextInputProps) {
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
 
       <View style={styles.inputContainer}>
         <TextInput
-          placeholder={label}
+          placeholder={placeholder ?? label}
           placeholderTextColor="#8290A5"
           style={styles.input}
+          secureTextEntry={secureTextEntry && !isPasswordVisible}
           {...inputProps}
         />
+
+        {secureTextEntry ? (
+          <Pressable
+            accessibilityLabel={isPasswordVisible ? "Ocultar contraseña" : "Mostrar contraseña"}
+            hitSlop={8}
+            onPress={() => setIsPasswordVisible((current) => !current)}
+            style={styles.passwordVisibilityButton}
+          >
+            <Ionicons
+              color={palette.dreamyBlue}
+              name={isPasswordVisible ? "eye-off-outline" : "eye-outline"}
+              size={21}
+            />
+          </Pressable>
+        ) : null}
       </View>
     </View>
   );
@@ -837,6 +977,8 @@ const styles = StyleSheet.create({
     borderColor: palette.silkyLilac,
     borderRadius: 12,
     borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
   },
 
   input: {
@@ -844,6 +986,128 @@ const styles = StyleSheet.create({
     fontSize: typography.body,
     minHeight: 52,
     paddingHorizontal: spacing.md,
+    flex: 1,
+  },
+
+  passwordVisibilityButton: {
+    alignItems: "center",
+    height: 48,
+    justifyContent: "center",
+    width: 48,
+  },
+
+  loginActions: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: -2,
+  },
+
+  rememberMe: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 8,
+  },
+
+  checkbox: {
+    alignItems: "center",
+    borderColor: palette.muted,
+    borderRadius: 3,
+    borderWidth: 1,
+    height: 19,
+    justifyContent: "center",
+    width: 19,
+  },
+
+  checkboxChecked: {
+    backgroundColor: palette.deepBlue,
+    borderColor: palette.deepBlue,
+  },
+
+  rememberMeText: {
+    color: palette.text,
+    fontSize: 12,
+  },
+
+  forgotPasswordButton: {
+    paddingVertical: 4,
+  },
+
+  forgotPasswordText: {
+    color: palette.deepBlue,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+
+  separator: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 6,
+  },
+
+  separatorLine: {
+    backgroundColor: palette.silkyLilac,
+    flex: 1,
+    height: 1,
+  },
+
+  separatorText: {
+    color: palette.muted,
+    fontSize: 10,
+  },
+
+  googleButton: {
+    alignItems: "center",
+    backgroundColor: palette.white,
+    borderColor: palette.silkyLilac,
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 9,
+    justifyContent: "center",
+    minHeight: 52,
+  },
+
+  googleIcon: {
+    color: "#4285F4",
+    fontSize: 20,
+    fontWeight: "900",
+  },
+
+  googleButtonText: {
+    color: palette.deepBlue,
+    fontSize: typography.body,
+    fontWeight: "800",
+  },
+
+  registrationRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 4,
+  },
+
+  registrationText: {
+    color: palette.muted,
+    fontSize: 12,
+  },
+
+  registrationLink: {
+    color: palette.deepBlue,
+    fontSize: 12,
+    fontWeight: "900",
+  },
+
+  backHomeButton: {
+    alignItems: "center",
+    minHeight: 26,
+  },
+
+  backHomeText: {
+    color: palette.deepBlue,
+    fontSize: 12,
+    fontWeight: "800",
   },
 
   button: {
