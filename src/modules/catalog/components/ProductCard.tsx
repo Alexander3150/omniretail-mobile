@@ -43,6 +43,15 @@ export function ProductCard({ currency, item, onAddToCart, onCartNotice }: Produ
   const [imageFailed, setImageFailed] = useState(false);
   async function handleAddToCart(event: GestureResponderEvent) {
     event.stopPropagation();
+
+    if (!isAuthenticated) {
+      router.push({
+        pathname: "/(auth)/login",
+        params: { reason: "cart" },
+      });
+      return;
+    }
+
     const result = await onAddToCart(item.product.id);
 
     if (result?.status === "added") {

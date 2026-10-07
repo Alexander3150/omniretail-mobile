@@ -3,6 +3,7 @@ import { Stack } from "expo-router";
 import { RepositoryProvider } from "@/infrastructure";
 import { SessionProvider } from "@/modules/auth";
 import { NotificationNavigationHandler } from "@/modules/notifications";
+import { AppLaunchScreen } from "@/shared";
 import { colors } from "@/theme";
 
 export default function RootLayout() {
@@ -23,6 +24,7 @@ export default function RootLayout() {
           <Stack.Screen name="(shop)" options={{ headerShown: false }} />
           <Stack.Screen name="(protected)" options={{ headerShown: false }} />
         </Stack>
+        <AppLaunchScreen />
       </SessionProvider>
     </RepositoryProvider>
   );

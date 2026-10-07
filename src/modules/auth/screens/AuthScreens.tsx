@@ -31,6 +31,7 @@ import {
 
 export function LoginScreen() {
   const { completeMfaLogin, login } = useSession();
+  const params = useLocalSearchParams<{ reason?: string }>();
   const [email, setEmail] = useState(
     isApiMode() ? "" : "cliente@demo.com",
   );
@@ -48,6 +49,7 @@ export function LoginScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit() {
+    let navigated = false;
     const validationError =
       validateEmail(email) ?? validateRequiredPassword(password);
     if (validationError) {
@@ -69,7 +71,10 @@ export function LoginScreen() {
         return;
       }
 
+      navigated = true;
+      setIsSubmitting(false);
       router.replace("/(protected)/(tabs)");
+      return;
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
         setError("Correo o contraseña incorrectos.");
@@ -77,11 +82,14 @@ export function LoginScreen() {
         setError(getErrorMessage(error, "No se pudo iniciar sesión."));
       }
     } finally {
-      setIsSubmitting(false);
+      if (!navigated) {
+        setIsSubmitting(false);
+      }
     }
   }
 
   async function handleMfaSubmit() {
+    let navigated = false;
     if (!mfaChallenge || !mfaCode.trim()) {
       setError("Ingresa el código de verificación.");
       return;
@@ -91,12 +99,16 @@ export function LoginScreen() {
     setIsSubmitting(true);
     try {
       await completeMfaLogin(mfaChallenge.challengeToken, mfaCode.trim());
+      navigated = true;
+      setIsSubmitting(false);
       router.replace("/(protected)/(tabs)");
     } catch (error) {
       setError(getErrorMessage(error, "No se pudo verificar el código."));
       setMfaCode("");
     } finally {
-      setIsSubmitting(false);
+      if (!navigated) {
+        setIsSubmitting(false);
+      }
     }
   }
 
@@ -144,7 +156,12 @@ export function LoginScreen() {
       title="Bienvenido de nuevo"
       subtitle="Ingresa tus datos para continuar."
       error={error}
-      message={infoMessage}
+      message={
+        infoMessage ??
+        (params.reason === "cart"
+          ? "Para comprar en la app, inicia sesión o regístrate para acceder a promociones exclusivas."
+          : null)
+      }
     >
       <AuthTextInput
         autoCapitalize="none"

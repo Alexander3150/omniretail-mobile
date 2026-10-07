@@ -2,7 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { Link } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   Dimensions,
   FlatList,
   Pressable,
@@ -64,18 +63,8 @@ export function HomeScreen() {
     categories,
     currency,
     error,
-    isLoading,
     products,
   } = useCommerceCatalog(undefined, query);
-
-  if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator color={palette.deepBlue} size="large" />
-        <Text style={styles.loadingText}>Preparando FerrePharma...</Text>
-      </View>
-    );
-  }
 
   return (
     <View style={styles.screen}>
