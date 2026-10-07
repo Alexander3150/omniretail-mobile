@@ -1,7 +1,11 @@
 import { createContext, type PropsWithChildren, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 import type { AuthResult, Customer, LoginInput, LoginResult, RegisterCustomerInput, RegistrationResult, Session } from "@/core";
-import { useRepositories } from "@/infrastructure";
+import {
+  isApiMode,
+  subscribeToApiSessionInvalidation,
+  useRepositories,
+} from "@/infrastructure";
 
 type SessionContextValue = {
   session: Session | null;
@@ -86,6 +90,18 @@ export function SessionProvider({ children }: PropsWithChildren) {
       isMounted = false;
     };
   }, [authRepository, customerRepository]);
+
+  useEffect(() => {
+    if (!isApiMode()) {
+      return;
+    }
+
+    return subscribeToApiSessionInvalidation(() => {
+      setSession(null);
+      setCustomer(null);
+      setIsLoading(false);
+    });
+  }, []);
 
   const login = useCallback(
     async (input: LoginInput) => {
