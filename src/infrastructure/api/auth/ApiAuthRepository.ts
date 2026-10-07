@@ -2,6 +2,7 @@ import {
   UserStatus,
   type AuthRepository,
   type AuthResult,
+  type LoginResult,
   type ChangePasswordInput,
   type LoginInput,
   type PasswordResetRequestInput,
@@ -20,6 +21,7 @@ import { ApiCustomerRepository } from "./ApiCustomerRepository";
 import { ApiTokenStorage } from "./ApiTokenStorage";
 import type {
   ApiCurrentSessionResponse,
+  ApiLoginResponse,
   ApiLoginOutcome,
   ApiRegisterCustomerResponse,
 } from "./types";
@@ -33,7 +35,7 @@ export class ApiAuthRepository implements AuthRepository {
     private readonly tenantSlug: string,
   ) {}
 
-  async login(input: LoginInput): Promise<AuthResult> {
+  async login(input: LoginInput): Promise<LoginResult> {
     try {
       const response =
         await this.apiClient.post<ApiLoginOutcome>(
@@ -41,20 +43,18 @@ export class ApiAuthRepository implements AuthRepository {
           {
             email: input.email.trim(),
             password: input.password,
+            rememberMe: Boolean(input.rememberMe),
             tenantSlug: this.tenantSlug,
             expectedUserType: "customer",
           },
         );
 
       if ("challengeToken" in response) {
-        // La app todavía no implementa el segundo paso (POST /auth/mfa/verify).
-        throw new ApiError(
-          "Tu cuenta tiene verificación en dos pasos. Inicia sesión desde la web mientras la app la habilita.",
-          {
-            status: 0,
-            code: "MFA_REQUIRED",
-          },
-        );
+        return {
+          kind: "mfaRequired",
+          challengeToken: response.challengeToken,
+          method: response.method,
+        };
       }
 
       await this.tokenStorage.saveToken(response.token);
@@ -70,6 +70,25 @@ export class ApiAuthRepository implements AuthRepository {
         await this.clearLocalSession();
       }
 
+      throw error;
+    }
+  }
+
+  async verifyMfaChallenge(
+    challengeToken: string,
+    code: string,
+  ): Promise<AuthResult> {
+    const response = await this.apiClient.post<ApiLoginResponse>(
+      "/auth/mfa/verify",
+      { challengeToken, code },
+    );
+
+    await this.tokenStorage.saveToken(response.token);
+
+    try {
+      return await this.restoreFromBackend();
+    } catch (error) {
+      await this.clearLocalSession();
       throw error;
     }
   }

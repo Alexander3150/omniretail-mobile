@@ -30,7 +30,7 @@ import {
 } from "../validation";
 
 export function LoginScreen() {
-  const { login } = useSession();
+  const { completeMfaLogin, login } = useSession();
   const [email, setEmail] = useState(
     isApiMode() ? "" : "cliente@demo.com",
   );
@@ -40,6 +40,11 @@ export function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const [rememberMe, setRememberMe] = useState(true);
+  const [mfaChallenge, setMfaChallenge] = useState<{
+    challengeToken: string;
+    method: "email" | "totp";
+  } | null>(null);
+  const [mfaCode, setMfaCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit() {
@@ -53,7 +58,17 @@ export function LoginScreen() {
     setError(null);
     setIsSubmitting(true);
     try {
-      await login({ email: email.trim(), password });
+      const result = await login({
+        email: email.trim(),
+        password,
+        rememberMe,
+      });
+
+      if ("kind" in result && result.kind === "mfaRequired") {
+        setMfaChallenge(result);
+        return;
+      }
+
       router.replace("/(protected)/(tabs)");
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
@@ -64,6 +79,64 @@ export function LoginScreen() {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  async function handleMfaSubmit() {
+    if (!mfaChallenge || !mfaCode.trim()) {
+      setError("Ingresa el código de verificación.");
+      return;
+    }
+
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      await completeMfaLogin(mfaChallenge.challengeToken, mfaCode.trim());
+      router.replace("/(protected)/(tabs)");
+    } catch (error) {
+      setError(getErrorMessage(error, "No se pudo verificar el código."));
+      setMfaCode("");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  if (mfaChallenge) {
+    return (
+      <AuthForm
+        title="Verificación en dos pasos"
+        subtitle={
+          mfaChallenge.method === "email"
+            ? "Te enviamos un código de verificación a tu correo."
+            : "Ingresa el código de tu aplicación autenticadora."
+        }
+        error={error}
+      >
+        <AuthTextInput
+          keyboardType="number-pad"
+          label="Código de verificación"
+          onChangeText={(value) => setMfaCode(value.replace(/\D/g, "").slice(0, 6))}
+          placeholder="123456"
+          value={mfaCode}
+        />
+        <PrimaryButton
+          disabled={isSubmitting || mfaCode.length < 6}
+          label="Verificar"
+          loading={isSubmitting}
+          onPress={handleMfaSubmit}
+        />
+        <Pressable
+          disabled={isSubmitting}
+          onPress={() => {
+            setError(null);
+            setMfaCode("");
+            setMfaChallenge(null);
+          }}
+          style={styles.backHomeButton}
+        >
+          <Text style={styles.backHomeText}>Volver al inicio de sesión</Text>
+        </Pressable>
+      </AuthForm>
+    );
   }
 
   return (
