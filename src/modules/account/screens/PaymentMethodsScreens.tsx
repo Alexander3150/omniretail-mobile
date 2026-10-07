@@ -12,7 +12,7 @@ import {
   View,
 } from "react-native";
 
-import { GUATEMALA_BANKS } from "@/config";
+import { CARD_BRANDS, GUATEMALA_BANKS } from "@/config";
 import { getErrorMessage } from "@/infrastructure";
 import { useSession } from "@/modules/auth";
 import { OptionPicker } from "@/shared";
@@ -39,21 +39,12 @@ const palette = {
 };
 
 const initialCardForm: CardFormState = {
-  cardNumber: "",
+  brand: "",
+  last4: "",
   issuingBank: "",
   cardholderName: "",
   expirationMonth: "",
   expirationYear: "",
-  cvv: "",
-};
-
-const demoCardForm: CardFormState = {
-  cardNumber: "4111 1111 1111 1111",
-  issuingBank: "Banco Industrial",
-  cardholderName: "Cliente Demo",
-  expirationMonth: "12",
-  expirationYear: "30",
-  cvv: "123",
 };
 
 export function PaymentMethodsScreen() {
@@ -297,31 +288,6 @@ export function NewPaymentMethodScreen() {
         title="Agregar tarjeta"
       />
 
-      <View style={styles.demoCard}>
-        <View style={styles.demoIcon}>
-          <Ionicons
-            name="flask-outline"
-            size={21}
-            color={palette.deepBlue}
-          />
-        </View>
-
-        <View style={styles.demoContent}>
-          <Text style={styles.demoTitle}>Tarjeta de prueba</Text>
-          <Text style={styles.demoDescription}>
-            Puedes completar automáticamente los datos demo para comprobar el
-            funcionamiento de la aplicación.
-          </Text>
-        </View>
-
-        <Pressable
-          onPress={() => setForm(demoCardForm)}
-          style={styles.demoButton}
-        >
-          <Text style={styles.demoButtonText}>Usar demo</Text>
-        </Pressable>
-      </View>
-
       {error ? (
         <View style={styles.errorBox}>
           <Ionicons
@@ -340,13 +306,29 @@ export function NewPaymentMethodScreen() {
           Completa los datos solicitados para guardar tu tarjeta.
         </Text>
 
+        <View style={styles.pickerSection}>
+          <Text style={styles.fieldLabel}>Marca de la tarjeta</Text>
+          <OptionPicker
+            label=""
+            onChange={(brand) =>
+              setForm((current) => ({ ...current, brand }))
+            }
+            options={CARD_BRANDS}
+            value={form.brand}
+          />
+        </View>
+
         <Field
           keyboardType="number-pad"
-          label="Número de tarjeta"
-          onChangeText={(cardNumber) =>
-            setForm((current) => ({ ...current, cardNumber }))
+          label="Últimos 4 dígitos"
+          maxLength={4}
+          onChangeText={(last4) =>
+            setForm((current) => ({
+              ...current,
+              last4: last4.replace(/\D/g, "").slice(0, 4),
+            }))
           }
-          value={form.cardNumber}
+          value={form.last4}
         />
 
         <View style={styles.pickerSection}>
@@ -367,6 +349,7 @@ export function NewPaymentMethodScreen() {
 
         <Field
           label="Titular de la tarjeta"
+          maxLength={60}
           onChangeText={(cardholderName) =>
             setForm((current) => ({ ...current, cardholderName }))
           }
@@ -377,8 +360,12 @@ export function NewPaymentMethodScreen() {
           <Field
             keyboardType="number-pad"
             label="Mes"
+            maxLength={2}
             onChangeText={(expirationMonth) =>
-              setForm((current) => ({ ...current, expirationMonth }))
+              setForm((current) => ({
+                ...current,
+                expirationMonth: expirationMonth.replace(/\D/g, "").slice(0, 2),
+              }))
             }
             value={form.expirationMonth}
           />
@@ -386,22 +373,17 @@ export function NewPaymentMethodScreen() {
           <Field
             keyboardType="number-pad"
             label="Año"
+            maxLength={4}
             onChangeText={(expirationYear) =>
-              setForm((current) => ({ ...current, expirationYear }))
+              setForm((current) => ({
+                ...current,
+                expirationYear: expirationYear.replace(/\D/g, "").slice(0, 4),
+              }))
             }
             value={form.expirationYear}
           />
         </View>
 
-        <Field
-          keyboardType="number-pad"
-          label="CVV"
-          onChangeText={(cvv) =>
-            setForm((current) => ({ ...current, cvv }))
-          }
-          secureTextEntry
-          value={form.cvv}
-        />
       </View>
 
       <View style={styles.securityNote}>
@@ -474,14 +456,14 @@ function PaymentHero({
 function Field({
   keyboardType = "default",
   label,
+  maxLength,
   onChangeText,
-  secureTextEntry,
   value,
 }: {
   keyboardType?: "default" | "number-pad";
   label: string;
+  maxLength?: number;
   onChangeText(value: string): void;
-  secureTextEntry?: boolean;
   value: string;
 }) {
   return (
@@ -490,10 +472,10 @@ function Field({
 
       <TextInput
         keyboardType={keyboardType}
+        maxLength={maxLength}
         onChangeText={onChangeText}
         placeholder={label}
         placeholderTextColor={palette.muted}
-        secureTextEntry={secureTextEntry}
         style={styles.input}
         value={value}
       />

@@ -1,45 +1,45 @@
 import type { CreateCustomerPaymentMethodInput } from "@/core";
+import { CARD_BRANDS, GUATEMALA_BANKS } from "@/config";
+
+const MAX_EXPIRATION_YEARS_AHEAD = 20;
+const CARDHOLDER_NAME_MAX_LENGTH = 60;
 
 export type CardFormState = {
-  cardNumber: string;
+  brand: string;
+  last4: string;
   issuingBank: string;
   cardholderName: string;
   expirationMonth: string;
   expirationYear: string;
-  cvv: string;
 };
 
 export function validateCardForm(input: CardFormState): string | null {
-  const digits = normalizeCardNumber(input.cardNumber);
   const month = Number(input.expirationMonth);
   const year = normalizeExpirationYear(input.expirationYear);
 
-  if (digits.length < 12 || digits.length > 19 || !/^\d+$/.test(digits)) {
-    return "El numero de tarjeta no es valido.";
+  if (!CARD_BRANDS.includes(input.brand as (typeof CARD_BRANDS)[number])) {
+    return "Selecciona una marca de tarjeta válida.";
   }
-  if (!passesLuhn(digits)) {
-    return "El numero de tarjeta no es valido.";
+  if (!/^\d{4}$/.test(input.last4)) {
+    return "Ingresa exactamente los últimos 4 dígitos.";
   }
-  if (detectCardBrand(digits) === "Unknown") {
-    return "Solo se aceptan tarjetas Visa, Mastercard, American Express o Discover.";
+  if (!GUATEMALA_BANKS.includes(input.issuingBank as (typeof GUATEMALA_BANKS)[number])) {
+    return "Selecciona un banco emisor válido.";
   }
-  if (!input.issuingBank.trim()) {
-    return "Selecciona el banco emisor.";
-  }
-  if (!input.cardholderName.trim()) {
-    return "El titular es requerido.";
+  if (input.cardholderName.trim().length > CARDHOLDER_NAME_MAX_LENGTH) {
+    return `El titular no puede superar ${CARDHOLDER_NAME_MAX_LENGTH} caracteres.`;
   }
   if (!Number.isInteger(month) || month < 1 || month > 12) {
     return "El mes de expiracion no es valido.";
   }
-  if (!Number.isInteger(year) || year < new Date().getFullYear()) {
-    return "El ano de expiracion no es valido.";
+  if (!Number.isInteger(year)) {
+    return "El año de expiración no es válido.";
   }
   if (year === new Date().getFullYear() && month < new Date().getMonth() + 1) {
     return "La tarjeta esta vencida.";
   }
-  if (!/^\d{3,4}$/.test(input.cvv.trim())) {
-    return "El CVV es requerido.";
+  if (year > new Date().getFullYear() + MAX_EXPIRATION_YEARS_AHEAD) {
+    return `El año de expiración no puede superar ${new Date().getFullYear() + MAX_EXPIRATION_YEARS_AHEAD}.`;
   }
 
   return null;
@@ -50,43 +50,18 @@ export function buildSafePaymentMethodInput(
   owner: { tenantId: string; customerId: string },
   isDefault: boolean,
 ): CreateCustomerPaymentMethodInput {
-  const digits = normalizeCardNumber(input.cardNumber);
-
   return {
     tenantId: owner.tenantId,
     customerId: owner.customerId,
-    providerTokenId: createDemoToken(digits),
-    brand: detectCardBrand(digits),
+    providerTokenId: createPaymentMethodReference(input.brand, input.last4),
+    brand: input.brand,
     issuingBank: input.issuingBank.trim(),
-    last4: digits.slice(-4),
+    last4: input.last4,
     expirationMonth: Number(input.expirationMonth),
     expirationYear: normalizeExpirationYear(input.expirationYear),
     cardholderName: input.cardholderName.trim(),
     isDefault,
   };
-}
-
-export function detectCardBrand(cardNumber: string): string {
-  const digits = normalizeCardNumber(cardNumber);
-
-  if (digits.startsWith("4")) {
-    return "Visa";
-  }
-  if (/^5[1-5]/.test(digits) || /^2(2[2-9]|[3-6]\d|7[01]|720)/.test(digits)) {
-    return "Mastercard";
-  }
-  if (/^3[47]/.test(digits)) {
-    return "American Express";
-  }
-  if (/^(6011|65|64[4-9])/.test(digits)) {
-    return "Discover";
-  }
-
-  return "Unknown";
-}
-
-function normalizeCardNumber(value: string): string {
-  return value.replace(/\D/g, "");
 }
 
 function normalizeExpirationYear(value: string): number {
@@ -99,25 +74,6 @@ function normalizeExpirationYear(value: string): number {
   return year;
 }
 
-function passesLuhn(value: string): boolean {
-  let sum = 0;
-  let shouldDouble = false;
-
-  for (let index = value.length - 1; index >= 0; index -= 1) {
-    let digit = Number(value[index]);
-    if (shouldDouble) {
-      digit *= 2;
-      if (digit > 9) {
-        digit -= 9;
-      }
-    }
-    sum += digit;
-    shouldDouble = !shouldDouble;
-  }
-
-  return sum % 10 === 0;
-}
-
-function createDemoToken(cardNumber: string): string {
-  return `demo-card-${detectCardBrand(cardNumber).toLowerCase()}-${cardNumber.slice(-4)}-${Date.now().toString(36)}`;
+function createPaymentMethodReference(brand: string, last4: string): string {
+  return `mobile-card-${brand.toLowerCase().replace(/\s+/g, "-")}-${last4}-${Date.now().toString(36)}`;
 }

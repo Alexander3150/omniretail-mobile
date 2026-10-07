@@ -22,6 +22,14 @@ import { getErrorMessage, isApiMode, useRepositories } from "@/infrastructure";
 import { OptionPicker } from "@/shared";
 import { colors, radius, spacing, typography } from "@/theme";
 
+import {
+  DELIVERY_ADDRESS_LIMITS,
+  sanitizeAddressLabel,
+  sanitizeAddressText,
+  sanitizeRecipientName,
+  validateDeliveryAddress,
+} from "../application/deliveryAddressValidation";
+
 export function AccountScreen() {
   const { customer, logout } = useSession();
 
@@ -675,12 +683,17 @@ function AddressForm({
     if (!session || isSaving) {
       return;
     }
-    if (!label.trim() || !addressLine.trim()) {
-      setError("El nombre y la dirección son requeridos.");
-      return;
-    }
-    if (apiMode && (!department || !municipality)) {
-      setError("Selecciona el departamento y el municipio.");
+    const validationError = validateDeliveryAddress({
+      label,
+      recipientName,
+      addressLine,
+      department,
+      municipality,
+      references,
+    });
+
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
@@ -774,8 +787,8 @@ function AddressForm({
           <TextInput
             style={styles.addressInput}
             value={label}
-            onChangeText={setLabel}
-            maxLength={35}
+            onChangeText={(value) => setLabel(sanitizeAddressLabel(value))}
+            maxLength={DELIVERY_ADDRESS_LIMITS.label}
             placeholder="Casa"
             placeholderTextColor={accountPalette.muted}
           />
@@ -788,8 +801,8 @@ function AddressForm({
           <TextInput
             style={styles.addressInput}
             value={recipientName}
-            onChangeText={setRecipientName}
-            maxLength={60}
+            onChangeText={(value) => setRecipientName(sanitizeRecipientName(value))}
+            maxLength={DELIVERY_ADDRESS_LIMITS.recipientName}
             placeholder="Nombre de quien recibirá el pedido"
             placeholderTextColor={accountPalette.muted}
           />
@@ -802,7 +815,8 @@ function AddressForm({
           <TextInput
             style={styles.addressInput}
             value={addressLine}
-            onChangeText={setAddressLine}
+            onChangeText={(value) => setAddressLine(sanitizeAddressText(value, "line"))}
+            maxLength={DELIVERY_ADDRESS_LIMITS.line}
             placeholder="Calle, avenida, zona y número de casa"
             placeholderTextColor={accountPalette.muted}
           />
@@ -839,7 +853,8 @@ function AddressForm({
               <TextInput
                 style={styles.addressInput}
                 value={municipality}
-                onChangeText={setMunicipality}
+                onChangeText={(value) => setMunicipality(sanitizeRecipientName(value))}
+                maxLength={DELIVERY_ADDRESS_LIMITS.recipientName}
                 placeholder="Municipio"
                 placeholderTextColor={accountPalette.muted}
               />
@@ -850,7 +865,8 @@ function AddressForm({
               <TextInput
                 style={styles.addressInput}
                 value={department}
-                onChangeText={setDepartment}
+                onChangeText={(value) => setDepartment(sanitizeRecipientName(value))}
+                maxLength={DELIVERY_ADDRESS_LIMITS.recipientName}
                 placeholder="Departamento"
                 placeholderTextColor={accountPalette.muted}
               />
@@ -879,7 +895,8 @@ function AddressForm({
           <TextInput
             style={[styles.addressInput, styles.addressReferencesInput]}
             value={references}
-            onChangeText={setReferences}
+            onChangeText={(value) => setReferences(sanitizeAddressText(value, "references"))}
+            maxLength={DELIVERY_ADDRESS_LIMITS.references}
             placeholder="Ejemplo: portón negro, frente al parque..."
             placeholderTextColor={accountPalette.muted}
             multiline
