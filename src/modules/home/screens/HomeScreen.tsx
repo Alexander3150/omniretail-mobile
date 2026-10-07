@@ -14,6 +14,7 @@ import {
 
 import { useSession } from "@/modules/auth";
 import { ProductCard, useCommerceCatalog } from "@/modules/catalog";
+import { CartToast, useCartToast } from "@/shared";
 
 const palette = {
   deepBlue: "#3E668F",
@@ -37,6 +38,7 @@ export function HomeScreen() {
     : "/(shop)/categories";
   const [query, setQuery] = useState("");
   const [activeBanner, setActiveBanner] = useState(0);
+  const { cartToastMessage, showCartToast } = useCartToast();
   const bannerListRef = useRef<FlatList<(typeof homeBanners)[number]>>(null);
 
   useEffect(() => {
@@ -76,7 +78,8 @@ export function HomeScreen() {
   }
 
   return (
-    <FlatList
+    <View style={styles.screen}>
+      <FlatList
       contentContainerStyle={styles.content}
       data={products}
       keyExtractor={(item) => item.product.id}
@@ -115,7 +118,7 @@ export function HomeScreen() {
                   <Ionicons
                     color={palette.deepBlue}
                     name="notifications-outline"
-                    size={22}
+                    size={28}
                   />
 
                   <View style={styles.notificationDot} />
@@ -454,9 +457,11 @@ export function HomeScreen() {
         </View>
       }
       renderItem={({ item }) => (
-        <ProductCard currency={currency} item={item} onAddToCart={addToCart} />
+        <ProductCard currency={currency} item={item} onAddToCart={addToCart} onCartNotice={showCartToast} />
       )}
-    />
+      />
+      <CartToast message={cartToastMessage} />
+    </View>
   );
 }
 
@@ -548,6 +553,7 @@ function getCategoryIcon(
 }
 
 const styles = StyleSheet.create({
+  screen: { backgroundColor: palette.vanillaMilk, flex: 1 },
   loadingContainer: {
     alignItems: "center",
     backgroundColor: palette.vanillaMilk,
@@ -643,23 +649,33 @@ const styles = StyleSheet.create({
   notificationButton: {
     alignItems: "center",
     backgroundColor: palette.white,
-    borderRadius: 23,
-    height: 46,
+    borderColor: "rgba(255,255,255,0.55)",
+    borderRadius: 29,
+    borderWidth: 2,
+    height: 58,
     justifyContent: "center",
     position: "relative",
-    width: 46,
+    shadowColor: "#172033",
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.16,
+    shadowRadius: 6,
+    width: 58,
+    elevation: 4,
   },
 
   notificationDot: {
     backgroundColor: palette.butterHoney,
     borderColor: palette.white,
-    borderRadius: 6,
+    borderRadius: 7,
     borderWidth: 2,
-    height: 11,
+    height: 14,
     position: "absolute",
-    right: 7,
-    top: 6,
-    width: 11,
+    right: 8,
+    top: 7,
+    width: 14,
   },
 
   heroDescription: {

@@ -13,7 +13,7 @@ import {
   View,
 } from "react-native";
 
-import { formatCurrency } from "@/shared";
+import { CartToast, formatCurrency, StockLimitModal, useCartToast } from "@/shared";
 
 import { calculatePrice } from "../application/pricing";
 import { ProductCard } from "../components/ProductCard";
@@ -26,6 +26,7 @@ export function CategoriesScreen() {
     params.categoryId,
   );
   const [query, setQuery] = useState("");
+  const { cartToastMessage, showCartToast } = useCartToast();
 
   const { addToCart, categories, currency, error, isLoading, products } =
     useCommerceCatalog(selectedCategoryId, query);
@@ -44,7 +45,8 @@ export function CategoriesScreen() {
   );
 
   return (
-    <FlatList
+    <View style={categoryStyles.screen}>
+      <FlatList
       contentContainerStyle={categoryStyles.content}
       data={products}
       keyExtractor={(item) => item.product.id}
@@ -252,9 +254,11 @@ export function CategoriesScreen() {
         </View>
       }
       renderItem={({ item }) => (
-        <ProductCard currency={currency} item={item} onAddToCart={addToCart} />
+        <ProductCard currency={currency} item={item} onAddToCart={addToCart} onCartNotice={showCartToast} />
       )}
-    />
+      />
+      <CartToast message={cartToastMessage} />
+    </View>
   );
 }
 
@@ -267,19 +271,80 @@ export function ProductDetailScreen() {
     product: productVm,
   } = useProductDetail(id);
   const [quantity, setQuantity] = useState(1);
+  const [quantityInput, setQuantityInput] = useState("1");
   const [message, setMessage] = useState<string | null>(null);
   const [imageFailed, setImageFailed] = useState(false);
+  const [stockLimit, setStockLimit] = useState<number | null>(null);
 
-  async function handleAdd() {
-    if (!productVm || quantity <= 0) {
+  function setSelectedQuantity(nextQuantity: number) {
+    if (!productVm) {
+      return null;
+    }
+
+    const availableQuantity = productVm.availableQuantity;
+
+    if (nextQuantity > availableQuantity) {
+      setStockLimit(availableQuantity);
+      setQuantity(Math.max(1, availableQuantity));
+      setQuantityInput(String(Math.max(1, availableQuantity)));
+      return null;
+    }
+
+    const boundedQuantity = Math.max(1, nextQuantity);
+    setQuantity(boundedQuantity);
+    setQuantityInput(String(boundedQuantity));
+    return boundedQuantity;
+  }
+
+  function submitQuantity() {
+    const nextQuantity = Number.parseInt(quantityInput, 10);
+
+    if (!Number.isFinite(nextQuantity) || nextQuantity < 1) {
+      setQuantityInput(String(quantity));
       return;
     }
 
-    for (let index = 0; index < quantity; index += 1) {
-      await addToCart(productVm.product.id);
+    setSelectedQuantity(nextQuantity);
+  }
+
+  async function handleAdd() {
+    if (!productVm) {
+      return;
     }
 
-    setMessage("Producto agregado al carrito.");
+    const requestedQuantity = Number.parseInt(quantityInput, 10);
+
+    if (!Number.isFinite(requestedQuantity) || requestedQuantity < 1) {
+      setQuantityInput(String(quantity));
+      return;
+    }
+
+    const quantityToAdd = setSelectedQuantity(requestedQuantity);
+
+    if (!quantityToAdd) {
+      return;
+    }
+
+    let addedQuantity = 0;
+
+    for (let index = 0; index < quantityToAdd; index += 1) {
+      const result = await addToCart(productVm.product.id);
+
+      if (result?.status !== "added") {
+        setStockLimit(result?.availableQuantity ?? 0);
+        break;
+      }
+
+      addedQuantity += 1;
+    }
+
+    if (addedQuantity > 0) {
+      setMessage(
+        addedQuantity === quantityToAdd
+          ? "Producto agregado al carrito."
+          : `${addedQuantity} unidades se agregaron al carrito.`,
+      );
+    }
   }
 
   if (isLoading) {
@@ -450,7 +515,7 @@ export function ProductDetailScreen() {
         <View style={detailStyles.quantityRow}>
           <Pressable
             accessibilityLabel="Disminuir cantidad"
-            onPress={() => setQuantity(Math.max(1, quantity - 1))}
+            onPress={() => setSelectedQuantity(quantity - 1)}
             style={({ pressed }) => [
               detailStyles.quantityButton,
               pressed ? detailStyles.pressed : null,
@@ -463,18 +528,22 @@ export function ProductDetailScreen() {
             />
           </Pressable>
 
-          <View style={detailStyles.quantityValue}>
-            <Text style={detailStyles.quantityText}>{quantity}</Text>
-          </View>
+          <TextInput
+            accessibilityLabel="Cantidad seleccionada"
+            keyboardType="number-pad"
+            maxLength={4}
+            onChangeText={(value) => setQuantityInput(value.replace(/\D/g, ""))}
+            onEndEditing={submitQuantity}
+            onSubmitEditing={submitQuantity}
+            selectTextOnFocus
+            style={detailStyles.quantityInput}
+            value={quantityInput}
+          />
 
           <Pressable
             accessibilityLabel="Aumentar cantidad"
             disabled={!productVm.available}
-            onPress={() =>
-              setQuantity(
-                Math.min(productVm.availableQuantity, quantity + 1),
-              )
-            }
+            onPress={() => setSelectedQuantity(quantity + 1)}
             style={({ pressed }) => [
               detailStyles.quantityButton,
               pressed ? detailStyles.pressed : null,
@@ -514,6 +583,12 @@ export function ProductDetailScreen() {
           </View>
         ) : null}
       </View>
+
+      <StockLimitModal
+        availableQuantity={stockLimit ?? 0}
+        onClose={() => setStockLimit(null)}
+        visible={stockLimit !== null}
+      />
     </ScrollView>
   );
 }
@@ -532,6 +607,10 @@ const categoryPalette = {
 };
 
 const categoryStyles = StyleSheet.create({
+  screen: {
+    backgroundColor: categoryPalette.vanillaMilk,
+    flex: 1,
+  },
   content: {
     backgroundColor: categoryPalette.vanillaMilk,
     flexGrow: 1,
@@ -1125,6 +1204,20 @@ const detailStyles = StyleSheet.create({
     color: categoryPalette.text,
     fontSize: 17,
     fontWeight: "900",
+  },
+
+  quantityInput: {
+    backgroundColor: categoryPalette.white,
+    borderColor: categoryPalette.border,
+    borderRadius: 13,
+    borderWidth: 1,
+    color: categoryPalette.text,
+    fontSize: 17,
+    fontWeight: "900",
+    height: 48,
+    minWidth: 62,
+    paddingHorizontal: 8,
+    textAlign: "center",
   },
 
   primaryButton: {

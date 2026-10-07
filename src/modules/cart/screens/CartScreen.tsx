@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -8,10 +8,11 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 
-import { formatCurrency } from "@/shared";
+import { formatCurrency, StockLimitModal } from "@/shared";
 
 import type { CartLine } from "../application/cartTotals";
 import { useCart } from "../hooks/useCart";
@@ -31,6 +32,7 @@ const palette = {
 };
 
 export function CartScreen() {
+  const [stockLimit, setStockLimit] = useState<number | null>(null);
   const {
     currency,
     error,
@@ -63,7 +65,8 @@ export function CartScreen() {
   );
 
   return (
-    <FlatList
+    <>
+      <FlatList
       contentContainerStyle={[
         styles.content,
         lines.length === 0 ? styles.emptyContent : null,
@@ -247,12 +250,23 @@ export function CartScreen() {
           currency={currency}
           item={item}
           onRemove={() => void removeItem(item.id)}
-          onUpdateQuantity={(quantity) =>
-            void updateQuantity(item.id, quantity)
-          }
+          onUpdateQuantity={async (quantity) => {
+            const result = await updateQuantity(item.id, quantity);
+
+            if (result.status === "limit-reached") {
+              setStockLimit(result.availableQuantity);
+            }
+          }}
         />
       )}
-    />
+      />
+
+      <StockLimitModal
+        availableQuantity={stockLimit ?? 0}
+        onClose={() => setStockLimit(null)}
+        visible={stockLimit !== null}
+      />
+    </>
   );
 }
 
@@ -315,7 +329,7 @@ type CartProductCardProps = {
   currency: string;
   item: CartLine;
   onRemove(): void;
-  onUpdateQuantity(quantity: number): void;
+  onUpdateQuantity(quantity: number): Promise<void>;
 };
 
 function CartProductCard({
@@ -324,8 +338,20 @@ function CartProductCard({
   onRemove,
   onUpdateQuantity,
 }: CartProductCardProps) {
+  const quantityInput = useRef(String(item.quantity));
   const hasDiscount =
     item.unitPrice > item.effectiveUnitPrice;
+
+  function submitQuantity() {
+    const requestedQuantity = Number.parseInt(quantityInput.current, 10);
+
+    if (!Number.isFinite(requestedQuantity) || requestedQuantity < 1) {
+      quantityInput.current = String(item.quantity);
+      return;
+    }
+
+    void onUpdateQuantity(requestedQuantity);
+  }
 
   return (
     <View style={styles.productCard}>
@@ -421,11 +447,20 @@ function CartProductCard({
             />
           </Pressable>
 
-          <View style={styles.quantityValue}>
-            <Text style={styles.quantityText}>
-              {item.quantity}
-            </Text>
-          </View>
+          <TextInput
+            accessibilityLabel={`Cantidad de ${item.productName}`}
+            defaultValue={String(item.quantity)}
+            keyboardType="number-pad"
+            key={`${item.id}-${item.quantity}`}
+            maxLength={4}
+            onChangeText={(value) => {
+              quantityInput.current = value.replace(/\D/g, "");
+            }}
+            onEndEditing={submitQuantity}
+            onSubmitEditing={submitQuantity}
+            selectTextOnFocus
+            style={styles.quantityInput}
+          />
 
           <Pressable
             accessibilityLabel="Aumentar cantidad"
@@ -876,6 +911,15 @@ const styles = StyleSheet.create({
     color: palette.text,
     fontSize: 14,
     fontWeight: "900",
+  },
+
+  quantityInput: {
+    color: palette.text,
+    fontSize: 18,
+    fontWeight: "900",
+    minWidth: 48,
+    paddingHorizontal: 6,
+    textAlign: "center",
   },
 
   lineTotal: {
