@@ -303,6 +303,7 @@ export function AddressesScreen() {
       renderItem={({ item }) => (
         <View style={styles.addressPanel}>
           <Text style={styles.value}>{item.label}</Text>
+          {item.isDefault ? <View style={styles.defaultAddressBadge}><Ionicons color={accountPalette.success} name="checkmark-circle" size={14} /><Text style={styles.defaultAddressBadgeText}>Predeterminada</Text></View> : null}
           <Text style={styles.label}>
             {[item.addressLine, item.addressLine2].filter(Boolean).join(", ")}
           </Text>
@@ -310,6 +311,7 @@ export function AddressesScreen() {
             {item.municipality} {item.department}
           </Text>
           <View style={styles.addressActions}>
+            {!item.isDefault ? <Pressable onPress={() => void runAction(() => addressRepository.setDefault(item.customerId, item.id))}><Text style={styles.linkText}>Predeterminada</Text></Pressable> : null}
             <Pressable
               onPress={() =>
                 router.push({
@@ -642,6 +644,15 @@ function AddressForm({
         onChangeText={setReferences}
         placeholder="Referencias (opcional)"
       />
+      <Pressable
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: isDefault }}
+        onPress={() => setIsDefault((previous) => !previous)}
+        style={[styles.defaultAddressToggle, isDefault ? styles.defaultAddressToggleActive : null]}
+      >
+        <Ionicons color={isDefault ? accountPalette.success : accountPalette.deepBlue} name={isDefault ? "checkmark-circle" : "ellipse-outline"} size={20} />
+        <Text style={[styles.defaultAddressToggleText, isDefault ? styles.defaultAddressToggleTextActive : null]}>{isDefault ? "Dirección predeterminada" : "Usar como dirección predeterminada"}</Text>
+      </Pressable>
       <Pressable disabled={isSaving} onPress={save} style={styles.addressSaveButton}>
         <Text style={styles.buttonText}>{isSaving ? "Guardando..." : "Guardar"}</Text>
       </Pressable>
@@ -1051,6 +1062,7 @@ const styles = StyleSheet.create({
   addressEmptyIcon: { alignItems: "center", backgroundColor: "#EEF3FB", borderRadius: 27, height: 54, justifyContent: "center", width: 54 },
   addressEmptyTitle: { color: accountPalette.text, fontSize: 17, fontWeight: "900", marginTop: 14, textAlign: "center" }, addressEmptyText: { color: accountPalette.muted, fontSize: 12, lineHeight: 18, marginTop: 6, textAlign: "center" }, addressPrimaryButton: { backgroundColor: accountPalette.deepBlue, borderRadius: 13, marginTop: 17, minHeight: 45, justifyContent: "center", paddingHorizontal: 15 },
   addressPanel: { backgroundColor: accountPalette.white, borderColor: accountPalette.silkyLilac, borderRadius: 18, borderWidth: 1, gap: spacing.sm, marginHorizontal: spacing.md, marginBottom: spacing.sm, padding: spacing.md }, addressActions: { flexDirection: "row", gap: spacing.md },
+  defaultAddressBadge: { alignItems: "center", alignSelf: "flex-start", backgroundColor: "#EAF7EF", borderRadius: 10, flexDirection: "row", gap: 4, paddingHorizontal: 8, paddingVertical: 5 }, defaultAddressBadgeText: { color: accountPalette.success, fontSize: 10, fontWeight: "900" }, defaultAddressToggle: { alignItems: "center", backgroundColor: "#EEF3FB", borderColor: accountPalette.silkyLilac, borderRadius: 12, borderWidth: 1, flexDirection: "row", gap: 8, justifyContent: "center", marginTop: spacing.sm, minHeight: 48, paddingHorizontal: 12 }, defaultAddressToggleActive: { backgroundColor: "#EAF7EF", borderColor: "#B8DDC9" }, defaultAddressToggleText: { color: accountPalette.deepBlue, fontSize: 12, fontWeight: "800" }, defaultAddressToggleTextActive: { color: accountPalette.success },
   formAddressHero: { backgroundColor: accountPalette.deepBlue, borderBottomLeftRadius: 26, borderBottomRightRadius: 26, marginHorizontal: -spacing.lg, marginTop: -spacing.lg, padding: 20, paddingTop: 42 }, formAddressTitle: { color: accountPalette.white, fontSize: 25, fontWeight: "900", marginTop: 4 }, formAddressSubtitle: { color: "#EAF1F8", fontSize: 12, marginTop: 7 }, addressFormCard: { backgroundColor: accountPalette.white, borderColor: accountPalette.silkyLilac, borderRadius: 20, borderWidth: 1, gap: spacing.sm, marginTop: -12, padding: spacing.md }, addressSaveButton: { alignItems: "center", backgroundColor: accountPalette.deepBlue, borderRadius: 13, justifyContent: "center", minHeight: 48, marginTop: spacing.sm },
   button: {
     alignItems: "center",
