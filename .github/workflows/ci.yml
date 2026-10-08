@@ -1,0 +1,108 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [development, main]
+  push:
+    branches: [development, main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ===========================================================================
+  # Step 1: tipos y lint (Expo SDK 57).
+  # ===========================================================================
+  build-test:
+    name: Tipos y lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Configurar Node.js 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: "[Step 1] Validar TypeScript"
+        run: npx tsc --noEmit
+
+      - name: "[Step 1] Lint de Expo"
+        run: npm run lint
+
+  # ===========================================================================
+  # Step 2: analisis estatico con SonarQube Cloud.
+  # ===========================================================================
+  sonar:
+    name: SonarQube Cloud
+    needs: build-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+    steps:
+      - name: SonarQube Cloud omitido
+        if: env.SONAR_TOKEN == '' || vars.SONAR_ORGANIZATION == '' || vars.SONAR_PROJECT_KEY == ''
+        run: echo "::warning title=SonarQube::Faltan SONAR_TOKEN (secret) o SONAR_ORGANIZATION / SONAR_PROJECT_KEY (variables). Se omite el analisis."
+
+      - name: Checkout
+        if: env.SONAR_TOKEN != '' && vars.SONAR_ORGANIZATION != '' && vars.SONAR_PROJECT_KEY != ''
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # Sonar necesita el historial completo para detectar codigo nuevo.
+
+      - name: "[Step 2] Analisis con SonarQube Cloud"
+        if: env.SONAR_TOKEN != '' && vars.SONAR_ORGANIZATION != '' && vars.SONAR_PROJECT_KEY != ''
+        uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9 # v8.3.0
+        with:
+          args: >
+            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
+            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
+            -Dsonar.qualitygate.wait=${{ vars.SONAR_QUALITY_GATE_BLOCKING == 'true' }}
+
+  # ===========================================================================
+  # Step 3: revision del PR con IA (Gemini). Comenta en el PR; nunca bloquea.
+  # ===========================================================================
+  ai-review:
+    name: Revision con IA (Gemini)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Configurar Node.js 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: "[Step 3] Revisar diff con Gemini"
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PROJECT_CONTEXT: App movil Expo SDK 57 / React Native 0.86 + TypeScript con expo-router, consume la API REST del backend OmniRetail.
+        run: node .github/scripts/ai-review.mjs
