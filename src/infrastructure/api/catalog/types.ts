@@ -16,5 +16,6 @@ export type ApiStorefrontProduct = {
   saleUnitId: string;
   saleUnitName?: string | null;
   inStock: boolean;
-  availableQuantity: number;
+  /** Quantity in the product's configured sale unit; null when stock is not tracked. */
+  availableQuantity: number | null;
 };

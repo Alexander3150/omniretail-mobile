@@ -28,7 +28,10 @@ export class ApiProductAvailabilityRepository
         tenantId,
         productId: product.id,
         branchId: STOREFRONT_BRANCH_ID,
-        availableQuantity: Number(product.availableQuantity),
+        availableQuantity:
+          product.availableQuantity === null
+            ? null
+            : Number(product.availableQuantity),
         available: product.inStock,
         pickupAvailable: false,
         deliveryAvailable: product.inStock,

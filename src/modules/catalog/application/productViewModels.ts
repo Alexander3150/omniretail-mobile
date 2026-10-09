@@ -8,7 +8,8 @@ export type ProductCardViewModel = {
   primaryImage: ProductImageViewModel;
   images: ProductImageViewModel[];
   price: PriceSummary;
-  availableQuantity: number;
+  /** Quantity in the configured sale unit, or null when the product has no stock control. */
+  availableQuantity: number | null;
   available: boolean;
   isFavorite: boolean;
 };
@@ -21,7 +22,7 @@ export function createProductCardViewModel(
   favoriteProductIds: string[],
 ): ProductCardViewModel {
   const relevantAvailability = availability.filter((item) => item.productId === product.id);
-  const availableQuantity = relevantAvailability.reduce((sum, item) => sum + item.availableQuantity, 0);
+  const availableQuantity = resolveAvailableQuantity(relevantAvailability);
   const productMedia = media.filter((item) => item.productId === product.id);
   const primaryMedia = selectPrimaryProductMedia(productMedia);
   const images = resolveProductImages(product, primaryMedia ? [primaryMedia, ...productMedia.filter((item) => item.id !== primaryMedia.id)] : productMedia);
@@ -38,4 +39,18 @@ export function createProductCardViewModel(
     available: relevantAvailability.some((item) => item.available),
     isFavorite: favoriteProductIds.includes(product.id),
   };
+}
+
+/**
+ * In API mode the repository exposes one storefront availability already resolved by the backend.
+ * Mock records can still contain branch projections, so they retain their existing aggregate.
+ */
+export function resolveAvailableQuantity(availability: ProductAvailability[]): number | null {
+  if (availability.length === 0) return 0;
+  if (availability.every((item) => item.availableQuantity === null)) return null;
+
+  return availability.reduce(
+    (sum, item) => sum + (item.availableQuantity ?? 0),
+    0,
+  );
 }

@@ -39,7 +39,7 @@ type ProductCardProps = {
 
 export function ProductCard({ currency, item, onAddToCart, onCartNotice }: ProductCardProps) {
   const { isAuthenticated } = useSession();
-  const canAdd = item.available && item.availableQuantity > 0;
+  const canAdd = item.available && (item.availableQuantity === null || item.availableQuantity > 0);
   const [imageFailed, setImageFailed] = useState(false);
   async function handleAddToCart(event: GestureResponderEvent) {
     event.stopPropagation();
