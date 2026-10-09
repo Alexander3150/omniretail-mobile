@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { useRepositories } from "@/infrastructure";
-import { calculatePrice, resolveProductImage, selectPrimaryProductMedia } from "@/modules/catalog";
+import {
+  calculatePrice,
+  resolveAvailableQuantity,
+  resolveProductImage,
+  selectPrimaryProductMedia,
+} from "@/modules/catalog";
 import { useSession } from "@/modules/auth";
 
 import { calculateCartTotals, type CartLine, type CartTotals } from "../application/cartTotals";
@@ -97,12 +102,14 @@ export function useCart() {
         return { status: "not-found" };
       }
       const availability = await repositories.productAvailabilityRepository.getByProduct(session.tenantId, line.productId);
-      const availableQuantity = availability.reduce((sum, item) => sum + item.availableQuantity, 0);
-      const nextQuantity = Math.min(quantity, availableQuantity);
+      const availableQuantity = resolveAvailableQuantity(availability);
+      const nextQuantity = availableQuantity === null
+        ? quantity
+        : Math.min(quantity, availableQuantity);
       await repositories.cartRepository.updateQuantity(itemId, nextQuantity);
       await load();
 
-      return nextQuantity < quantity
+      return availableQuantity !== null && nextQuantity < quantity
         ? { status: "limit-reached", availableQuantity, quantity: nextQuantity }
         : { status: "updated", quantity: nextQuantity };
     }

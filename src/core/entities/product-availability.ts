@@ -4,7 +4,8 @@ export type ProductAvailability = {
   tenantId: TenantId;
   productId: EntityId;
   branchId: EntityId;
-  availableQuantity: number;
+  /** `null` means the product does not consume tracked stock. */
+  availableQuantity: number | null;
   available: boolean;
   pickupAvailable: boolean;
   deliveryAvailable: boolean;

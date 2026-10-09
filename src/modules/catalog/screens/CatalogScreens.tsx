@@ -285,7 +285,7 @@ export function ProductDetailScreen() {
 
     const availableQuantity = productVm.availableQuantity;
 
-    if (nextQuantity > availableQuantity) {
+    if (availableQuantity !== null && nextQuantity > availableQuantity) {
       setStockLimit(availableQuantity);
       setQuantity(Math.max(1, availableQuantity));
       setQuantityInput(String(Math.max(1, availableQuantity)));
@@ -518,7 +518,9 @@ export function ProductDetailScreen() {
           </View>
 
           <Text style={detailStyles.availableText}>
-            {productVm.availableQuantity} disponibles
+            {productVm.availableQuantity === null
+              ? "Disponible"
+              : `${productVm.availableQuantity} disponibles`}
           </Text>
         </View>
 

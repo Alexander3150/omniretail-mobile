@@ -15,6 +15,7 @@ import { useSession } from "@/modules/auth";
 
 import {
   createProductCardViewModel,
+  resolveAvailableQuantity,
   type ProductCardViewModel,
 } from "../application/productViewModels";
 
@@ -28,7 +29,7 @@ type CatalogState = {
 };
 
 export type AddToCartResult =
-  | { status: "added"; availableQuantity: number }
+  | { status: "added"; availableQuantity: number | null }
   | { status: "limit-reached"; availableQuantity: number }
   | { status: "unavailable"; availableQuantity: number };
 
@@ -218,10 +219,8 @@ export function useCommerceCatalog(
         product.id,
       );
 
-    const availableQuantity = availability.reduce(
-      (sum, item) => sum + item.availableQuantity,
-      0,
-    );
+    const availableQuantity = resolveAvailableQuantity(availability);
+    const isAvailable = availability.some((item) => item.available);
 
     const cart =
       await repositories.cartRepository.getOrCreate(
@@ -240,13 +239,11 @@ export function useCommerceCatalog(
       )
       .reduce((sum, item) => sum + item.quantity, 0);
 
-    if (
-      availableQuantity <= 0
-    ) {
-      return { status: "unavailable", availableQuantity };
+    if (!isAvailable || (availableQuantity !== null && availableQuantity <= 0)) {
+      return { status: "unavailable", availableQuantity: availableQuantity ?? 0 };
     }
 
-    if (currentQuantity >= availableQuantity) {
+    if (availableQuantity !== null && currentQuantity >= availableQuantity) {
       return { status: "limit-reached", availableQuantity };
     }
 
