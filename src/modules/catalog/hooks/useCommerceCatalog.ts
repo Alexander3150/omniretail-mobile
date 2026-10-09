@@ -220,6 +220,7 @@ export function useCommerceCatalog(
       );
 
     const availableQuantity = resolveAvailableQuantity(availability);
+    const isAvailable = availability.some((item) => item.available);
 
     const cart =
       await repositories.cartRepository.getOrCreate(
@@ -238,10 +239,8 @@ export function useCommerceCatalog(
       )
       .reduce((sum, item) => sum + item.quantity, 0);
 
-    if (
-      availableQuantity !== null && availableQuantity <= 0
-    ) {
-      return { status: "unavailable", availableQuantity };
+    if (!isAvailable || (availableQuantity !== null && availableQuantity <= 0)) {
+      return { status: "unavailable", availableQuantity: availableQuantity ?? 0 };
     }
 
     if (availableQuantity !== null && currentQuantity >= availableQuantity) {

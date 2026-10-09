@@ -29,7 +29,7 @@ export class ApiProductAvailabilityRepository
         productId: product.id,
         branchId: STOREFRONT_BRANCH_ID,
         availableQuantity:
-          product.availableQuantity === null
+          product.availableQuantity == null
             ? null
             : Number(product.availableQuantity),
         available: product.inStock,
