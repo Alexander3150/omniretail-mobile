@@ -22,6 +22,10 @@ vi.mock("expo-router", async () => {
     },
   };
 });
+vi.mock("@/infrastructure/repositories", () => {
+  const repositories = { businessConfigRepository: { getCurrent: state.getCurrent } };
+  return { useRepositories: () => repositories };
+});
 vi.mock("@/infrastructure", () => {
   const repositories = { businessConfigRepository: { getCurrent: state.getCurrent } };
   return { useRepositories: () => repositories };
