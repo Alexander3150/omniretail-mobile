@@ -40,7 +40,7 @@ type BannerEntry =
 
 export function HomeScreen() {
   const { customer, isAuthenticated } = useSession();
-  const { heroSlides, logoUri, storeName } = useBusinessConfig();
+  const { heroSlides, logoUri } = useBusinessConfig();
 
   // Con diapositivas configuradas en el panel web se muestran esas; si no, las de siempre.
   const bannerEntries = useMemo<BannerEntry[]>(
@@ -99,7 +99,6 @@ export function HomeScreen() {
 
   const {
     addToCart,
-    businessName,
     categories,
     currency,
     error,
@@ -229,14 +228,14 @@ export function HomeScreen() {
 
             <View style={styles.welcomeRow}>
               <View style={styles.welcomeText}>
-                <View style={styles.brandRow}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                   <StoreLogo
                     backgroundColor={palette.vanillaMilk}
                     iconColor={palette.deepBlue}
-                    size={30}
+                    size={22}
                     uri={logoUri}
                   />
-                  <Text style={styles.brand}>{storeName.toUpperCase()}</Text>
+                  <Text style={styles.brand}>FERREPHARMA</Text>
                 </View>
 
                 <Text style={styles.greeting}>
@@ -249,7 +248,7 @@ export function HomeScreen() {
                     name="storefront-outline"
                     size={14}
                   />
-                  <Text style={styles.businessName}>{businessName}</Text>
+                  <Text style={styles.businessName}>FerrePharma</Text>
                 </View>
               </View>
 
@@ -320,7 +319,7 @@ export function HomeScreen() {
                   <View>
                     <Text style={styles.eyebrow}>PARA TI</Text>
                     <Text style={styles.sectionTitle}>
-                      Descubre {storeName}
+                      Descubre FerrePharma
                     </Text>
                   </View>
 
@@ -667,11 +666,6 @@ const styles = StyleSheet.create({
     paddingRight: 12,
   },
 
-  brandRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 8,
-  },
   brand: {
     color: palette.butterHoney,
     fontSize: 11,
@@ -825,7 +819,7 @@ const styles = StyleSheet.create({
   },
 
   bannerOuter: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 0,
   },
 
   promoCard: {
