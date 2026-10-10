@@ -1,9 +1,13 @@
 import { render, renderHook, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { BusinessConfig } from "@/core";
 import { StoreBrandText } from "@/shared/components/StoreBrandText";
-import { DEFAULT_STORE_NAME, useBusinessConfig } from "@/shared/hooks/useBusinessConfig";
+import {
+  clearBusinessConfigCache,
+  DEFAULT_STORE_NAME,
+  useBusinessConfig,
+} from "@/shared/hooks/useBusinessConfig";
 
 const state = vi.hoisted(() => ({
   getCurrent: vi.fn(),
@@ -32,6 +36,10 @@ const config = (extra: Partial<BusinessConfig> = {}): BusinessConfig => ({
 });
 
 describe("useBusinessConfig", () => {
+  beforeEach(() => {
+    clearBusinessConfigCache();
+  });
+
   it("antes de leer la configuracion usa el nombre por defecto y no hay logo ni carrusel", () => {
     state.getCurrent.mockReturnValue(new Promise(() => undefined));
 
@@ -62,6 +70,31 @@ describe("useBusinessConfig", () => {
     expect(result.current.storeName).toBe(DEFAULT_STORE_NAME);
   });
 
+  it("una pantalla que se monta despues arranca con la configuracion ya leida, sin parpadear con el nombre por defecto", async () => {
+    state.getCurrent.mockResolvedValue(config({ name: "Ferretería Los Simpson" }));
+    const first = renderHook(() => useBusinessConfig());
+    await waitFor(() => expect(first.result.current.storeName).toBe("Ferretería Los Simpson"));
+
+    // La segunda lectura tarda: el nombre real ya debe verse desde el primer render.
+    state.getCurrent.mockReturnValue(new Promise(() => undefined));
+    const second = renderHook(() => useBusinessConfig());
+
+    expect(second.result.current.storeName).toBe("Ferretería Los Simpson");
+    expect(second.result.current.config).not.toBeNull();
+  });
+
+  it("despues de limpiar la cache vuelve a partir del nombre por defecto", async () => {
+    state.getCurrent.mockResolvedValue(config());
+    const first = renderHook(() => useBusinessConfig());
+    await waitFor(() => expect(first.result.current.config).not.toBeNull());
+
+    clearBusinessConfigCache();
+    state.getCurrent.mockReturnValue(new Promise(() => undefined));
+    const second = renderHook(() => useBusinessConfig());
+
+    expect(second.result.current.storeName).toBe(DEFAULT_STORE_NAME);
+  });
+
   it("sin conexion no falla y mantiene los valores por defecto", async () => {
     state.getCurrent.mockRejectedValue(new Error("network"));
 
@@ -74,6 +107,10 @@ describe("useBusinessConfig", () => {
 });
 
 describe("StoreBrandText", () => {
+  beforeEach(() => {
+    clearBusinessConfigCache();
+  });
+
   it("muestra el nombre de la tienda en mayusculas", async () => {
     state.getCurrent.mockResolvedValue(config());
 

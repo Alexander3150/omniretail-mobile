@@ -15,6 +15,7 @@ import { useSession } from "@/modules/auth";
 import { ProductCard, useCommerceCatalog } from "@/modules/catalog";
 import type { BusinessHeroSlide } from "@/core";
 import { RemoteBannerCard } from "@/modules/home/components/RemoteBannerCard";
+import { recoverBannerScroll } from "@/modules/home/utils/bannerScroll";
 import { CartToast, StoreLogo, useBusinessConfig, useCartToast } from "@/shared";
 
 const palette = {
@@ -64,6 +65,16 @@ export function HomeScreen() {
     : "/(shop)/categories";
   const [query, setQuery] = useState("");
   const [activeBanner, setActiveBanner] = useState(0);
+
+  // Al pasar de los banners de siempre a las diapositivas del panel (o al reves) el indice activo
+  // anterior puede no existir en la lista nueva: se reinicia en el mismo render en que cambian
+  // (patron de React para ajustar estado cuando cambia una prop, sin un efecto extra).
+  const [bannerSlides, setBannerSlides] = useState(heroSlides);
+  if (bannerSlides !== heroSlides) {
+    setBannerSlides(heroSlides);
+    setActiveBanner(0);
+  }
+
   const { cartToastMessage, showCartToast } = useCartToast();
   const bannerListRef = useRef<FlatList<BannerEntry>>(null);
 
@@ -327,6 +338,9 @@ export function HomeScreen() {
                   data={bannerEntries}
                   horizontal
                   keyExtractor={(item) => item.key}
+                  onScrollToIndexFailed={(info) =>
+                    recoverBannerScroll(bannerListRef.current, info, BANNER_WIDTH)
+                  }
                   onMomentumScrollEnd={(event) => {
                     const index = Math.round(
                       event.nativeEvent.contentOffset.x / BANNER_WIDTH,

@@ -26,6 +26,7 @@ export default defineConfig({
         "src/infrastructure/api/account/ApiStorefrontConfigService.ts",
         "src/modules/home/components/RemoteBannerCard.tsx",
         "src/modules/home/screens/HomeScreen.tsx",
+        "src/modules/home/utils/bannerScroll.ts",
         "src/shared/components/StoreBrandText.tsx",
         "src/shared/components/StoreLogo.tsx",
         "src/shared/hooks/useBusinessConfig.ts",

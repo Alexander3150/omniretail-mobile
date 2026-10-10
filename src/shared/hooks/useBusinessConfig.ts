@@ -10,6 +10,16 @@ export const DEFAULT_STORE_NAME = "FERREPHARMA";
 // Referencia estable: evita recalcular el carrusel en cada render mientras no hay configuracion.
 const NO_SLIDES: BusinessHeroSlide[] = [];
 
+// Ultima configuracion leida, compartida por todas las pantallas. Asi, tras la primera lectura,
+// cualquier pantalla que se monte arranca ya con el nombre y el logo reales y no parpadea con el
+// nombre por defecto.
+let cachedBusinessConfig: BusinessConfig | null = null;
+
+/** Descarta la configuracion en memoria (las pruebas la usan para partir de cero). */
+export function clearBusinessConfigCache() {
+  cachedBusinessConfig = null;
+}
+
 /**
  * Configuración pública de la tienda (nombre, logo, carrusel y contacto) configurada desde el
  * panel web. Se vuelve a leer cada vez que la pantalla toma el foco; el servicio la cachea unos
@@ -18,7 +28,7 @@ const NO_SLIDES: BusinessHeroSlide[] = [];
  */
 export function useBusinessConfig() {
   const { businessConfigRepository } = useRepositories();
-  const [config, setConfig] = useState<BusinessConfig | null>(null);
+  const [config, setConfig] = useState<BusinessConfig | null>(cachedBusinessConfig);
 
   useFocusEffect(
     useCallback(() => {
@@ -26,6 +36,7 @@ export function useBusinessConfig() {
 
       businessConfigRepository.getCurrent().then(
         (current) => {
+          cachedBusinessConfig = current;
           if (active) setConfig(current);
         },
         () => undefined,

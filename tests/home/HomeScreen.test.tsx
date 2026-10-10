@@ -121,4 +121,23 @@ describe("HomeScreen: tienda configurada en el panel web", () => {
 
     expect(screen.getByText("Consulta tus pedidos fácilmente")).toBeTruthy();
   });
+
+  it("al pasar de los banners de siempre a las diapositivas del panel se vuelve a la primera sin fallar", () => {
+    vi.useFakeTimers();
+    const { rerender } = render(<HomeScreen />);
+    act(() => {
+      vi.advanceTimersByTime(4000 * 2);
+    });
+
+    state.slides = [slide("Ofertas"), slide("Nuevos")];
+    rerender(<HomeScreen />);
+
+    expect(screen.getByText("Ofertas")).toBeTruthy();
+    expect(screen.queryByText("Todo lo que necesitas en un solo lugar")).toBeNull();
+    expect(() => {
+      act(() => {
+        vi.advanceTimersByTime(4000 * 3);
+      });
+    }).not.toThrow();
+  });
 });
