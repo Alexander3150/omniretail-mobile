@@ -1,0 +1,72 @@
+import { fireEvent, render } from "@testing-library/react";
+import React from "react";
+import { describe, expect, it, vi } from "vitest";
+
+import { OptionPicker } from "@/shared/components/OptionPicker";
+
+describe("OptionPicker", () => {
+  it("muestra el label y el valor seleccionado", () => {
+    const { getByText } = render(
+      <OptionPicker
+        label="Departamento"
+        onChange={vi.fn()}
+        options={["Guatemala", "Escuintla"]}
+        value="Guatemala"
+      />,
+    );
+
+    expect(getByText("Departamento")).not.toBeNull();
+    expect(getByText("Guatemala")).not.toBeNull();
+  });
+
+  it("abre el modal y permite seleccionar una opción", () => {
+    const handleChange = vi.fn();
+    const { getByText, getAllByText } = render(
+      <OptionPicker
+        label="Departamento"
+        onChange={handleChange}
+        options={["Guatemala", "Escuintla"]}
+        value=""
+      />,
+    );
+
+    fireEvent.click(getByText("Selecciona departamento"));
+    // En el modal abierto, seleccionamos "Escuintla"
+    const escuintlaOptions = getAllByText("Escuintla");
+    fireEvent.click(escuintlaOptions[0]);
+
+    expect(handleChange).toHaveBeenCalledWith("Escuintla");
+  });
+
+  it("filtra opciones mediante el buscador cuando hay más de 12 opciones", () => {
+    const options = Array.from({ length: 15 }, (_, i) => `Opcion ${i + 1}`);
+    const { getByPlaceholderText, getByText } = render(
+      <OptionPicker
+        label="Opciones"
+        onChange={vi.fn()}
+        options={options}
+        value=""
+      />,
+    );
+
+    fireEvent.click(getByText("Selecciona opciones"));
+    const searchInput = getByPlaceholderText("Buscar opciones");
+    fireEvent.change(searchInput, { target: { value: "Opcion 15" } });
+
+    expect(getByText("Opcion 15")).not.toBeNull();
+  });
+
+  it("muestra el mensaje de vacío si no hay opciones", () => {
+    const { getByText } = render(
+      <OptionPicker
+        emptyText="No hay municipios"
+        label="Municipio"
+        onChange={vi.fn()}
+        options={[]}
+        value=""
+      />,
+    );
+
+    expect(getByText("No hay municipios")).not.toBeNull();
+  });
+});
