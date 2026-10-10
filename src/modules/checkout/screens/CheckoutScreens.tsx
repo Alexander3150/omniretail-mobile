@@ -8,7 +8,7 @@ import { isApiMode, useRepositories } from "@/infrastructure";
 import { useSession } from "@/modules/auth";
 import { useCart } from "@/modules/cart";
 import { useInvoiceDownload } from "@/modules/invoice";
-import { formatCurrency } from "@/shared";
+import { formatCurrency, KeyboardAwareContainer } from "@/shared";
 import { colors, spacing, typography } from "@/theme";
 
 import { calculateCheckoutTotals } from "../application/checkoutPricing";
@@ -135,7 +135,10 @@ function MockCheckoutDeliveryScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.content}>
+    <KeyboardAwareContainer
+      contentContainerStyle={styles.content}
+      extraBottomSpace={60}
+    >
       <CheckoutHero
         badge="1 de 3 · Entrega"
         description="Elige cómo quieres recibir tu pedido."
@@ -344,7 +347,7 @@ function MockCheckoutDeliveryScreen() {
       <Text style={styles.checkoutFooter}>
         Podrás revisar todos los datos antes de confirmar.
       </Text>
-    </ScrollView>
+    </KeyboardAwareContainer>
   );
 }
 
@@ -379,7 +382,10 @@ function MockCheckoutPaymentScreen() {
   );
 
   return (
-    <ScrollView contentContainerStyle={styles.content}>
+    <KeyboardAwareContainer
+      contentContainerStyle={styles.content}
+      extraBottomSpace={60}
+    >
       <CheckoutHero
         badge="2 de 3 · Pago"
         description="Selecciona cómo quieres pagar tu pedido."
@@ -505,7 +511,7 @@ function MockCheckoutPaymentScreen() {
       <Text style={styles.checkoutFooter}>
         Aún no se realizará ningún cobro.
       </Text>
-    </ScrollView>
+    </KeyboardAwareContainer>
   );
 }
 

@@ -1,13 +1,13 @@
-import * as Notifications from "expo-notifications";
+import Constants, { ExecutionEnvironment } from "expo-constants";
 import { router } from "expo-router";
 import { useEffect } from "react";
 import { Platform } from "react-native";
 
-function openNotificationOrder(
-  response: Notifications.NotificationResponse,
-) {
-  const orderId =
-    response.notification.request.content.data?.orderId;
+const isExpoGo =
+  Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+
+function openNotificationOrder(response: any) {
+  const orderId = response?.notification?.request?.content?.data?.orderId;
 
   if (typeof orderId !== "string" || !orderId.trim()) {
     return;
@@ -21,26 +21,32 @@ function openNotificationOrder(
 
 export function NotificationNavigationHandler() {
   useEffect(() => {
-    if (Platform.OS === "web") {
+    if (isExpoGo || Platform.OS === "web") {
       return;
     }
 
-    const subscription =
-      Notifications.addNotificationResponseReceivedListener(
-        openNotificationOrder,
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const Notifications = require("expo-notifications");
+      const subscription =
+        Notifications.addNotificationResponseReceivedListener(
+          openNotificationOrder,
+        );
+
+      void Notifications.getLastNotificationResponseAsync().then(
+        (response: any) => {
+          if (response) {
+            openNotificationOrder(response);
+          }
+        },
       );
 
-    void Notifications.getLastNotificationResponseAsync().then(
-      (response) => {
-        if (response) {
-          openNotificationOrder(response);
-        }
-      },
-    );
-
-    return () => {
-      subscription.remove();
-    };
+      return () => {
+        subscription.remove();
+      };
+    } catch {
+      // In environments where expo-notifications native module is missing
+    }
   }, []);
 
   return null;

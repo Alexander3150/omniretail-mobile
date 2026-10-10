@@ -667,8 +667,8 @@ function AuthForm({
 }: AuthFormProps) {
   return (
     <ScrollView
-      automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
-      contentContainerStyle={styles.scrollContent}
+      automaticallyAdjustKeyboardInsets
+      contentContainerStyle={[styles.scrollContent, { paddingBottom: 60 }]}
       keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
       keyboardShouldPersistTaps="handled"
     >

@@ -5,7 +5,6 @@ import {
   ActivityIndicator,
   FlatList,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -15,7 +14,7 @@ import {
 import { CARD_BRANDS, GUATEMALA_BANKS } from "@/config";
 import { getErrorMessage } from "@/infrastructure";
 import { useSession } from "@/modules/auth";
-import { OptionPicker } from "@/shared";
+import { KeyboardAwareContainer, OptionPicker } from "@/shared";
 
 import {
   buildSafePaymentMethodInput,
@@ -278,10 +277,9 @@ export function NewPaymentMethodScreen() {
   }
 
   return (
-    <ScrollView
+    <KeyboardAwareContainer
       contentContainerStyle={styles.formContainer}
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
+      extraBottomSpace={80}
     >
       <PaymentHero
         description="Agrega los datos de la tarjeta que deseas utilizar en tus compras."
@@ -414,7 +412,7 @@ export function NewPaymentMethodScreen() {
           {isSubmitting ? "Guardando..." : "Guardar tarjeta"}
         </Text>
       </Pressable>
-    </ScrollView>
+    </KeyboardAwareContainer>
   );
 }
 

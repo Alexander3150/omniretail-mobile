@@ -5,7 +5,6 @@ import {
   ActivityIndicator,
   FlatList,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -19,7 +18,7 @@ import {
   matchLocationName,
 } from "@/config";
 import { getErrorMessage, isApiMode, useRepositories } from "@/infrastructure";
-import { OptionPicker } from "@/shared";
+import { KeyboardAwareContainer, OptionPicker } from "@/shared";
 import { colors, radius, spacing, typography } from "@/theme";
 
 import {
@@ -41,10 +40,9 @@ export function AccountScreen() {
   const initials = getInitials(customer?.name ?? "Cliente");
 
   return (
-    <ScrollView
+    <KeyboardAwareContainer
       contentContainerStyle={accountStyles.container}
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
+      extraBottomSpace={40}
     >
       <View style={accountStyles.hero}>
         <View style={accountStyles.heroCircleLarge} />
@@ -184,7 +182,7 @@ export function AccountScreen() {
       <Text style={accountStyles.footer}>
         FerrePharma · Ferretería & Farmacia
       </Text>
-    </ScrollView>
+    </KeyboardAwareContainer>
   );
 }
 
@@ -737,9 +735,9 @@ function AddressForm({
   }
 
   return (
-    <ScrollView
+    <KeyboardAwareContainer
       contentContainerStyle={styles.addressFormContainer}
-      keyboardShouldPersistTaps="handled"
+      extraBottomSpace={100}
     >
       <View style={styles.addressHero}>
         <View style={styles.addressHeroCircleLarge} />
@@ -947,7 +945,7 @@ function AddressForm({
           {isSaving ? "Guardando..." : "Guardar dirección"}
         </Text>
       </Pressable>
-    </ScrollView>
+    </KeyboardAwareContainer>
   );
 }
 
