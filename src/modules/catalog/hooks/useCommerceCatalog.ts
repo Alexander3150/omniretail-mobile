@@ -63,11 +63,13 @@ export function useCommerceCatalog(
         session?.tenantId ??
         (apiMode ? apiConfig.tenantSlug : "tenant-omniretail-demo");
 
-      const businessName = apiMode
-        ? "FERREPHARMA"
-        : (
-            await repositories.businessConfigRepository.getCurrent()
-          ).name;
+      // El nombre sale de la configuracion de la tienda (panel web); sin conexion se usa el de siempre.
+      const businessName = await repositories.businessConfigRepository
+        .getCurrent()
+        .then(
+          (config) => config.name,
+          () => "FERREPHARMA",
+        );
 
       const allProducts =
         await repositories.productRepository.getAll(tenantId);

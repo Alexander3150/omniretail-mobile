@@ -12,6 +12,7 @@ import {
 
 import { openBranchDirections } from "../application/branchLinks";
 import { useBranch, useBranches } from "../hooks/useBranches";
+import { StoreBrandText } from "@/shared";
 
 const palette = {
   deepBlue: "#3E668F",
@@ -44,7 +45,7 @@ function Hero({
       <View style={styles.heroTop}>
         {showBackButton ? <Pressable accessibilityLabel="Regresar" onPress={() => router.back()} style={styles.backButton}><Ionicons color={palette.deepBlue} name="arrow-back" size={20} /></Pressable> : null}
         <View style={styles.heroText}>
-          <Text style={styles.brand}>FERREPHARMA</Text>
+          <StoreBrandText style={styles.brand} />
           <Text style={styles.heroTitle}>{title}</Text>
         </View>
 

@@ -12,7 +12,7 @@ import {
   View,
 } from "react-native";
 
-import { formatCurrency, StockLimitModal } from "@/shared";
+import { formatCurrency, StockLimitModal, StoreBrandText } from "@/shared";
 
 import type { CartLine } from "../application/cartTotals";
 import { useCart } from "../hooks/useCart";
@@ -286,7 +286,7 @@ function CartHeader({
 
       <View style={styles.headerTop}>
         <View>
-          <Text style={styles.brand}>FERREPHARMA</Text>
+          <StoreBrandText style={styles.brand} />
           <Text style={styles.title}>Mi carrito</Text>
         </View>
 

@@ -13,7 +13,7 @@ import {
   View,
 } from "react-native";
 
-import { CartToast, formatCurrency, StockLimitModal, useCartToast } from "@/shared";
+import { CartToast, formatCurrency, StockLimitModal, StoreBrandText, useCartToast } from "@/shared";
 import { useSession } from "@/modules/auth";
 
 import { calculatePrice } from "../application/pricing";
@@ -59,7 +59,7 @@ export function CategoriesScreen() {
 
             <View style={categoryStyles.heroTop}>
               <View style={categoryStyles.heroText}>
-                <Text style={categoryStyles.brand}>FERREPHARMA</Text>
+                <StoreBrandText style={categoryStyles.brand} />
 
                 <Text style={categoryStyles.heroTitle}>Categorías</Text>
               </View>
@@ -395,7 +395,7 @@ export function ProductDetailScreen() {
         <View style={detailStyles.decorationOne} />
         <View style={detailStyles.decorationTwo} />
 
-        <Text style={detailStyles.brand}>FERREPHARMA</Text>
+        <StoreBrandText style={detailStyles.brand} />
         <Text style={detailStyles.heroTitle}>Detalle del producto</Text>
         <Text style={detailStyles.heroDescription}>
           Información, disponibilidad y precio del producto.

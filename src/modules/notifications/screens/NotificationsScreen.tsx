@@ -10,7 +10,7 @@ import {
   View,
 } from "react-native";
 
-import { formatDateTime } from "@/shared";
+import { formatDateTime, StoreBrandText } from "@/shared";
 
 import { useNotifications } from "../hooks/useNotifications";
 
@@ -65,7 +65,7 @@ export function NotificationsScreen() {
                 <Ionicons color={palette.deepBlue} name="arrow-back" size={20} />
               </Pressable>
               <View style={styles.heroText}>
-                <Text style={styles.brand}>FERREPHARMA</Text>
+                <StoreBrandText style={styles.brand} />
                 <Text style={styles.heroTitle}>Notificaciones</Text>
               </View>
 
