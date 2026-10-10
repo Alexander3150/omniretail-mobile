@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Link } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Dimensions,
   FlatList,
@@ -13,7 +13,10 @@ import {
 
 import { useSession } from "@/modules/auth";
 import { ProductCard, useCommerceCatalog } from "@/modules/catalog";
-import { CartToast, useCartToast } from "@/shared";
+import type { BusinessHeroSlide } from "@/core";
+import { RemoteBannerCard } from "@/modules/home/components/RemoteBannerCard";
+import { recoverBannerScroll } from "@/modules/home/utils/bannerScroll";
+import { CartToast, StoreLogo, useBusinessConfig, useCartToast } from "@/shared";
 
 const palette = {
   deepBlue: "#3E668F",
@@ -29,21 +32,58 @@ const palette = {
   success: "#247A52",
 };
 
+type HomeBanner = (typeof homeBanners)[number];
+
+type BannerEntry =
+  | { kind: "static"; key: string; banner: HomeBanner }
+  | { kind: "remote"; key: string; slide: BusinessHeroSlide };
+
 export function HomeScreen() {
   const { customer, isAuthenticated } = useSession();
+  const { heroSlides, logoUri, storeName } = useBusinessConfig();
+
+  // Con diapositivas configuradas en el panel web se muestran esas; si no, las de siempre.
+  const bannerEntries = useMemo<BannerEntry[]>(
+    () =>
+      heroSlides.length > 0
+        ? heroSlides.map((slide, index) => ({
+            kind: "remote" as const,
+            key: `remote-${index}`,
+            slide,
+          }))
+        : homeBanners.map((banner) => ({
+            kind: "static" as const,
+            key: banner.id,
+            banner,
+          })),
+    [heroSlides],
+  );
+  const bannerCount = bannerEntries.length;
 
   const categoriesPath = isAuthenticated
     ? "/(protected)/(tabs)/categories"
     : "/(shop)/categories";
   const [query, setQuery] = useState("");
   const [activeBanner, setActiveBanner] = useState(0);
+
+  // Al pasar de los banners de siempre a las diapositivas del panel (o al reves) el indice activo
+  // anterior puede no existir en la lista nueva: se reinicia en el mismo render en que cambian
+  // (patron de React para ajustar estado cuando cambia una prop, sin un efecto extra).
+  const [bannerSlides, setBannerSlides] = useState(heroSlides);
+  if (bannerSlides !== heroSlides) {
+    setBannerSlides(heroSlides);
+    setActiveBanner(0);
+  }
+
   const { cartToastMessage, showCartToast } = useCartToast();
-  const bannerListRef = useRef<FlatList<(typeof homeBanners)[number]>>(null);
+  const bannerListRef = useRef<FlatList<BannerEntry>>(null);
 
   useEffect(() => {
+    if (bannerCount < 2) return undefined;
+
     const interval = setInterval(() => {
       setActiveBanner((current) => {
-        const next = (current + 1) % homeBanners.length;
+        const next = (current + 1) % bannerCount;
 
         bannerListRef.current?.scrollToIndex({
           animated: true,
@@ -55,7 +95,7 @@ export function HomeScreen() {
     }, 4000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [bannerCount]);
 
   const {
     addToCart,
@@ -66,135 +106,7 @@ export function HomeScreen() {
     products,
   } = useCommerceCatalog(undefined, query);
 
-  return (
-    <View style={styles.screen}>
-      <FlatList
-      contentContainerStyle={styles.content}
-      data={products}
-      keyExtractor={(item) => item.product.id}
-      showsVerticalScrollIndicator={false}
-      ListHeaderComponent={
-        <>
-          <View style={styles.hero}>
-            <View style={styles.heroDecorationOne} />
-            <View style={styles.heroDecorationTwo} />
-
-            <View style={styles.welcomeRow}>
-              <View style={styles.welcomeText}>
-                <Text style={styles.brand}>FERREPHARMA</Text>
-
-                <Text style={styles.greeting}>
-                  Hola, {customer?.name ?? "cliente"}
-                </Text>
-
-                <View style={styles.businessRow}>
-                  <Ionicons
-                    color={palette.butterHoney}
-                    name="storefront-outline"
-                    size={14}
-                  />
-                  <Text style={styles.businessName}>{businessName}</Text>
-                </View>
-              </View>
-
-              <Link asChild href="/(protected)/notifications">
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.notificationButton,
-                    pressed ? styles.pressed : null,
-                  ]}
-                >
-                  <Ionicons
-                    color={palette.deepBlue}
-                    name="notifications-outline"
-                    size={28}
-                  />
-
-                  <View style={styles.notificationDot} />
-                </Pressable>
-              </Link>
-            </View>
-
-            <Text style={styles.heroDescription}>
-              Todo lo que necesitas, más cerca de ti.
-            </Text>
-
-            <View style={styles.searchContainer}>
-              <Ionicons
-                color={palette.deepBlue}
-                name="search-outline"
-                size={20}
-              />
-
-              <TextInput
-                onChangeText={setQuery}
-                placeholder="Buscar productos o SKU"
-                placeholderTextColor={palette.muted}
-                returnKeyType="search"
-                style={styles.input}
-                value={query}
-              />
-
-              {query.length > 0 ? (
-                <Pressable
-                  onPress={() => setQuery("")}
-                  style={styles.clearButton}
-                >
-                  <Ionicons color={palette.deepBlue} name="close" size={18} />
-                </Pressable>
-              ) : null}
-            </View>
-
-            {error ? (
-              <View style={styles.errorBox}>
-                <Ionicons
-                  color={palette.danger}
-                  name="alert-circle-outline"
-                  size={17}
-                />
-                <Text style={styles.error}>{error}</Text>
-              </View>
-            ) : null}
-          </View>
-
-          {!query.trim() ? (
-            <>
-              <View style={styles.carouselSection}>
-                <View style={styles.sectionHeader}>
-                  <View>
-                    <Text style={styles.eyebrow}>PARA TI</Text>
-                    <Text style={styles.sectionTitle}>
-                      Descubre FerrePharma
-                    </Text>
-                  </View>
-
-                  <View style={styles.sparkleIcon}>
-                    <Ionicons
-                      color={palette.deepBlue}
-                      name="sparkles-outline"
-                      size={18}
-                    />
-                  </View>
-                </View>
-
-                <FlatList
-                  ref={bannerListRef}
-                  data={homeBanners}
-                  horizontal
-                  keyExtractor={(item) => item.id}
-                  onMomentumScrollEnd={(event) => {
-                    const index = Math.round(
-                      event.nativeEvent.contentOffset.x / BANNER_WIDTH,
-                    );
-                    setActiveBanner(index);
-                  }}
-                  getItemLayout={(_, index) => ({
-                    index,
-                    length: BANNER_WIDTH,
-                    offset: BANNER_WIDTH * index,
-                  })}
-                  pagingEnabled
-                  renderItem={({ item, index }) => (
+  const renderStaticBanner = (item: HomeBanner, index: number) => (
                     <View style={[styles.bannerOuter, { width: BANNER_WIDTH }]}>
                       <View
                         style={[
@@ -300,16 +212,163 @@ export function HomeScreen() {
                         </View>
                       </View>
                     </View>
-                  )}
+  );
+
+  return (
+    <View style={styles.screen}>
+      <FlatList
+      contentContainerStyle={styles.content}
+      data={products}
+      keyExtractor={(item) => item.product.id}
+      showsVerticalScrollIndicator={false}
+      ListHeaderComponent={
+        <>
+          <View style={styles.hero}>
+            <View style={styles.heroDecorationOne} />
+            <View style={styles.heroDecorationTwo} />
+
+            <View style={styles.welcomeRow}>
+              <View style={styles.welcomeText}>
+                <View style={styles.brandRow}>
+                  <StoreLogo
+                    backgroundColor={palette.vanillaMilk}
+                    iconColor={palette.deepBlue}
+                    size={30}
+                    uri={logoUri}
+                  />
+                  <Text style={styles.brand}>{storeName.toUpperCase()}</Text>
+                </View>
+
+                <Text style={styles.greeting}>
+                  Hola, {customer?.name ?? "cliente"}
+                </Text>
+
+                <View style={styles.businessRow}>
+                  <Ionicons
+                    color={palette.butterHoney}
+                    name="storefront-outline"
+                    size={14}
+                  />
+                  <Text style={styles.businessName}>{businessName}</Text>
+                </View>
+              </View>
+
+              <Link asChild href="/(protected)/notifications">
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.notificationButton,
+                    pressed ? styles.pressed : null,
+                  ]}
+                >
+                  <Ionicons
+                    color={palette.deepBlue}
+                    name="notifications-outline"
+                    size={28}
+                  />
+
+                  <View style={styles.notificationDot} />
+                </Pressable>
+              </Link>
+            </View>
+
+            <Text style={styles.heroDescription}>
+              Todo lo que necesitas, más cerca de ti.
+            </Text>
+
+            <View style={styles.searchContainer}>
+              <Ionicons
+                color={palette.deepBlue}
+                name="search-outline"
+                size={20}
+              />
+
+              <TextInput
+                onChangeText={setQuery}
+                placeholder="Buscar productos o SKU"
+                placeholderTextColor={palette.muted}
+                returnKeyType="search"
+                style={styles.input}
+                value={query}
+              />
+
+              {query.length > 0 ? (
+                <Pressable
+                  onPress={() => setQuery("")}
+                  style={styles.clearButton}
+                >
+                  <Ionicons color={palette.deepBlue} name="close" size={18} />
+                </Pressable>
+              ) : null}
+            </View>
+
+            {error ? (
+              <View style={styles.errorBox}>
+                <Ionicons
+                  color={palette.danger}
+                  name="alert-circle-outline"
+                  size={17}
+                />
+                <Text style={styles.error}>{error}</Text>
+              </View>
+            ) : null}
+          </View>
+
+          {!query.trim() ? (
+            <>
+              <View style={styles.carouselSection}>
+                <View style={styles.sectionHeader}>
+                  <View>
+                    <Text style={styles.eyebrow}>PARA TI</Text>
+                    <Text style={styles.sectionTitle}>
+                      Descubre {storeName}
+                    </Text>
+                  </View>
+
+                  <View style={styles.sparkleIcon}>
+                    <Ionicons
+                      color={palette.deepBlue}
+                      name="sparkles-outline"
+                      size={18}
+                    />
+                  </View>
+                </View>
+
+                <FlatList
+                  ref={bannerListRef}
+                  data={bannerEntries}
+                  horizontal
+                  keyExtractor={(item) => item.key}
+                  onScrollToIndexFailed={(info) =>
+                    recoverBannerScroll(bannerListRef.current, info, BANNER_WIDTH)
+                  }
+                  onMomentumScrollEnd={(event) => {
+                    const index = Math.round(
+                      event.nativeEvent.contentOffset.x / BANNER_WIDTH,
+                    );
+                    setActiveBanner(index);
+                  }}
+                  getItemLayout={(_, index) => ({
+                    index,
+                    length: BANNER_WIDTH,
+                    offset: BANNER_WIDTH * index,
+                  })}
+                  pagingEnabled
+                  renderItem={({ item: entry, index }) =>
+                    entry.kind === "remote" ? (
+                      <RemoteBannerCard slide={entry.slide} width={BANNER_WIDTH} />
+                    ) : (
+                      renderStaticBanner(entry.banner, index)
+                    )
+                  }
                   showsHorizontalScrollIndicator={false}
                   snapToInterval={BANNER_WIDTH}
                   decelerationRate="fast"
                 />
 
                 <View style={styles.pagination}>
-                  {homeBanners.map((banner, index) => (
+                  {bannerEntries.map((entry, index) => (
                     <View
-                      key={banner.id}
+                      key={entry.key}
                       style={[
                         styles.paginationDot,
                         index === activeBanner
@@ -608,6 +667,11 @@ const styles = StyleSheet.create({
     paddingRight: 12,
   },
 
+  brandRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 8,
+  },
   brand: {
     color: palette.butterHoney,
     fontSize: 11,

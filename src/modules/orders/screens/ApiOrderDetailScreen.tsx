@@ -17,7 +17,7 @@ import {
 } from "@/infrastructure/api/checkout";
 import { useApiOrderTracking } from "@/modules/orders/hooks/useApiOrderTracking";
 import { useOrderReceiptDownload } from "@/modules/orders/hooks/useOrderReceiptDownload";
-import { formatCurrency, formatDateTime } from "@/shared";
+import { formatCurrency, formatDateTime, StoreBrandText } from "@/shared";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -159,7 +159,7 @@ export function ApiOrderDetailScreen() {
             </Pressable>
 
             <View style={styles.flex}>
-              <Text style={styles.brand}>FERREPHARMA</Text>
+              <StoreBrandText style={styles.brand} />
               <Text style={styles.heroTitle}>Detalle del pedido</Text>
             </View>
           </View>

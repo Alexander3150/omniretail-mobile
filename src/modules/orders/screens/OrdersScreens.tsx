@@ -14,7 +14,7 @@ import {
 import { demoConfig } from "@/config";
 import { DeliveryMethod, OrderStatus } from "@/core";
 import { useInvoiceDownload } from "@/modules/invoice";
-import { formatCurrency, formatDateTime } from "@/shared";
+import { formatCurrency, formatDateTime, StoreBrandText } from "@/shared";
 
 import {
   type ApiOrderListStatus,
@@ -72,7 +72,7 @@ export function OrdersScreen() {
               </Pressable>
 
               <View style={orderStyles.heroText}>
-                <Text style={orderStyles.brand}>FERREPHARMA</Text>
+                <StoreBrandText style={orderStyles.brand} />
 
                 <Text style={orderStyles.heroTitle}>Mis pedidos</Text>
               </View>

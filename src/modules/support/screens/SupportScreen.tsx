@@ -15,6 +15,7 @@ import {
   openWhatsAppSupport,
 } from "../application/supportLinks";
 import { useSupport } from "../hooks/useSupport";
+import { StoreBrandText } from "@/shared";
 
 const palette = {
   deepBlue: "#3E668F",
@@ -248,7 +249,7 @@ function Hero() {
           <Ionicons color={palette.deepBlue} name="arrow-back" size={20} />
         </Pressable>
         <View style={styles.heroText}>
-          <Text style={styles.brand}>FERREPHARMA</Text>
+          <StoreBrandText style={styles.brand} />
           <Text style={styles.heroTitle}>Soporte</Text>
         </View>
 

@@ -8,9 +8,11 @@ import type {
 } from "@/core";
 
 import type { ApiClient } from "../ApiClient";
+import { resolveApiAssetUrl } from "../config";
 import type { ApiStorefrontConfigResponse } from "./types";
 
-const CONFIG_TTL_MS = 5 * 60_000;
+// Corto a proposito: los cambios del panel web (logo, nombre, carrusel) deben verse en pocos segundos.
+const CONFIG_TTL_MS = 60_000;
 const DEFAULT_CURRENCY = "GTQ";
 
 /**
@@ -56,7 +58,15 @@ export class ApiBusinessConfigRepository implements BusinessConfigRepository {
     return {
       tenantId: config.tenantId,
       name: config.storeName,
-      logoUri: config.logoUrl ?? undefined,
+      // El backend devuelve rutas relativas (/media/...): se completan con el origen de la API.
+      logoUri: resolveApiAssetUrl(config.logoUrl),
+      heroSlides: (config.slides ?? [])
+        .map((slide) => ({
+          title: slide.title?.trim() ?? "",
+          description: slide.description?.trim() ?? "",
+          imageUri: resolveApiAssetUrl(slide.imageUrl),
+        }))
+        .filter((slide) => slide.title || slide.imageUri),
       currency: DEFAULT_CURRENCY,
       support: {
         phone: config.contactPhone ?? undefined,
