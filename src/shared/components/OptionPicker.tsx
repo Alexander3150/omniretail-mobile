@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
-import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { colors, radius, spacing, typography } from "@/theme";
 
@@ -52,11 +52,13 @@ export function OptionPicker({
       <Modal animationType="slide" onRequestClose={handleClose} transparent visible={isOpen}>
         <View style={styles.backdrop}>
           <Pressable accessibilityLabel="Cerrar selector" onPress={handleClose} style={StyleSheet.absoluteFill} />
-          <View style={styles.sheet}>
-            <View style={styles.sheetHeader}><Text style={styles.sheetTitle}>{label}</Text><Pressable onPress={handleClose} style={styles.close}><Ionicons color={colors.primary} name="close" size={20} /></Pressable></View>
-            {options.length > SEARCH_THRESHOLD ? <TextInput autoFocus onChangeText={setQuery} placeholder={`Buscar ${label.toLowerCase()}`} placeholderTextColor={colors.textMuted} style={styles.search} value={query} /> : null}
-            <FlatList data={visibleOptions} keyExtractor={(item) => item} ListEmptyComponent={<Text style={styles.empty}>{emptyText}</Text>} renderItem={({ item }) => <Pressable onPress={() => { onChange(item); handleClose(); }} style={[styles.option, item === value ? styles.optionSelected : null]}><Text style={[styles.optionText, item === value ? styles.optionTextSelected : null]}>{item}</Text>{item === value ? <Ionicons color={colors.surface} name="checkmark" size={18} /> : null}</Pressable>} />
-          </View>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.keyboardAvoiding}>
+            <View style={styles.sheet}>
+              <View style={styles.sheetHeader}><Text style={styles.sheetTitle}>{label}</Text><Pressable onPress={handleClose} style={styles.close}><Ionicons color={colors.primary} name="close" size={20} /></Pressable></View>
+              {options.length > SEARCH_THRESHOLD ? <TextInput autoFocus onChangeText={setQuery} placeholder={`Buscar ${label.toLowerCase()}`} placeholderTextColor={colors.textMuted} style={styles.search} value={query} /> : null}
+              <FlatList data={visibleOptions} keyExtractor={(item) => item} ListEmptyComponent={<Text style={styles.empty}>{emptyText}</Text>} renderItem={({ item }) => <Pressable onPress={() => { onChange(item); handleClose(); }} style={[styles.option, item === value ? styles.optionSelected : null]}><Text style={[styles.optionText, item === value ? styles.optionTextSelected : null]}>{item}</Text>{item === value ? <Ionicons color={colors.surface} name="checkmark" size={18} /> : null}</Pressable>} />
+            </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
     </View>
@@ -93,5 +95,5 @@ const styles = StyleSheet.create({
     minHeight: 44,
     paddingHorizontal: spacing.md,
   },
-  backdrop: { backgroundColor: "rgba(23, 32, 51, .55)", flex: 1, justifyContent: "flex-end" }, sheet: { backgroundColor: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: "72%", padding: spacing.lg }, sheetHeader: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginBottom: spacing.md }, sheetTitle: { color: colors.text, fontSize: typography.subtitle, fontWeight: "800" }, close: { alignItems: "center", backgroundColor: "#EEF3FB", borderRadius: 16, height: 32, justifyContent: "center", width: 32 }, option: { alignItems: "center", borderBottomColor: colors.border, borderBottomWidth: 1, flexDirection: "row", justifyContent: "space-between", minHeight: 48, paddingHorizontal: spacing.sm }, optionSelected: { backgroundColor: colors.primary, borderRadius: radius.sm }, optionText: { color: colors.text, fontSize: typography.body }, optionTextSelected: { color: colors.surface, fontWeight: "700" },
+  backdrop: { backgroundColor: "rgba(23, 32, 51, .55)", flex: 1, justifyContent: "flex-end" }, keyboardAvoiding: { justifyContent: "flex-end", width: "100%" }, sheet: { backgroundColor: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: "72%", padding: spacing.lg }, sheetHeader: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginBottom: spacing.md }, sheetTitle: { color: colors.text, fontSize: typography.subtitle, fontWeight: "800" }, close: { alignItems: "center", backgroundColor: "#EEF3FB", borderRadius: 16, height: 32, justifyContent: "center", width: 32 }, option: { alignItems: "center", borderBottomColor: colors.border, borderBottomWidth: 1, flexDirection: "row", justifyContent: "space-between", minHeight: 48, paddingHorizontal: spacing.sm }, optionSelected: { backgroundColor: colors.primary, borderRadius: radius.sm }, optionText: { color: colors.text, fontSize: typography.body }, optionTextSelected: { color: colors.surface, fontWeight: "700" },
 });

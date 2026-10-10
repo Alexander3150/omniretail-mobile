@@ -17,7 +17,7 @@ import {
   UserStatus,
 } from "@/core";
 
-import type { MockDatabase } from "../database";
+import type { MockDatabase } from "../database/MockDatabase";
 import { MOCK_DATABASE_VERSION } from "../database/storageKeys";
 
 const tenantId = "tenant-omniretail-demo";

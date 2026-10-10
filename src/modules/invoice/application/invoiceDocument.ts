@@ -1,5 +1,5 @@
 import type { BusinessConfig, Order, OrderItem, Payment } from "@/core";
-import { formatCurrency, formatDateTime } from "@/shared";
+import { formatCurrency, formatDateTime } from "@/shared/utils";
 
 export type InvoiceDocumentData = {
   business: BusinessConfig;

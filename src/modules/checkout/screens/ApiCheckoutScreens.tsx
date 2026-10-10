@@ -15,7 +15,7 @@ import { ApiError, getErrorMessage, useRepositories } from "@/infrastructure";
 import { GUATEMALA_DEPARTMENTS, getGuatemalaMunicipalities } from "@/config";
 import { useSession } from "@/modules/auth";
 import { useCart } from "@/modules/cart";
-import { formatCurrency, OptionPicker } from "@/shared";
+import { KeyboardAwareContainer, formatCurrency, OptionPicker } from "@/shared";
 import { colors, typography } from "@/theme";
 
 import {
@@ -175,7 +175,10 @@ export function ApiCheckoutDeliveryScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.content}>
+    <KeyboardAwareContainer
+      contentContainerStyle={styles.content}
+      extraBottomSpace={60}
+    >
       <CheckoutHero
         badge="1 de 3 · Entrega"
         description="Indica dónde quieres recibir tu pedido."
@@ -282,7 +285,7 @@ export function ApiCheckoutDeliveryScreen() {
       <Pressable onPress={continueToPayment} style={styles.primaryButton}>
         <Text style={styles.primaryText}>Continuar</Text>
       </Pressable>
-    </ScrollView>
+    </KeyboardAwareContainer>
   );
 }
 
@@ -342,7 +345,10 @@ export function ApiCheckoutPaymentScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.content}>
+    <KeyboardAwareContainer
+      contentContainerStyle={styles.content}
+      extraBottomSpace={60}
+    >
       <CheckoutHero
         badge="2 de 3 · Pago"
         description="Completa los datos para simular el pago."
@@ -452,7 +458,7 @@ export function ApiCheckoutPaymentScreen() {
       <Pressable onPress={continueToReview} style={styles.primaryButton}>
         <Text style={styles.primaryText}>Revisar pedido</Text>
       </Pressable>
-    </ScrollView>
+    </KeyboardAwareContainer>
   );
 }
 

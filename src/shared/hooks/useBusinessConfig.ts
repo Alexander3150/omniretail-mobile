@@ -2,7 +2,7 @@ import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 
 import type { BusinessConfig, BusinessHeroSlide } from "@/core";
-import { useRepositories } from "@/infrastructure";
+import { useRepositories } from "@/infrastructure/repositories";
 
 /** Nombre que se muestra mientras llega la configuración o si no se puede leer. */
 export const DEFAULT_STORE_NAME = "FERREPHARMA";
