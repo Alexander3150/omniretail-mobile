@@ -51,3 +51,6 @@ example
 /auditoria/
 /omniretail-backend/
 /PLAN_INTEGRACION_BACKEND.md
+
+# Cobertura de pruebas (vitest)
+/coverage
